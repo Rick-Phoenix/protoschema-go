@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package {{.PackageName}};
+
+// Loop through and import all the required dependencies.
+{{range .Imports}}
+import "{{.}}";
+{{end}}
+
+// Loop through each message we need to generate.
+{{range .Messages}}
+message {{.Name}} {
+  // Loop through all reserved numbers for this message.
+  {{- if .ReservedNumbers}}
+  reserved {{ join .ReservedNumbers ", "}};
+  {{- end}}
+
+  // Loop through each field in the message.
+  {{- range .Fields}}
+  {{.Type}} {{.Name}} = {{.Number}}
+  {{- if .Options}} [{{.Options}}] {{- end}};
+  {{- end}}
+}
+{{end}}
