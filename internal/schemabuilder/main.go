@@ -1,4 +1,4 @@
-package main
+package schemabuilder
 
 import (
 	"fmt"
@@ -144,35 +144,4 @@ func UnwrapToPlainStruct(richSchemaPtr any) any {
 
 	plainStructType := reflect.StructOf(plainFields)
 	return reflect.New(plainStructType).Interface()
-}
-
-func main() {
-	fmt.Println("--- Step 1: Defining our rich schema instance ---")
-
-	fmt.Printf("Original rich schema type: %T\n\n", &UserExample)
-
-	fmt.Println("--- Step 2: Calling UnwrapToPlainStruct ---")
-	plainUser := UnwrapToPlainStruct(&UserExample)
-	fmt.Printf("The returned plain struct is of type: %T\n", plainUser)
-	fmt.Printf("Value of the plain struct instance: %#v\n\n", plainUser)
-
-	fmt.Println("--- Step 3: Verifying the new struct's fields and tags ---")
-	// To inspect the result, we use reflection again!
-	// We use .Elem() because plainUser is a pointer to a struct.
-	plainType := reflect.TypeOf(plainUser).Elem()
-
-	for i := 0; i < plainType.NumField(); i++ {
-		field := plainType.Field(i)
-		fmt.Printf(
-			"Field %d: Name=%s, Type=%s, Tag='%s'\n",
-			i,
-			field.Name, // The field's name
-			field.Type, // The field's Go type
-			field.Tag,  // The field's struct tag
-		)
-	}
-
-	rules := ProcessRules(UserExample.Name)
-
-	fmt.Print(rules)
 }
