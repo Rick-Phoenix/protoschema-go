@@ -43,9 +43,28 @@ var ProtoTypeMap = map[string]string{
 	"int64":     "int64",
 	"int32":     "int32",
 	"bool":      "bool",
-	"bytes":     "bytes",
+	"byte":      "bytes",
+	"byte[]":    "bytes",
+	"uint8":     "bytes",
 	"timestamp": "google.protobuf.Timestamp",
-	"updatedAT": "google.protobuf.Timestamp",
+	"float32":   "float",
+	"float64":   "double",
+	"uint32":    "uint32",
+	"uint64":    "uint64",
+}
+
+var NullableTypes = map[string]string{
+	"double": "google.protobuf.DoubleValue",
+	"float":  "google.protobuf.FloatValue",
+	"int64":  "google.protobuf.Int64Value",
+	"uint64": "google.protobuf.UInt64Value",
+	"int32":  "google.protobuf.Int32Value",
+	"uint32": "google.protobuf.UInt32Value",
+	"bool":   "google.protobuf.BoolValue",
+	"string": "google.protobuf.StringValue",
+	"byte":   "google.protobuf.BytesValue",
+	"byte[]": "google.protobuf.BytesValue",
+	"uint8":  "google.protobuf.BytesValue",
 }
 
 func Generate(t *schemabuilder.TableBuilder, o Options) error {
@@ -73,6 +92,13 @@ func Generate(t *schemabuilder.TableBuilder, o Options) error {
 		if protoData.ColType == "timestamp" {
 			imports["google/protobuf/timestamp.proto"] = true
 		}
+
+		// "google/protobuf/wrappers.proto"
+		// "google/protobuf/empty.proto";
+		//  google.protobuf.StringValue
+		// google.protobuf.Empty
+		// "google/protobuf/field_mask.proto"
+		// "google.protobuf.FieldMask update_mask"
 
 		protoType := ProtoTypeMap[protoData.ColType]
 
