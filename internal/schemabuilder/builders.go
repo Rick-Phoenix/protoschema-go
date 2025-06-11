@@ -2,75 +2,35 @@ package schemabuilder
 
 import (
 	"fmt"
-	"time"
 )
 
-type ColumnsMap map[string]ColumnBuilder2
-
-type TableSchema interface {
-	GetColumns() ColumnsMap
-}
+type ColumnsMap map[string]ColumnBuilder
 
 type TableBuilder struct {
 	Name    string
 	Columns ColumnsMap
 }
 
-func (b *TableBuilder) GetColumns() ColumnsMap {
-	return b.Columns
+var UserSchema = &TableBuilder{
+	Name: "User",
+	Columns: ColumnsMap{
+		"Name":      StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
+		"Age":       Int64Col().Responses("get"),
+		"Blob":      BytesCol().Requests("get"),
+		"CreatedAt": TimestampCol().Responses("get"),
+	},
 }
 
-var User2 = &TableBuilder{
-	Name:    "User",
-	Columns: ColumnsMap{"Name": StringCol().Required().MinLen(3).Requests("create").Responses("get", "create")},
-}
-
-func DoThings(t TableSchema) bool {
-	return true
-}
-
-var test = DoThings(User2)
-
-type Column2 struct {
+type Column struct {
 	Rules     []string
 	Requests  []string
 	Responses []string
 	ColType   string
 }
 
-type Column[T any] struct {
-	Value     T
-	Rules     []string
-	Requests  []string
-	Responses []string
+type ColumnBuilder interface {
+	Build() Column
 }
-
-type ColumnBuilder2 interface {
-	Build() Column2
-}
-
-// ColumnBuilder is an interface for any type that can produce a Column[T].
-type ColumnBuilder[T any] interface {
-	// Any type that has this method signature automatically implements the interface.
-	Build() Column[T]
-}
-
-type UserSchema struct {
-	// ID          ColumnBuilder[int64]  `bun:"id,pk,autoincrement" json:"id"`
-	Name  ColumnBuilder[string] `bun:"name,notnull" json:"user_name"`
-	Email ColumnBuilder[string] `bun:"email,unique"`
-	// Age         ColumnBuilder[int64]
-}
-
-// var UserExample = UserSchema{
-// 	// This works because the value returned by StringCol().Required().MinLen(3)
-// 	// is a *StringColumnBuilder, which satisfies the ColumnBuilder[string] interface.
-// 	Name: StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
-//
-// 	Email: StringCol().Required().Email().Requests("create").Responses("get"),
-//
-// 	// Age: Int64Col(),
-// }
 
 type StringColumnBuilder struct {
 	rules     []string
@@ -139,39 +99,79 @@ func (b *StringColumnBuilder) Email() *StringColumnBuilder {
 	return b
 }
 
-func (b *StringColumnBuilder) Build() Column2 {
-	return Column2{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "string"}
+func (b *StringColumnBuilder) Build() Column {
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "string"}
 }
 
 type Int64ColumnBuilder struct {
-	rules []string
+	rules     []string
+	requests  []string
+	responses []string
 }
 
 func Int64Col() *Int64ColumnBuilder {
 	return &Int64ColumnBuilder{}
 }
 
-func (b *Int64ColumnBuilder) Build() Column[int64] {
-	return Column[int64]{Rules: b.rules}
+func (b *Int64ColumnBuilder) Requests(r ...string) *Int64ColumnBuilder {
+	b.requests = append(b.requests, r...)
+	return b
+}
+
+func (b *Int64ColumnBuilder) Responses(r ...string) *Int64ColumnBuilder {
+	b.responses = append(b.responses, r...)
+	return b
+}
+
+func (b *Int64ColumnBuilder) Build() Column {
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "int64"}
 }
 
 type BytesColumnBuilder struct {
-	rules []string
+	rules     []string
+	requests  []string
+	responses []string
 }
 
 // The generic type parameter is a slice of bytes
-func (b *BytesColumnBuilder) Build() Column[[]byte] {
-	return Column[[]byte]{Rules: b.rules}
+func (b *BytesColumnBuilder) Build() Column {
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "bytes"}
 }
 
 func BytesCol() *BytesColumnBuilder {
 	return &BytesColumnBuilder{}
 }
 
-type TimeStampColumnBuilder struct {
-	rules []string
+func (b *BytesColumnBuilder) Requests(r ...string) *BytesColumnBuilder {
+	b.requests = append(b.requests, r...)
+	return b
 }
 
-func (b *TimeStampColumnBuilder) Build() Column[time.Time] {
-	return Column[time.Time]{Rules: b.rules}
+func (b *BytesColumnBuilder) Responses(r ...string) *BytesColumnBuilder {
+	b.responses = append(b.responses, r...)
+	return b
+}
+
+type TimeStampColumnBuilder struct {
+	rules     []string
+	requests  []string
+	responses []string
+}
+
+func TimestampCol() *TimeStampColumnBuilder {
+	return &TimeStampColumnBuilder{}
+}
+
+func (b *TimeStampColumnBuilder) Build() Column {
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "timestamp"}
+}
+
+func (b *TimeStampColumnBuilder) Requests(r ...string) *TimeStampColumnBuilder {
+	b.requests = append(b.requests, r...)
+	return b
+}
+
+func (b *TimeStampColumnBuilder) Responses(r ...string) *TimeStampColumnBuilder {
+	b.responses = append(b.responses, r...)
+	return b
 }

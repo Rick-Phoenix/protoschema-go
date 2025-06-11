@@ -1,6 +1,8 @@
 package schemabuilder
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"strings"
 	"unicode"
 )
@@ -45,4 +47,14 @@ func Capitalize(s string) string {
 	letters[0] = unicode.ToUpper(letters[0])
 
 	return string(letters)
+}
+
+func RandomString(byteLength int) (string, error) {
+	b := make([]byte, byteLength)
+	_, err := rand.Read(b) // Read random bytes into the slice
+	if err != nil {
+		return "", err
+	}
+	// Encode the random bytes into a URL-safe base64 string
+	return base64.URLEncoding.EncodeToString(b), nil
 }

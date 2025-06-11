@@ -7,15 +7,9 @@ import (
 	"github.com/Rick-Phoenix/gofirst/internal/schemabuilder/protogen"
 )
 
-// Our NAMED schema type.
-type UserSchema struct {
-	ID   schemabuilder.ColumnBuilder[int64]
-	Name schemabuilder.ColumnBuilder[string]
-}
-
 func main() {
 	// Initialize our schema.
-	schema := schemabuilder.User2
+	schema := schemabuilder.UserSchema
 
 	// Define paths and options.
 	templatePath := "templates/service.proto.tmpl"
@@ -25,7 +19,7 @@ func main() {
 	options := &protogen.Options{TmplPath: templatePath, ProtoRoot: outputRoot, Version: version, ProjectName: "test"}
 
 	// Run the generator!
-	if err := protogen.Generate2(schema, *options); err != nil {
+	if err := protogen.Generate(schema, *options); err != nil {
 		log.Fatalf("🔥 Generation failed: %v", err)
 	}
 }
