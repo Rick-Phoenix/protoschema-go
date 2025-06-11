@@ -1,50 +1,24 @@
 package schemabuilder
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 )
 
-// The ProcessRules function now needs to be generic to handle the builder interface.
-func ProcessRules[T any](builder ColumnBuilder[T]) string {
-	if builder == nil {
-		return ""
-	}
-
-	// First, call Build() to get the final Column object.
-	finalColumn := builder.Build()
-	rules := finalColumn.Rules
-
-	if len(rules) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("[%s]", strings.Join(rules, ", "))
-}
-
-type TableSchema struct {
-	NoService   bool
-	ServiceName string
-}
-
 type UserSchema struct {
-	ID          ColumnBuilder[int64]  `bun:"id,pk,autoincrement" json:"id"`
-	Name        ColumnBuilder[string] `bun:"name,notnull" json:"user_name"`
-	Email       ColumnBuilder[string] `bun:"email,unique"`
-	Age         ColumnBuilder[int]
-	NoService   bool
-	ServiceName string
+	// ID          ColumnBuilder[int64]  `bun:"id,pk,autoincrement" json:"id"`
+	Name  ColumnBuilder[string] `bun:"name,notnull" json:"user_name"`
+	Email ColumnBuilder[string] `bun:"email,unique"`
+	// Age         ColumnBuilder[int64]
 }
 
 var UserExample = UserSchema{
 	// This works because the value returned by StringCol().Required().MinLen(3)
 	// is a *StringColumnBuilder, which satisfies the ColumnBuilder[string] interface.
-	Name: StringCol().Required().MinLen(3),
+	Name: StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
 
-	Email: StringCol().Required().Email(),
+	Email: StringCol().Required().Email().Requests("create").Responses("get"),
 
-	Age:         IntCol().GreaterThan(17),
-	ServiceName: "User",
+	// Age: Int64Col(),
 }
 
 // The FINAL, CORRECTED version of our unwrapper.
@@ -55,7 +29,7 @@ func UnwrapToPlainStruct(richSchemaPtr any) any {
 
 	var plainFields []reflect.StructField
 
-	for i := 0; i < richStructType.NumField(); i++ {
+	for i := range richStructType.NumField() {
 		richField := richStructType.Field(i) // The field definition from UserSchema
 
 		// richField.Type is now our ColumnBuilder[T] interface.

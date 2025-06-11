@@ -15,18 +15,17 @@ type UserSchema struct {
 
 func main() {
 	// Initialize our schema.
-	schema := &UserSchema{
-		ID:   schemabuilder.Int64Col(),
-		Name: schemabuilder.StringCol().Required().MinLen(3),
-	}
+	schema := &schemabuilder.UserExample
 
 	// Define paths and options.
 	templatePath := "templates/service.proto.tmpl"
 	outputRoot := "gen/proto"
 	version := "v1"
 
+	options := &protogen.Options{TmplPath: templatePath, ProtoRoot: outputRoot, Version: version, ProjectName: "test"}
+
 	// Run the generator!
-	if err := protogen.Generate(schema, templatePath, outputRoot, version); err != nil {
+	if err := protogen.Generate(schema, *options); err != nil {
 		log.Fatalf("🔥 Generation failed: %v", err)
 	}
 }
