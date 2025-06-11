@@ -12,7 +12,6 @@ message GetUserRequest {
 
 message GetUserResponse {
   string name = 1 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 3];
-  string email = 2 [(buf.validate.field).required = true, (buf.validate.field).string.email = true];
 }
 
 

@@ -5,8 +5,37 @@ import (
 	"time"
 )
 
+type ColumnsMap map[string]ColumnBuilder2
+
 type TableSchema interface {
-	Columns() Column[any]
+	GetColumns() ColumnsMap
+}
+
+type TableBuilder struct {
+	Name    string
+	Columns ColumnsMap
+}
+
+func (b *TableBuilder) GetColumns() ColumnsMap {
+	return b.Columns
+}
+
+var User2 = &TableBuilder{
+	Name:    "User",
+	Columns: ColumnsMap{"Name": StringCol().Required().MinLen(3).Requests("create").Responses("get", "create")},
+}
+
+func DoThings(t TableSchema) bool {
+	return true
+}
+
+var test = DoThings(User2)
+
+type Column2 struct {
+	Rules     []string
+	Requests  []string
+	Responses []string
+	ColType   string
 }
 
 type Column[T any] struct {
@@ -16,11 +45,32 @@ type Column[T any] struct {
 	Responses []string
 }
 
+type ColumnBuilder2 interface {
+	Build() Column2
+}
+
 // ColumnBuilder is an interface for any type that can produce a Column[T].
 type ColumnBuilder[T any] interface {
 	// Any type that has this method signature automatically implements the interface.
 	Build() Column[T]
 }
+
+type UserSchema struct {
+	// ID          ColumnBuilder[int64]  `bun:"id,pk,autoincrement" json:"id"`
+	Name  ColumnBuilder[string] `bun:"name,notnull" json:"user_name"`
+	Email ColumnBuilder[string] `bun:"email,unique"`
+	// Age         ColumnBuilder[int64]
+}
+
+// var UserExample = UserSchema{
+// 	// This works because the value returned by StringCol().Required().MinLen(3)
+// 	// is a *StringColumnBuilder, which satisfies the ColumnBuilder[string] interface.
+// 	Name: StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
+//
+// 	Email: StringCol().Required().Email().Requests("create").Responses("get"),
+//
+// 	// Age: Int64Col(),
+// }
 
 type StringColumnBuilder struct {
 	rules     []string
@@ -89,8 +139,8 @@ func (b *StringColumnBuilder) Email() *StringColumnBuilder {
 	return b
 }
 
-func (b *StringColumnBuilder) Build() Column[string] {
-	return Column[string]{Rules: b.rules, Requests: b.requests, Responses: b.responses}
+func (b *StringColumnBuilder) Build() Column2 {
+	return Column2{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "string"}
 }
 
 type Int64ColumnBuilder struct {

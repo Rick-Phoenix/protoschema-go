@@ -4,23 +4,6 @@ import (
 	"reflect"
 )
 
-type UserSchema struct {
-	// ID          ColumnBuilder[int64]  `bun:"id,pk,autoincrement" json:"id"`
-	Name  ColumnBuilder[string] `bun:"name,notnull" json:"user_name"`
-	Email ColumnBuilder[string] `bun:"email,unique"`
-	// Age         ColumnBuilder[int64]
-}
-
-var UserExample = UserSchema{
-	// This works because the value returned by StringCol().Required().MinLen(3)
-	// is a *StringColumnBuilder, which satisfies the ColumnBuilder[string] interface.
-	Name: StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
-
-	Email: StringCol().Required().Email().Requests("create").Responses("get"),
-
-	// Age: Int64Col(),
-}
-
 // The FINAL, CORRECTED version of our unwrapper.
 func UnwrapToPlainStruct(richSchemaPtr any) any {
 	richValue := reflect.ValueOf(richSchemaPtr)

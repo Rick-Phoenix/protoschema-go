@@ -15,7 +15,7 @@ type UserSchema struct {
 
 func main() {
 	// Initialize our schema.
-	schema := &schemabuilder.UserExample
+	schema := schemabuilder.User2
 
 	// Define paths and options.
 	templatePath := "templates/service.proto.tmpl"
@@ -25,7 +25,7 @@ func main() {
 	options := &protogen.Options{TmplPath: templatePath, ProtoRoot: outputRoot, Version: version, ProjectName: "test"}
 
 	// Run the generator!
-	if err := protogen.Generate(schema, *options); err != nil {
+	if err := protogen.Generate2(schema, *options); err != nil {
 		log.Fatalf("🔥 Generation failed: %v", err)
 	}
 }
