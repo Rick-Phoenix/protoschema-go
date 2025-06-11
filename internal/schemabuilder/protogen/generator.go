@@ -67,6 +67,9 @@ var NullableTypes = map[string]string{
 	"uint8":  "google.protobuf.BytesValue",
 }
 
+// "google/protobuf/field_mask.proto"
+// "google.protobuf.FieldMask update_mask"
+
 func Generate(t *schemabuilder.TableBuilder, o Options) error {
 	imports := make(map[string]bool)
 	serviceNameRaw := t.Name
@@ -93,14 +96,14 @@ func Generate(t *schemabuilder.TableBuilder, o Options) error {
 			imports["google/protobuf/timestamp.proto"] = true
 		}
 
-		// "google/protobuf/wrappers.proto"
-		// "google/protobuf/empty.proto";
-		//  google.protobuf.StringValue
-		// google.protobuf.Empty
-		// "google/protobuf/field_mask.proto"
-		// "google.protobuf.FieldMask update_mask"
+		var protoType string
 
-		protoType := ProtoTypeMap[protoData.ColType]
+		if protoData.Nullable == true {
+			imports["google/protobuf/wrappers.proto"] = true
+			protoType = NullableTypes[protoData.ColType]
+		} else {
+			protoType = ProtoTypeMap[protoData.ColType]
+		}
 
 		requests := protoData.Requests
 

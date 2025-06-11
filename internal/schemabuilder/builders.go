@@ -11,21 +11,12 @@ type TableBuilder struct {
 	Columns ColumnsMap
 }
 
-var UserSchema = &TableBuilder{
-	Name: "User",
-	Columns: ColumnsMap{
-		"Name":      StringCol().Required().MinLen(3).Requests("create").Responses("get", "create"),
-		"Age":       Int64Col().Responses("get"),
-		"Blob":      BytesCol().Requests("get"),
-		"CreatedAt": TimestampCol().Responses("get"),
-	},
-}
-
 type Column struct {
 	Rules     []string
 	Requests  []string
 	Responses []string
 	ColType   string
+	Nullable  bool
 }
 
 type ColumnBuilder interface {
@@ -36,10 +27,16 @@ type StringColumnBuilder struct {
 	rules     []string
 	requests  []string
 	responses []string
+	nullable  bool
 }
 
 func StringCol() *StringColumnBuilder {
 	return &StringColumnBuilder{}
+}
+
+func (b *StringColumnBuilder) Nullable() *StringColumnBuilder {
+	b.nullable = true
+	return b
 }
 
 func (b *StringColumnBuilder) Requests(r ...string) *StringColumnBuilder {
@@ -100,17 +97,23 @@ func (b *StringColumnBuilder) Email() *StringColumnBuilder {
 }
 
 func (b *StringColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "string"}
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "string", Nullable: b.nullable}
 }
 
 type Int64ColumnBuilder struct {
 	rules     []string
 	requests  []string
 	responses []string
+	nullable  bool
 }
 
 func Int64Col() *Int64ColumnBuilder {
 	return &Int64ColumnBuilder{}
+}
+
+func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
+	b.nullable = true
+	return b
 }
 
 func (b *Int64ColumnBuilder) Requests(r ...string) *Int64ColumnBuilder {
@@ -124,22 +127,28 @@ func (b *Int64ColumnBuilder) Responses(r ...string) *Int64ColumnBuilder {
 }
 
 func (b *Int64ColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "int64"}
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "int64", Nullable: b.nullable}
 }
 
 type BytesColumnBuilder struct {
 	rules     []string
 	requests  []string
 	responses []string
+	nullable  bool
 }
 
 // The generic type parameter is a slice of bytes
 func (b *BytesColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "bytes"}
+	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "byte[]", Nullable: b.nullable}
 }
 
 func BytesCol() *BytesColumnBuilder {
 	return &BytesColumnBuilder{}
+}
+
+func (b *BytesColumnBuilder) Nullable() *BytesColumnBuilder {
+	b.nullable = true
+	return b
 }
 
 func (b *BytesColumnBuilder) Requests(r ...string) *BytesColumnBuilder {
