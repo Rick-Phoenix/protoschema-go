@@ -4,13 +4,17 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"log"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 	_ "modernc.org/sqlite"
 )
+
+type UserWithPosts struct {
+	gofirst.User
+	Posts []gofirst.Post
+}
 
 func main() {
 	// 1. Open the database
@@ -23,14 +27,12 @@ func main() {
 	queries := gofirst.New(database)
 	ctx := context.Background()
 
-	// 4. Fetch the user with all their posts using the view
-	userWithPosts, err := queries.GetUserWithPostsFromView(ctx)
-	if err != nil {
-		log.Fatalf("Failed to get user with posts from view: %v", err)
-	}
+	user, err := queries.GetUsers(ctx, 1)
 
-	var data []gofirst.Post
-	err = json.Unmarshal([]byte(userWithPosts.Posts), &data)
+	posts, err := queries.GetPostsFromUserId(ctx, 1)
 
-	fmt.Printf("%+v", data)
+	userWithPosts := UserWithPosts{User: user, Posts: posts}
+
+	fmt.Printf("%+v", userWithPosts)
+
 }

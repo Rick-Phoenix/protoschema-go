@@ -9,6 +9,40 @@ import (
 	"context"
 )
 
+const getPostsFromUserId = `-- name: GetPostsFromUserId :many
+SELECT id, title, content, created_at, author_id, subreddit_id FROM posts WHERE author_id = ?
+`
+
+func (q *Queries) GetPostsFromUserId(ctx context.Context, authorID int64) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsFromUserId, authorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Content,
+			&i.CreatedAt,
+			&i.AuthorID,
+			&i.SubredditID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserWithPostsFromView = `-- name: GetUserWithPostsFromView :one
 SELECT id, name, created_at, posts FROM user_with_posts
 `
@@ -22,5 +56,16 @@ func (q *Queries) GetUserWithPostsFromView(ctx context.Context) (UserWithPost, e
 		&i.CreatedAt,
 		&i.Posts,
 	)
+	return i, err
+}
+
+const getUsers = `-- name: GetUsers :one
+SELECT id, name, created_at FROM users WHERE id = ?
+`
+
+func (q *Queries) GetUsers(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUsers, id)
+	var i User
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
 	return i, err
 }
