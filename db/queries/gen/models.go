@@ -9,43 +9,50 @@ import (
 )
 
 type Comment struct {
-	ID              int64
-	TextContent     string
-	CreatedAt       sql.NullString
-	AuthorID        int64
-	PostID          int64
-	ParentCommentID sql.NullInt64
+	ID              int64          `json:"id"`
+	TextContent     string         `json:"text_content"`
+	CreatedAt       sql.NullString `json:"created_at"`
+	AuthorID        int64          `json:"author_id"`
+	PostID          int64          `json:"post_id"`
+	ParentCommentID sql.NullInt64  `json:"parent_comment_id"`
 }
 
 type Post struct {
-	ID          int64
-	Title       string
-	Content     sql.NullString
-	CreatedAt   sql.NullString
-	AuthorID    int64
-	SubredditID int64
+	ID          int64          `json:"id"`
+	Title       string         `json:"title"`
+	Content     sql.NullString `json:"content"`
+	CreatedAt   sql.NullString `json:"created_at"`
+	AuthorID    int64          `json:"author_id"`
+	SubredditID int64          `json:"subreddit_id"`
 }
 
 type SchemaMigration struct {
-	Version string
+	Version string `json:"version"`
 }
 
 type Subreddit struct {
-	ID          int64
-	Name        string
-	Description sql.NullString
-	CreatedAt   sql.NullString
-	CreatorID   sql.NullInt64
+	ID          int64          `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   sql.NullString `json:"created_at"`
+	CreatorID   sql.NullInt64  `json:"creator_id"`
 }
 
 type User struct {
-	ID        int64
-	Name      string
-	CreatedAt sql.NullString
+	ID        int64          `json:"id"`
+	Name      string         `json:"name"`
+	CreatedAt sql.NullString `json:"created_at"`
 }
 
 type UserSubscription struct {
-	UserID      int64
-	SubredditID int64
-	CreatedAt   sql.NullString
+	UserID      int64          `json:"user_id"`
+	SubredditID int64          `json:"subreddit_id"`
+	CreatedAt   sql.NullString `json:"created_at"`
+}
+
+type UserWithPost struct {
+	ID        int64          `json:"id"`
+	Name      string         `json:"name"`
+	CreatedAt sql.NullString `json:"created_at"`
+	Posts     string         `json:"posts"`
 }

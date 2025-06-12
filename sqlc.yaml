@@ -7,3 +7,8 @@ sql:
       go:
         package: "gofirst"
         out: "db/queries/gen"
+        emit_json_tags: true
+        overrides:
+          - column: "user_with_posts.posts"
+            go_type:
+              type: "string"

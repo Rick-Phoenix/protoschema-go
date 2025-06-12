@@ -9,59 +9,18 @@ import (
 	"context"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-    name
-) VALUES (
-    ?
-)
-RETURNING id, name, created_at
+const getUserWithPostsFromView = `-- name: GetUserWithPostsFromView :one
+SELECT id, name, created_at, posts FROM user_with_posts
 `
 
-func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, name)
-	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+func (q *Queries) GetUserWithPostsFromView(ctx context.Context) (UserWithPost, error) {
+	row := q.db.QueryRowContext(ctx, getUserWithPostsFromView)
+	var i UserWithPost
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.Posts,
+	)
 	return i, err
-}
-
-const getUser = `-- name: GetUser :one
-SELECT id, name, created_at FROM users
-WHERE id =
-? LIMIT 1
-`
-
-func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
-	return i, err
-}
-
-const listUsers = `-- name: ListUsers :many
-SELECT id, name, created_at FROM users
-ORDER BY name
-`
-
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

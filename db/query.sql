@@ -1,16 +1,2 @@
--- name: GetUser :one
-SELECT * FROM users
-WHERE id =
-? LIMIT 1;
-
--- name: ListUsers :many
-SELECT * FROM users
-ORDER BY name;
-
--- name: CreateUser :one
-INSERT INTO users (
-    name
-) VALUES (
-    ?
-)
-RETURNING * ;
+-- name: GetUserWithPostsFromView :one
+SELECT * FROM user_with_posts;
