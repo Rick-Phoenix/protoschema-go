@@ -99,8 +99,11 @@ func CreateProto(schemaPtr any) (*CompleteServiceData, error) {
 					log.Fatalf("Mismatch in the type")
 				}
 
-				if coltype == "timestamp" {
+				switch coltype {
+				case "timestamp":
 					imports["google/protobuf/timestamp.proto"] = true
+				case "fieldMask":
+					imports["google/protobuf/field_mask.proto"] = true
 				}
 
 				var protoType string

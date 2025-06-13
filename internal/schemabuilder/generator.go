@@ -55,9 +55,6 @@ var NullableTypes = map[string]string{
 	"uint8":  "google.protobuf.BytesValue",
 }
 
-// "google/protobuf/field_mask.proto"
-// "google.protobuf.FieldMask update_mask"
-
 func Generate(s CompleteServiceData, o Options) error {
 
 	templateData := ProtoFileData{
@@ -81,7 +78,6 @@ func Generate(s CompleteServiceData, o Options) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	// 4. WRITE TO FILE
 	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, s.ServiceName+".proto")
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err

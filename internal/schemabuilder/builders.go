@@ -8,6 +8,7 @@ import (
 type ColumnsMap map[string]ColumnBuilder
 
 // Think about how to implement CEL rules
+// FieldMask method
 type Column struct {
 	Rules    map[string]string
 	ColType  string
@@ -71,6 +72,18 @@ func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
 
 func (b *Int64ColumnBuilder) Build() Column {
 	return Column{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
+}
+
+type FieldMaskBuilder struct {
+	fieldNr int
+}
+
+func FieldMask(fieldNumber int) *FieldMaskBuilder {
+	return &FieldMaskBuilder{fieldNr: fieldNumber}
+}
+
+func (b *FieldMaskBuilder) Build() Column {
+	return Column{FieldNr: b.fieldNr, ColType: "fieldMask"}
 }
 
 // type BytesColumnBuilder struct {
