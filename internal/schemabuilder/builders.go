@@ -22,11 +22,12 @@ type ColumnBuilder interface {
 type StringColumnBuilder struct {
 	rules    map[string]string
 	nullable bool
+	fieldNr  int
 }
 
-func StrValid() *StringColumnBuilder {
+func StrValid(fieldNumber int) *StringColumnBuilder {
 
-	return &StringColumnBuilder{}
+	return &StringColumnBuilder{fieldNr: fieldNumber}
 }
 
 func (b *StringColumnBuilder) Extend(e *StringColumnBuilder) *StringColumnBuilder {
@@ -50,7 +51,7 @@ func (b *StringColumnBuilder) Required() *StringColumnBuilder {
 }
 
 func (b *StringColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, ColType: "string", Nullable: b.nullable}
+	return Column{Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 type Int64ColumnBuilder struct {

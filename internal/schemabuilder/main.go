@@ -24,16 +24,17 @@ var TablesData = TablesDataType{
 	"User": TableData{
 		"Name": FieldData{
 			"Get": &ServiceData{
-				Request:  StrValid(),
-				Response: StrValid().Extend(StrValid().Required()),
+				Request:  StrValid(1),
+				Response: StrValid(2).Extend(StrValid(0).Required()),
 			},
 		},
 	},
 }
 
 type ProtoMessage struct {
-	Name   string
-	Fields []ProtoField
+	Name     string
+	Fields   []ProtoField
+	Reserved []int
 }
 
 type ProtoField struct {
@@ -44,7 +45,9 @@ type ProtoField struct {
 
 var ValidMethods = []string{"Get", "Create", "Update", "Delete"}
 
-func CreateProto(schemaPtr any) (map[string]*ProtoMessage, error) {
+type ProtoMessages map[string]*ProtoMessage
+
+func CreateProto(schemaPtr any) (ProtoMessages, error) {
 	schemaType := reflect.TypeOf(schemaPtr).Elem()
 	schemaName := schemaType.Name()
 
@@ -78,12 +81,12 @@ func CreateProto(schemaPtr any) (map[string]*ProtoMessage, error) {
 				log.Fatalf("Invalid method name, %s", methodName)
 			}
 
-			if methodInstructions.Request != nil {
-				fieldInfo := methodInstructions.Request.Build()
+			appendField := func(fieldInfo *Column, serviceType string) {
+				messageName := methodName + schemaName + serviceType
 				if fieldInfo.ColType != fieldType {
 					log.Fatalf("Mismatch in the type")
 				}
-				messageName := methodName + schemaName + "Request"
+
 				if _, ok := messages[messageName]; !ok {
 					messages[messageName] = &ProtoMessage{Name: messageName}
 				}
@@ -91,17 +94,14 @@ func CreateProto(schemaPtr any) (map[string]*ProtoMessage, error) {
 				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules})
 			}
 
+			if methodInstructions.Request != nil {
+				fieldInfo := methodInstructions.Request.Build()
+				appendField(&fieldInfo, "Request")
+			}
+
 			if methodInstructions.Response != nil {
 				fieldInfo := methodInstructions.Response.Build()
-				if fieldInfo.ColType != fieldType {
-					log.Fatalf("Mismatch in the type")
-				}
-				messageName := methodName + schemaName + "Response"
-				if _, ok := messages[messageName]; !ok {
-					messages[messageName] = &ProtoMessage{Name: messageName}
-				}
-
-				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules})
+				appendField(&fieldInfo, "Response")
 			}
 		}
 
