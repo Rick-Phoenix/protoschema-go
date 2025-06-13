@@ -9,12 +9,12 @@ type TableData map[string]ColumnBuilder
 type TablesDataType map[string]TableData
 
 type ServiceData struct {
-	Request  []Column
-	Response []Column
+	Request  ColumnBuilder
+	Response ColumnBuilder
 }
 
 var MethodsData struct {
-	Create, Get, Update, Delete ServiceData
+	Create, Get, Update, Delete *ServiceData
 }
 
 var TablesData = TablesDataType{
