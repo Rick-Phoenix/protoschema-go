@@ -24,8 +24,8 @@ var TablesData = TablesDataType{
 	"User": TableData{
 		"Name": FieldData{
 			"Get": &ServiceData{
-				Request:  StrValid(1),
-				Response: StrValid(2).Extend(StrValid(0).Required()),
+				Request:  ProtoString(1),
+				Response: ProtoString(2).Extend(ProtoString(0).Required()),
 			},
 		},
 	},
@@ -58,6 +58,10 @@ func CreateProto(schemaPtr any) (ProtoMessages, error) {
 		return nil, fmt.Errorf("Could not find the data for the schema %s", schemaName)
 	}
 
+	imports := make(map[string]bool)
+
+	imports["buf/validate/validate.proto"] = true
+
 	var messages = make(map[string]*ProtoMessage)
 
 	for i := range schemaType.NumField() {
@@ -83,15 +87,29 @@ func CreateProto(schemaPtr any) (ProtoMessages, error) {
 
 			appendField := func(fieldInfo *Column, serviceType string) {
 				messageName := methodName + schemaName + serviceType
-				if fieldInfo.ColType != fieldType {
+				coltype := fieldInfo.ColType
+				if coltype != fieldType {
 					log.Fatalf("Mismatch in the type")
+				}
+
+				if coltype == "timestamp" {
+					imports["google/protobuf/timestamp.proto"] = true
+				}
+
+				var protoType string
+
+				if fieldType == "sql.NullString" || fieldInfo.Nullable == true {
+					imports["google/protobuf/wrappers.proto"] = true
+					protoType = NullableTypes[coltype]
+				} else {
+					protoType = ProtoTypeMap[coltype]
 				}
 
 				if _, ok := messages[messageName]; !ok {
 					messages[messageName] = &ProtoMessage{Name: messageName}
 				}
 
-				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules})
+				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules, Type: protoType})
 			}
 
 			if methodInstructions.Request != nil {

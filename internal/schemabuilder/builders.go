@@ -13,6 +13,7 @@ type Column struct {
 	ColType  string
 	Nullable bool
 	FieldNr  int
+	Imports  map[string]bool
 }
 
 type ColumnBuilder interface {
@@ -25,7 +26,7 @@ type StringColumnBuilder struct {
 	fieldNr  int
 }
 
-func StrValid(fieldNumber int) *StringColumnBuilder {
+func ProtoString(fieldNumber int) *StringColumnBuilder {
 
 	return &StringColumnBuilder{fieldNr: fieldNumber}
 }

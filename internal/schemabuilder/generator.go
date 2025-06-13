@@ -16,6 +16,7 @@ type Options struct {
 	ProjectName string
 	TmplPath    string
 	ServiceName string
+	Imports     map[string]bool
 }
 
 type ProtoFileData struct {
@@ -61,11 +62,9 @@ func Generate(m ProtoMessages, o Options) error {
 
 	templateData := ProtoFileData{
 		PackageName: fmt.Sprintf("%s.%s", o.ProjectName, o.Version),
-		Resource:    Capitalize(o.ServiceName),
-		Imports:     imports,
-		Messages: []MessageData{
-			*getRequest, *getResponse,
-		},
+		Resource:    Capitalize(o.ProjectName),
+		Imports:     o.Imports,
+		Messages:    m,
 	}
 
 	funcMap := template.FuncMap{
@@ -83,7 +82,7 @@ func Generate(m ProtoMessages, o Options) error {
 	}
 
 	// 4. WRITE TO FILE
-	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, serviceName+".proto")
+	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, o.ProjectName+".proto")
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err
 	}
