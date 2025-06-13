@@ -8,7 +8,7 @@ import (
 type ColumnsMap map[string]ColumnBuilder
 
 // Think about how to implement CEL rules
-// FieldMask method
+// Reusing other messages as types
 type Column struct {
 	Rules    map[string]string
 	ColType  string
@@ -84,6 +84,23 @@ func FieldMask(fieldNumber int) *FieldMaskBuilder {
 
 func (b *FieldMaskBuilder) Build() Column {
 	return Column{FieldNr: b.fieldNr, ColType: "fieldMask"}
+}
+
+type CelFieldBuilder struct {
+	opts CelFieldOpts
+}
+
+type CelFieldOpts struct {
+	fieldNr                 int
+	id, message, expression string
+}
+
+func CelField(o CelFieldOpts) *CelFieldBuilder {
+	return &CelFieldBuilder{opts: o}
+}
+
+func (b *CelFieldBuilder) Build() Column {
+	return Column{FieldNr: b.opts.fieldNr}
 }
 
 // type BytesColumnBuilder struct {
