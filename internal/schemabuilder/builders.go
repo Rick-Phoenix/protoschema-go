@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"fmt"
+	"slices"
 )
 
 type ColumnsMap map[string]ColumnBuilder
@@ -11,12 +12,15 @@ type TableBuilder struct {
 	Columns ColumnsMap
 }
 
+// Extend with other column builder
+// Rules as map to avoid duplicates
 type Column struct {
 	Rules     []string
 	Requests  []string
 	Responses []string
 	ColType   string
 	Nullable  bool
+	FieldNr   int
 }
 
 type ColumnBuilder interface {
@@ -32,6 +36,13 @@ type StringColumnBuilder struct {
 
 func StringCol() *StringColumnBuilder {
 	return &StringColumnBuilder{}
+}
+
+func (b *StringColumnBuilder) Extend(e *StringColumnBuilder) *StringColumnBuilder {
+	extraRules := (*e).Build().Rules
+	newRules := slices.Concat(b.rules, extraRules)
+	b.rules = newRules
+	return b
 }
 
 func (b *StringColumnBuilder) Nullable() *StringColumnBuilder {
