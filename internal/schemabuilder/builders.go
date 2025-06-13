@@ -13,7 +13,6 @@ type Column struct {
 	ColType  string
 	Nullable bool
 	FieldNr  int
-	Imports  map[string]bool
 }
 
 type ColumnBuilder interface {
@@ -58,6 +57,7 @@ func (b *StringColumnBuilder) Build() Column {
 type Int64ColumnBuilder struct {
 	rules    map[string]string
 	nullable bool
+	fieldNr  int
 }
 
 func Int64Col() *Int64ColumnBuilder {
@@ -70,7 +70,7 @@ func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
 }
 
 func (b *Int64ColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, ColType: "int64", Nullable: b.nullable}
+	return Column{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 // type BytesColumnBuilder struct {

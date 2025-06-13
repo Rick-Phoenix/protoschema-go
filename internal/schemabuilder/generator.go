@@ -21,7 +21,7 @@ type Options struct {
 
 type ProtoFileData struct {
 	PackageName string
-	Imports     map[string]bool
+	Imports     []string
 	Messages    ProtoMessages
 	Resource    string
 }
@@ -58,13 +58,13 @@ var NullableTypes = map[string]string{
 // "google/protobuf/field_mask.proto"
 // "google.protobuf.FieldMask update_mask"
 
-func Generate(m ProtoMessages, o Options) error {
+func Generate(s CompleteServiceData, o Options) error {
 
 	templateData := ProtoFileData{
 		PackageName: fmt.Sprintf("%s.%s", o.ProjectName, o.Version),
 		Resource:    Capitalize(o.ProjectName),
-		Imports:     o.Imports,
-		Messages:    m,
+		Imports:     s.Imports,
+		Messages:    s.Messages,
 	}
 
 	funcMap := template.FuncMap{
@@ -82,7 +82,7 @@ func Generate(m ProtoMessages, o Options) error {
 	}
 
 	// 4. WRITE TO FILE
-	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, o.ProjectName+".proto")
+	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, s.ServiceName+".proto")
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err
 	}

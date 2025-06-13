@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"fmt"
 	"log"
+	"maps"
 	"reflect"
 	"slices"
 )
@@ -16,6 +17,12 @@ type ServiceData struct {
 }
 type MethodsData struct {
 	Create, Get, Update, Delete *ServiceData
+}
+
+type CompleteServiceData struct {
+	Imports     []string
+	ServiceName string
+	Messages    ProtoMessages
 }
 
 type FieldData map[string]*ServiceData
@@ -47,7 +54,7 @@ var ValidMethods = []string{"Get", "Create", "Update", "Delete"}
 
 type ProtoMessages map[string]*ProtoMessage
 
-func CreateProto(schemaPtr any) (ProtoMessages, error) {
+func CreateProto(schemaPtr any) (*CompleteServiceData, error) {
 	schemaType := reflect.TypeOf(schemaPtr).Elem()
 	schemaName := schemaType.Name()
 
@@ -125,5 +132,8 @@ func CreateProto(schemaPtr any) (ProtoMessages, error) {
 
 	}
 
-	return messages, nil
+	completeServiceData := &CompleteServiceData{
+		ServiceName: schemaName, Imports: slices.Collect(maps.Keys(imports)), Messages: messages,
+	}
+	return completeServiceData, nil
 }

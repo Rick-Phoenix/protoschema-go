@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package {{.PackageName}};
 
-{{range $importPath, $_ := .Imports}}
-import "{{$importPath}}";
+{{range .Imports}}
+import "{{ . }}";
 {{end}}
 
 {{range .Messages}}
