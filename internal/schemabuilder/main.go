@@ -2,20 +2,32 @@ package schemabuilder
 
 import (
 	"fmt"
+	"log"
 	"reflect"
+	"slices"
 )
 
-type TableData map[string]*MethodsOut
+type TableData map[string]FieldData
 type TablesDataType map[string]TableData
+
+type ServiceData struct {
+	Request  ColumnBuilder
+	Response ColumnBuilder
+}
+type MethodsData struct {
+	Create, Get, Update, Delete *ServiceData
+}
+
+type FieldData map[string]*ServiceData
 
 var TablesData = TablesDataType{
 	"User": TableData{
-		"Name": StringCol(&MethodsData{
-			Get: &ServiceData{
+		"Name": FieldData{
+			"Get": &ServiceData{
 				Request:  StrValid(),
 				Response: StrValid().Extend(StrValid().Required()),
 			},
-		}),
+		},
 	},
 }
 
@@ -30,7 +42,9 @@ type ProtoField struct {
 	Options map[string]string
 }
 
-func CreateProto(schemaPtr any) ([]ProtoMessage, error) {
+var ValidMethods = []string{"Get", "Create", "Update", "Delete"}
+
+func CreateProto(schemaPtr any) (map[string]*ProtoMessage, error) {
 	schemaType := reflect.TypeOf(schemaPtr).Elem()
 	schemaName := schemaType.Name()
 
@@ -41,76 +55,56 @@ func CreateProto(schemaPtr any) ([]ProtoMessage, error) {
 		return nil, fmt.Errorf("Could not find the data for the schema %s", schemaName)
 	}
 
-	GetRequest := &ProtoMessage{
-		Name: "Get" + schemaName + "Request",
-	}
-
-	GetResponse := &ProtoMessage{
-		Name: "Get" + schemaName + "Response",
-	}
-	CreateRequest := &ProtoMessage{
-		Name: "Create" + schemaName + "Request",
-	}
-	CreateResponse := &ProtoMessage{
-		Name: "Create" + schemaName + "Response",
-	}
-	UpdateRequest := &ProtoMessage{
-		Name: "Update" + schemaName + "Request",
-	}
-	UpdateResponse := &ProtoMessage{
-		Name: "Update" + schemaName + "Response",
-	}
-	DeleteRequest := &ProtoMessage{
-		Name: "Delete" + schemaName + "Request",
-	}
-	DeleteResponse := &ProtoMessage{
-		Name: "Delete" + schemaName + "Response",
-	}
+	var messages = make(map[string]*ProtoMessage)
 
 	for i := range schemaType.NumField() {
-		field := schemaType.Field(i)
-		fieldName := field.Name
+		dbColumn := schemaType.Field(i)
+		fieldName := dbColumn.Name
+		fieldType := dbColumn.Type.String()
 
-		if !field.IsExported() {
-			fmt.Printf("Ignoring unexported column %s...\n", field.Name)
+		if !dbColumn.IsExported() {
+			fmt.Printf("Ignoring unexported column %s...\n", dbColumn.Name)
 			continue
 		}
 
-		var colInstance *MethodsOut
+		var fieldDefinitions FieldData
 
-		if colInstance, ok = schemaData[fieldName]; !ok {
+		if fieldDefinitions, ok = schemaData[fieldName]; !ok {
 			return nil, fmt.Errorf("Could not find the data for the column %s in the table %s", fieldName, schemaName)
 		}
 
-		GetRequest.Fields = append(GetRequest.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Get.Request.Rules})
-		GetResponse.Fields = append(GetResponse.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Get.Response.Rules})
-		CreateRequest.Fields = append(CreateRequest.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Create.Request.Rules})
-		CreateResponse.Fields = append(CreateResponse.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Create.Response.Rules})
-		UpdateRequest.Fields = append(UpdateRequest.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Update.Request.Rules})
-		UpdateResponse.Fields = append(UpdateResponse.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Update.Response.Rules})
-		DeleteRequest.Fields = append(DeleteRequest.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Delete.Request.Rules})
-		DeleteResponse.Fields = append(DeleteResponse.Fields, ProtoField{
-			Name:    fieldName,
-			Options: colInstance.Delete.Response.Rules})
+		for methodName, methodInstructions := range fieldDefinitions {
+			if !slices.Contains(ValidMethods, methodName) {
+				log.Fatalf("Invalid method name, %s", methodName)
+			}
 
-	}
+			if methodInstructions.Request != nil {
+				fieldInfo := methodInstructions.Request.Build()
+				if fieldInfo.ColType != fieldType {
+					log.Fatalf("Mismatch in the type")
+				}
+				messageName := methodName + schemaName + "Request"
+				if _, ok := messages[messageName]; !ok {
+					messages[messageName] = &ProtoMessage{Name: messageName}
+				}
 
-	messages := []ProtoMessage{
-		*GetRequest, *GetResponse, *CreateRequest, *CreateResponse, *UpdateRequest, *UpdateResponse, *DeleteRequest, *DeleteResponse,
+				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules})
+			}
+
+			if methodInstructions.Response != nil {
+				fieldInfo := methodInstructions.Response.Build()
+				if fieldInfo.ColType != fieldType {
+					log.Fatalf("Mismatch in the type")
+				}
+				messageName := methodName + schemaName + "Response"
+				if _, ok := messages[messageName]; !ok {
+					messages[messageName] = &ProtoMessage{Name: messageName}
+				}
+
+				messages[messageName].Fields = append(messages[messageName].Fields, ProtoField{Name: fieldName, Options: fieldInfo.Rules})
+			}
+		}
+
 	}
 
 	return messages, nil
