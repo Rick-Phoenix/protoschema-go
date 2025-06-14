@@ -1,20 +1,6 @@
 package schemabuilder
 
-import (
-	"log"
-	"maps"
-)
-
-type ProtoServiceBuilder struct {
-	messageSchemas []ProtoMessageSchema
-	fieldsMap      map[string]string
-}
-
-type ProtoServiceBuilderInterface interface {
-	Build() ProtoServiceOutput
-}
-
-type ProtoServiceOutput struct {
+type ProtoService struct {
 	Messages   []ProtoMessage
 	FieldsFlat []string
 }
@@ -28,17 +14,19 @@ type ServiceData struct {
 	Response ProtoMessageSchema
 }
 
-func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoServiceOutput {
-	out := &ProtoServiceOutput{}
-	getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request)
-	out.Messages = append(out.Messages, getRequest)
+func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoService {
+	out := &ProtoService{}
+	if s.Get != nil {
+		getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request)
+		out.Messages = append(out.Messages, getRequest)
+	}
 	return *out
 }
 
-type ProtoFieldSchemas map[string]ProtoFieldBuilder
+type ProtoFieldsMap map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
-	Fields   ProtoFieldSchemas
+	Fields   ProtoFieldsMap
 	Options  map[string]string
 	Reserved []int
 }
@@ -51,12 +39,11 @@ type ProtoMessage struct {
 }
 
 func NewProtoMessage(messageName string, s ProtoMessageSchema) ProtoMessage {
-	// Loop the map of fields, build them with their name as an arg and return the output
 	var protoFields []ProtoFieldData
 	for fieldName, fieldBuilder := range s.Fields {
 		protoFields = append(protoFields, fieldBuilder.Build(fieldName))
 	}
-	return ProtoMessage{Fields: protoFields, Name: messageName}
+	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved}
 }
 
 type ProtoField struct {
@@ -105,16 +92,6 @@ func (b *ProtoStringBuilder) CelField(o CelFieldOpts) *ProtoStringBuilder {
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
 	})
 
-	return b
-}
-
-func (b *ProtoStringBuilder) Extend(e *ProtoStringBuilder) *ProtoStringBuilder {
-	extendedBuilderData := e.Build()
-	if extendedBuilderData.ColType != b.Build().ColType {
-		log.Fatalf("Wrong col type")
-	}
-	extraRules := maps.All((*e).Build().Rules)
-	maps.Insert(b.rules, extraRules)
 	return b
 }
 

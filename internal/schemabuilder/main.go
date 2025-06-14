@@ -8,20 +8,19 @@ import (
 	"slices"
 )
 
-type TablesDataType map[string]ProtoServiceOutput
-
 type FieldData map[string]*ServiceData
 
 var UserSchema = ProtoMessageSchema{
-	Fields: ProtoFields{
+	Fields: ProtoFieldsMap{
 		"name": ProtoString(1),
 	},
 }
 
 type ServicesMap map[string]ProtoServiceSchema
 
-type ServicesData map[string]ProtoServiceOutput
+type ServicesData map[string]ProtoService
 
+// Make something that reflects the db field names and types and checks if the messages are correct
 func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	out := make(ServicesData)
 
@@ -34,11 +33,11 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 
 // Service must know its name. But it's good to have a map of (db) names to services.
 // So I might make a wrapper that takes a map like this and passes the names to the service builders
-var TablesData = TablesDataType{
+var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Get: &ServiceData{
-			Request:  NewProtoMessage(ProtoMessageSchema{}),
-			Response: NewProtoMessage(ProtoMessageSchema{}),
+			Request:  ProtoMessageSchema{},
+			Response: ProtoMessageSchema{},
 		},
 	},
 }
