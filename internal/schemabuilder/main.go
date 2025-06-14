@@ -8,46 +8,33 @@ import (
 	"slices"
 )
 
-type TableData map[string]FieldData
-type TablesDataType map[string]TableData
+type TablesDataType map[string]ProtoServiceSchema
+type TableData map[string]ProtoServiceSchema
 
 type ServiceData struct {
-	Request  ColumnBuilder
-	Response ColumnBuilder
-}
-type MethodsData struct {
-	Create, Get, Update, Delete *ServiceData
+	Request  ProtoMessageSchema
+	Response ProtoMessageSchema
 }
 
-type CompleteServiceData struct {
-	Imports     []string
-	ServiceName string
-	Messages    ProtoMessages
+type ProtoServiceOutput struct {
+	Messages   []ProtoMessage
+	FieldsFlat []string
+}
+
+type ProtoServiceSchema struct {
+	Create, Get, Update, Delete *ServiceData
 }
 
 type FieldData map[string]*ServiceData
 
 var TablesData = TablesDataType{
-	"User": TableData{
-		"Name": FieldData{
-			"Get": &ServiceData{
-				Request:  ProtoString(1),
-				Response: ProtoString(2).Extend(ProtoString(0).Required()),
-			},
+	// New servicebuilder
+	"User": ProtoServiceSchema{
+		Get: &ServiceData{
+			Request:  ProtoString(1),
+			Response: ProtoString(2).Extend(ProtoString(0).Required()),
 		},
 	},
-}
-
-type ProtoMessage struct {
-	Name     string
-	Fields   []ProtoField
-	Reserved []int
-}
-
-type ProtoField struct {
-	Name    string
-	Type    string
-	Options map[string]string
 }
 
 var ValidMethods = []string{"Get", "Create", "Update", "Delete"}
@@ -92,7 +79,7 @@ func CreateProto(schemaPtr any) (*CompleteServiceData, error) {
 				log.Fatalf("Invalid method name, %s", methodName)
 			}
 
-			appendField := func(fieldInfo *Column, serviceType string) {
+			appendField := func(fieldInfo *ProtoFieldData, serviceType string) {
 				messageName := methodName + schemaName + serviceType
 				coltype := fieldInfo.ColType
 				if coltype != fieldType {

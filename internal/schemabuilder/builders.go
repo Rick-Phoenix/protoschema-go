@@ -5,12 +5,51 @@ import (
 	"maps"
 )
 
-type ColumnsMap map[string]ColumnBuilder
+type ProtoServiceBuilder struct {
+	messageSchemas []ProtoMessageSchema
+	fieldsMap      map[string]string
+}
 
-// Think about how to implement CEL rules
-// Reusing other messages as types
-// Non db handling
-type Column struct {
+type ProtoServiceBuilderInterface interface {
+	Build() ProtoServiceOutput
+}
+
+func NewProtoService(s ProtoServiceSchema) *ProtoServiceBuilder {
+	return &ProtoServiceBuilder{}
+}
+
+func (b *ProtoServiceBuilder) Build() ProtoServiceOutput {
+	return ProtoServiceOutput{}
+}
+
+type ProtoMessageSchema struct {
+	Fields  map[string]ProtoField
+	Options map[string]string
+}
+
+type ProtoMessage struct {
+	Name     string
+	Fields   []ProtoFieldBuilder
+	Reserved []int
+	Options  []string
+}
+
+type ProtoMessageBuilderInterface interface {
+	Build() ProtoMessage
+}
+
+func NewProtoMessage() {
+	// Loop the map of fields, build them with their name as an arg and return the output
+
+}
+
+type ProtoField struct {
+	Name    string
+	Type    string
+	Options map[string]string
+}
+
+type ProtoFieldData struct {
 	Rules      map[string]string
 	ColType    string
 	Nullable   bool
@@ -18,8 +57,8 @@ type Column struct {
 	celOptions []CelFieldOpts
 }
 
-type ColumnBuilder interface {
-	Build() Column
+type ProtoFieldBuilder interface {
+	Build(name string) ProtoFieldData
 }
 
 type CelFieldOpts struct {
@@ -36,7 +75,6 @@ type StringColumnBuilder struct {
 type MessageOption map[string]string
 
 func ProtoString(fieldNumber int) *StringColumnBuilder {
-
 	return &StringColumnBuilder{fieldNr: fieldNumber}
 }
 
@@ -69,8 +107,8 @@ func (b *StringColumnBuilder) Required() *StringColumnBuilder {
 	return b
 }
 
-func (b *StringColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
+func (b *StringColumnBuilder) Build() ProtoFieldData {
+	return ProtoFieldData{Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 type Int64ColumnBuilder struct {
@@ -88,8 +126,8 @@ func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
 	return b
 }
 
-func (b *Int64ColumnBuilder) Build() Column {
-	return Column{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
+func (b *Int64ColumnBuilder) Build() ProtoFieldData {
+	return ProtoFieldData{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 type FieldMaskBuilder struct {
@@ -100,8 +138,8 @@ func FieldMask(fieldNumber int) *FieldMaskBuilder {
 	return &FieldMaskBuilder{fieldNr: fieldNumber}
 }
 
-func (b *FieldMaskBuilder) Build() Column {
-	return Column{FieldNr: b.fieldNr, ColType: "fieldMask"}
+func (b *FieldMaskBuilder) Build() ProtoFieldData {
+	return ProtoFieldData{FieldNr: b.fieldNr, ColType: "fieldMask"}
 }
 
 // type BytesColumnBuilder struct {

@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+type CompleteServiceData struct {
+	Imports     []string
+	ServiceName string
+	Messages    ProtoMessages
+}
+
 type Options struct {
 	ProtoRoot   string
 	Version     string
