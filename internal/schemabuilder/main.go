@@ -10,11 +10,6 @@ import (
 
 type TablesDataType map[string]ProtoServiceOutput
 
-type ServiceData struct {
-	Request  ProtoMessage
-	Response ProtoMessage
-}
-
 type FieldData map[string]*ServiceData
 
 var UserSchema = ProtoMessageSchema{
@@ -33,6 +28,8 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	for resource, serviceSchema := range m {
 		out[resource] = NewProtoService(resource, serviceSchema)
 	}
+
+	return out
 }
 
 // Service must know its name. But it's good to have a map of (db) names to services.

@@ -23,31 +23,43 @@ type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
 }
 
-func NewProtoService(s ProtoServiceSchema) ProtoServiceOutput {
-	return ProtoServiceOutput{}
+type ServiceData struct {
+	Request  ProtoMessageBuilderInterface
+	Response ProtoMessageBuilderInterface
 }
 
-type ProtoFields map[string]ProtoFieldBuilder
+func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoServiceOutput {
+	out := &ProtoServiceOutput{}
+	getRequest := s.Get.Request.Build("Get" + resourceName + "Request")
+	out.Messages = append(out.Messages, getRequest)
+	return *out
+}
+
+type ProtoFieldSchemas map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
-	Fields  ProtoFields
+	Fields  ProtoFieldSchemas
 	Options map[string]string
 }
 
 type ProtoMessage struct {
 	Name     string
-	Fields   []ProtoFieldBuilder
+	Fields   []ProtoFieldData
 	Reserved []int
 	Options  []string
 }
 
 type ProtoMessageBuilderInterface interface {
-	Build() ProtoMessage
+	Build(name string) ProtoMessage
 }
 
 func NewProtoMessage(s ProtoMessageSchema) ProtoMessage {
 	// Loop the map of fields, build them with their name as an arg and return the output
-	return ProtoMessage{}
+	var protoFields []ProtoFieldData
+	for fieldName, fieldBuilder := range s.Fields {
+		protoFields = append(protoFields, fieldBuilder.Build(fieldName))
+	}
+	return ProtoMessage{Fields: protoFields}
 }
 
 type ProtoField struct {
@@ -66,7 +78,7 @@ type ProtoFieldData struct {
 }
 
 type ProtoFieldBuilder interface {
-	Build(name string) ProtoFieldData
+	Build(fieldName string) ProtoFieldData
 }
 
 type CelFieldOpts struct {
@@ -86,8 +98,8 @@ func ProtoString(fieldNumber int) *ProtoStringBuilder {
 	return &ProtoStringBuilder{fieldNr: fieldNumber}
 }
 
-func (b *ProtoStringBuilder) Build(name string) ProtoFieldData {
-	return ProtoFieldData{Name: name, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
+func (b *ProtoStringBuilder) Build(fieldName string) ProtoFieldData {
+	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 // Multiple can be supported so needs another method than a map
