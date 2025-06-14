@@ -1,7 +1,6 @@
 package schemabuilder
 
 import (
-	"fmt"
 	"log"
 	"maps"
 )
@@ -12,10 +11,11 @@ type ColumnsMap map[string]ColumnBuilder
 // Reusing other messages as types
 // Non db handling
 type Column struct {
-	Rules    map[string]string
-	ColType  string
-	Nullable bool
-	FieldNr  int
+	Rules      map[string]string
+	ColType    string
+	Nullable   bool
+	FieldNr    int
+	celOptions []CelFieldOpts
 }
 
 type ColumnBuilder interface {
@@ -23,15 +23,17 @@ type ColumnBuilder interface {
 }
 
 type CelFieldOpts struct {
-	fieldNr                 int
-	id, message, expression string
+	Id, Message, Expression string
 }
 
 type StringColumnBuilder struct {
-	rules    map[string]string
-	nullable bool
-	fieldNr  int
+	rules      map[string]string
+	celOptions []CelFieldOpts
+	nullable   bool
+	fieldNr    int
 }
+
+type MessageOption map[string]string
 
 func ProtoString(fieldNumber int) *StringColumnBuilder {
 
@@ -40,11 +42,10 @@ func ProtoString(fieldNumber int) *StringColumnBuilder {
 
 // Multiple can be supported so needs another method than a map
 func (b *StringColumnBuilder) CelField(o CelFieldOpts) *StringColumnBuilder {
-	b.rules["(buf.validate.field).cel"] = fmt.Sprintf(`{
-			id: "%s"
-			message: "%s"
-			expression: "%s"
-		}`, o.id, o.message, o.expression)
+	b.celOptions = append(b.celOptions, CelFieldOpts{
+		Id: o.Id, Expression: o.Expression, Message: o.Message,
+	})
+
 	return b
 }
 
