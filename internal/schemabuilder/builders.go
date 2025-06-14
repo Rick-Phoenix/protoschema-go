@@ -14,16 +14,23 @@ type ProtoServiceBuilderInterface interface {
 	Build() ProtoServiceOutput
 }
 
-func NewProtoService(s ProtoServiceSchema) *ProtoServiceBuilder {
-	return &ProtoServiceBuilder{}
+type ProtoServiceOutput struct {
+	Messages   []ProtoMessage
+	FieldsFlat []string
 }
 
-func (b *ProtoServiceBuilder) Build() ProtoServiceOutput {
+type ProtoServiceSchema struct {
+	Create, Get, Update, Delete *ServiceData
+}
+
+func NewProtoService(s ProtoServiceSchema) ProtoServiceOutput {
 	return ProtoServiceOutput{}
 }
 
+type ProtoFields map[string]ProtoFieldBuilder
+
 type ProtoMessageSchema struct {
-	Fields  map[string]ProtoField
+	Fields  ProtoFields
 	Options map[string]string
 }
 
@@ -38,9 +45,9 @@ type ProtoMessageBuilderInterface interface {
 	Build() ProtoMessage
 }
 
-func NewProtoMessage() {
+func NewProtoMessage(s ProtoMessageSchema) ProtoMessage {
 	// Loop the map of fields, build them with their name as an arg and return the output
-
+	return ProtoMessage{}
 }
 
 type ProtoField struct {
@@ -54,7 +61,8 @@ type ProtoFieldData struct {
 	ColType    string
 	Nullable   bool
 	FieldNr    int
-	celOptions []CelFieldOpts
+	CelOptions []CelFieldOpts
+	Name       string
 }
 
 type ProtoFieldBuilder interface {
@@ -65,7 +73,7 @@ type CelFieldOpts struct {
 	Id, Message, Expression string
 }
 
-type StringColumnBuilder struct {
+type ProtoStringBuilder struct {
 	rules      map[string]string
 	celOptions []CelFieldOpts
 	nullable   bool
@@ -74,12 +82,16 @@ type StringColumnBuilder struct {
 
 type MessageOption map[string]string
 
-func ProtoString(fieldNumber int) *StringColumnBuilder {
-	return &StringColumnBuilder{fieldNr: fieldNumber}
+func ProtoString(fieldNumber int) *ProtoStringBuilder {
+	return &ProtoStringBuilder{fieldNr: fieldNumber}
+}
+
+func (b *ProtoStringBuilder) Build(name string) ProtoFieldData {
+	return ProtoFieldData{Name: name, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 // Multiple can be supported so needs another method than a map
-func (b *StringColumnBuilder) CelField(o CelFieldOpts) *StringColumnBuilder {
+func (b *ProtoStringBuilder) CelField(o CelFieldOpts) *ProtoStringBuilder {
 	b.celOptions = append(b.celOptions, CelFieldOpts{
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
 	})
@@ -87,7 +99,7 @@ func (b *StringColumnBuilder) CelField(o CelFieldOpts) *StringColumnBuilder {
 	return b
 }
 
-func (b *StringColumnBuilder) Extend(e *StringColumnBuilder) *StringColumnBuilder {
+func (b *ProtoStringBuilder) Extend(e *ProtoStringBuilder) *ProtoStringBuilder {
 	extendedBuilderData := e.Build()
 	if extendedBuilderData.ColType != b.Build().ColType {
 		log.Fatalf("Wrong col type")
@@ -97,18 +109,14 @@ func (b *StringColumnBuilder) Extend(e *StringColumnBuilder) *StringColumnBuilde
 	return b
 }
 
-func (b *StringColumnBuilder) Nullable() *StringColumnBuilder {
+func (b *ProtoStringBuilder) Nullable() *ProtoStringBuilder {
 	b.nullable = true
 	return b
 }
 
-func (b *StringColumnBuilder) Required() *StringColumnBuilder {
+func (b *ProtoStringBuilder) Required() *ProtoStringBuilder {
 	b.rules["(buf.validate.field).required"] = "true"
 	return b
-}
-
-func (b *StringColumnBuilder) Build() ProtoFieldData {
-	return ProtoFieldData{Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
 }
 
 type Int64ColumnBuilder struct {

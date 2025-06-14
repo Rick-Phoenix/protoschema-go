@@ -8,31 +8,40 @@ import (
 	"slices"
 )
 
-type TablesDataType map[string]ProtoServiceSchema
-type TableData map[string]ProtoServiceSchema
+type TablesDataType map[string]ProtoServiceOutput
 
 type ServiceData struct {
-	Request  ProtoMessageSchema
-	Response ProtoMessageSchema
-}
-
-type ProtoServiceOutput struct {
-	Messages   []ProtoMessage
-	FieldsFlat []string
-}
-
-type ProtoServiceSchema struct {
-	Create, Get, Update, Delete *ServiceData
+	Request  ProtoMessage
+	Response ProtoMessage
 }
 
 type FieldData map[string]*ServiceData
 
+var UserSchema = ProtoMessageSchema{
+	Fields: ProtoFields{
+		"name": ProtoString(1),
+	},
+}
+
+type ServicesMap map[string]ProtoServiceSchema
+
+type ServicesData map[string]ProtoServiceOutput
+
+func BuildFinalServicesMap(m ServicesMap) ServicesData {
+	out := make(ServicesData)
+
+	for resource, serviceSchema := range m {
+		out[resource] = NewProtoService(resource, serviceSchema)
+	}
+}
+
+// Service must know its name. But it's good to have a map of (db) names to services.
+// So I might make a wrapper that takes a map like this and passes the names to the service builders
 var TablesData = TablesDataType{
-	// New servicebuilder
 	"User": ProtoServiceSchema{
 		Get: &ServiceData{
-			Request:  ProtoString(1),
-			Response: ProtoString(2).Extend(ProtoString(0).Required()),
+			Request:  NewProtoMessage(ProtoMessageSchema{}),
+			Response: NewProtoMessage(ProtoMessageSchema{}),
 		},
 	},
 }
