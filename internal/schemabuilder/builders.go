@@ -6,6 +6,7 @@ type ProtoService struct {
 	Messages   []ProtoMessage
 	FieldsFlat []string
 	Imports    []string
+	Options    map[string]string
 }
 
 type ProtoServiceSchema struct {
@@ -36,13 +37,16 @@ type ProtoMessageSchema struct {
 	Options    map[string]string
 	CelOptions []CelFieldOpts
 	Reserved   []int
+	FieldMask  bool
 }
 
 type ProtoMessage struct {
-	Name     string
-	Fields   []ProtoFieldData
-	Reserved []int
-	Options  map[string]string
+	Name       string
+	Fields     []ProtoFieldData
+	Reserved   []int
+	CelOptions []CelFieldOpts
+	Options    map[string]string
+	Deprecated bool
 }
 
 func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) ProtoMessage {
@@ -50,13 +54,17 @@ func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) Prot
 	for fieldName, fieldBuilder := range s.Fields {
 		protoFields = append(protoFields, fieldBuilder.Build(fieldName, imports))
 	}
-	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options}
+	if s.FieldMask {
+		imports["google/protobuf/field_mask.proto"] = struct{}{}
+	}
+	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
 }
 
 type ProtoField struct {
-	Name    string
-	Type    string
-	Options map[string]string
+	Name       string
+	Type       string
+	Options    map[string]string
+	CelOptions []CelFieldOpts
 }
 
 type ProtoFieldData struct {
@@ -67,8 +75,6 @@ type ProtoFieldData struct {
 	CelOptions []CelFieldOpts
 	Name       string
 }
-
-// Cel field and rules aggregator, imports
 
 type ProtoFieldBuilder interface {
 	Build(fieldName string, imports Set) ProtoFieldData
@@ -100,7 +106,6 @@ func (b *ProtoStringBuilder) Build(fieldName string, imports Set) ProtoFieldData
 	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
-// Multiple can be supported so needs another method than a map
 func (b *ProtoStringBuilder) CelField(o CelFieldOpts) *ProtoStringBuilder {
 	b.celOptions = append(b.celOptions, CelFieldOpts{
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
@@ -119,37 +124,41 @@ func (b *ProtoStringBuilder) Required() *ProtoStringBuilder {
 	return b
 }
 
-type Int64ColumnBuilder struct {
-	rules    map[string]string
-	nullable bool
-	fieldNr  int
+type ProtoTimestampBuilder struct {
+	rules      map[string]string
+	responses  []string
+	nullable   bool
+	fieldNr    int
+	celOptions []CelFieldOpts
 }
 
-func Int64Col() *Int64ColumnBuilder {
-	return &Int64ColumnBuilder{}
+func ProtoTimestamp() *ProtoTimestampBuilder {
+	return &ProtoTimestampBuilder{}
 }
 
-func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
-	b.nullable = true
-	return b
+func (b *ProtoTimestampBuilder) Build(fieldName string, imports Set) ProtoFieldData {
+	imports["google/protobuf/field_mask.proto"] = struct{}{}
+	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "timestamp", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
-func (b *Int64ColumnBuilder) Build() ProtoFieldData {
-	return ProtoFieldData{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
-}
-
-type FieldMaskBuilder struct {
-	fieldNr int
-}
-
-func FieldMask(fieldNumber int) *FieldMaskBuilder {
-	return &FieldMaskBuilder{fieldNr: fieldNumber}
-}
-
-func (b *FieldMaskBuilder) Build() ProtoFieldData {
-	return ProtoFieldData{FieldNr: b.fieldNr, ColType: "fieldMask"}
-}
-
+// type Int64ColumnBuilder struct {
+// 	rules    map[string]string
+// 	nullable bool
+// 	fieldNr  int
+// }
+//
+// func Int64Col() *Int64ColumnBuilder {
+// 	return &Int64ColumnBuilder{}
+// }
+//
+// func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
+// 	b.nullable = true
+// 	return b
+// }
+//
+// func (b *Int64ColumnBuilder) Build() ProtoFieldData {
+// 	return ProtoFieldData{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
+// }
 // type BytesColumnBuilder struct {
 // 	rules     []string
 // 	requests  []string
@@ -181,26 +190,3 @@ func (b *FieldMaskBuilder) Build() ProtoFieldData {
 // 	return b
 // }
 //
-// type TimeStampColumnBuilder struct {
-// 	rules     []string
-// 	requests  []string
-// 	responses []string
-// }
-//
-// func TimestampCol() *TimeStampColumnBuilder {
-// 	return &TimeStampColumnBuilder{}
-// }
-//
-// func (b *TimeStampColumnBuilder) Build() Column {
-// 	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "timestamp"}
-// }
-//
-// func (b *TimeStampColumnBuilder) Requests(r ...string) *TimeStampColumnBuilder {
-// 	b.requests = append(b.requests, r...)
-// 	return b
-// }
-//
-// func (b *TimeStampColumnBuilder) Responses(r ...string) *TimeStampColumnBuilder {
-// 	b.responses = append(b.responses, r...)
-// 	return b
-// }
