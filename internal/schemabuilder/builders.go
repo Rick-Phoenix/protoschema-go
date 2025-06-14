@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"fmt"
 	"log"
 	"maps"
 )
@@ -9,6 +10,7 @@ type ColumnsMap map[string]ColumnBuilder
 
 // Think about how to implement CEL rules
 // Reusing other messages as types
+// Non db handling
 type Column struct {
 	Rules    map[string]string
 	ColType  string
@@ -20,6 +22,11 @@ type ColumnBuilder interface {
 	Build() Column
 }
 
+type CelFieldOpts struct {
+	fieldNr                 int
+	id, message, expression string
+}
+
 type StringColumnBuilder struct {
 	rules    map[string]string
 	nullable bool
@@ -29,6 +36,16 @@ type StringColumnBuilder struct {
 func ProtoString(fieldNumber int) *StringColumnBuilder {
 
 	return &StringColumnBuilder{fieldNr: fieldNumber}
+}
+
+// Multiple can be supported so needs another method than a map
+func (b *StringColumnBuilder) CelField(o CelFieldOpts) *StringColumnBuilder {
+	b.rules["(buf.validate.field).cel"] = fmt.Sprintf(`{
+			id: "%s"
+			message: "%s"
+			expression: "%s"
+		}`, o.id, o.message, o.expression)
+	return b
 }
 
 func (b *StringColumnBuilder) Extend(e *StringColumnBuilder) *StringColumnBuilder {
@@ -84,23 +101,6 @@ func FieldMask(fieldNumber int) *FieldMaskBuilder {
 
 func (b *FieldMaskBuilder) Build() Column {
 	return Column{FieldNr: b.fieldNr, ColType: "fieldMask"}
-}
-
-type CelFieldBuilder struct {
-	opts CelFieldOpts
-}
-
-type CelFieldOpts struct {
-	fieldNr                 int
-	id, message, expression string
-}
-
-func CelField(o CelFieldOpts) *CelFieldBuilder {
-	return &CelFieldBuilder{opts: o}
-}
-
-func (b *CelFieldBuilder) Build() Column {
-	return Column{FieldNr: b.opts.fieldNr}
 }
 
 // type BytesColumnBuilder struct {
