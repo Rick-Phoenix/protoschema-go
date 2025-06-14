@@ -31,8 +31,6 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	return out
 }
 
-// Service must know its name. But it's good to have a map of (db) names to services.
-// So I might make a wrapper that takes a map like this and passes the names to the service builders
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Get: &ServiceData{
@@ -41,10 +39,6 @@ var TablesData = ServicesMap{
 		},
 	},
 }
-
-var ValidMethods = []string{"Get", "Create", "Update", "Delete"}
-
-type ProtoMessages map[string]*ProtoMessage
 
 func CreateProto(schemaPtr any) (*CompleteServiceData, error) {
 	schemaType := reflect.TypeOf(schemaPtr).Elem()

@@ -1,13 +1,18 @@
 package schemabuilder
 
+import "maps"
+
 type ProtoService struct {
 	Messages   []ProtoMessage
 	FieldsFlat []string
+	Imports    []string
 }
 
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
 }
+
+type Set map[string]struct{}
 
 type ServiceData struct {
 	Request  ProtoMessageSchema
@@ -16,8 +21,9 @@ type ServiceData struct {
 
 func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoService {
 	out := &ProtoService{}
+	imports := make(Set)
 	if s.Get != nil {
-		getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request)
+		getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request, imports)
 		out.Messages = append(out.Messages, getRequest)
 	}
 	return *out
@@ -26,24 +32,25 @@ func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoService {
 type ProtoFieldsMap map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
-	Fields   ProtoFieldsMap
-	Options  map[string]string
-	Reserved []int
+	Fields     ProtoFieldsMap
+	Options    map[string]string
+	CelOptions []CelFieldOpts
+	Reserved   []int
 }
 
 type ProtoMessage struct {
 	Name     string
 	Fields   []ProtoFieldData
 	Reserved []int
-	Options  []string
+	Options  map[string]string
 }
 
-func NewProtoMessage(messageName string, s ProtoMessageSchema) ProtoMessage {
+func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) ProtoMessage {
 	var protoFields []ProtoFieldData
 	for fieldName, fieldBuilder := range s.Fields {
-		protoFields = append(protoFields, fieldBuilder.Build(fieldName))
+		protoFields = append(protoFields, fieldBuilder.Build(fieldName, imports))
 	}
-	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved}
+	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options}
 }
 
 type ProtoField struct {
@@ -61,8 +68,10 @@ type ProtoFieldData struct {
 	Name       string
 }
 
+// Cel field and rules aggregator, imports
+
 type ProtoFieldBuilder interface {
-	Build(fieldName string) ProtoFieldData
+	Build(fieldName string, imports Set) ProtoFieldData
 }
 
 type CelFieldOpts struct {
@@ -74,6 +83,7 @@ type ProtoStringBuilder struct {
 	celOptions []CelFieldOpts
 	nullable   bool
 	fieldNr    int
+	imports    Set
 }
 
 type MessageOption map[string]string
@@ -82,8 +92,12 @@ func ProtoString(fieldNumber int) *ProtoStringBuilder {
 	return &ProtoStringBuilder{fieldNr: fieldNumber}
 }
 
-func (b *ProtoStringBuilder) Build(fieldName string) ProtoFieldData {
-	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr}
+func (b *ProtoStringBuilder) Build(fieldName string, imports Set) ProtoFieldData {
+	if b.nullable {
+		b.imports["google/protobuf/wrappers.proto"] = struct{}{}
+	}
+	maps.Copy(imports, b.imports)
+	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
 // Multiple can be supported so needs another method than a map
