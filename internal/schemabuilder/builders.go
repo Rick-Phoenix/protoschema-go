@@ -43,7 +43,6 @@ type ProtoMessageSchema struct {
 	CelOptions []CelFieldOpts
 	Reserved   []int
 	FieldMask  bool
-	Deprecated bool
 }
 
 type ProtoMessage struct {
@@ -52,7 +51,6 @@ type ProtoMessage struct {
 	Reserved   []int
 	CelOptions []CelFieldOpts
 	Options    map[string]string
-	Deprecated bool
 }
 
 func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) ProtoMessage {
@@ -101,26 +99,29 @@ type ProtoField struct {
 	Type       string
 	Options    map[string]string
 	CelOptions []CelFieldOpts
+	Deprecated bool
 }
 
 type ProtoFieldData struct {
-	Rules      map[string]string
+	Options    map[string]string
+	CelOptions []CelFieldOpts
 	ColType    string
 	Nullable   bool
 	FieldNr    int
-	CelOptions []CelFieldOpts
 	Name       string
 	Imports    Set
+	Deprecated bool
 }
 
 type protoFieldInternal struct {
-	rules      map[string]string
+	options    map[string]string
 	celOptions []CelFieldOpts
 	nullable   bool
 	fieldNr    int
 	imports    Set
 	colType    string
 	fieldMask  bool
+	deprecated bool
 }
 
 type ProtoFieldBuilder interface {
@@ -141,11 +142,16 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData
 	}
 	maps.Copy(imports, b.imports)
 
-	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
+	return ProtoFieldData{Name: fieldName, Options: b.options, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
 func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
 	b.nullable = true
+	return b
+}
+
+func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
+	b.deprecated = true
 	return b
 }
 
@@ -161,8 +167,9 @@ func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 	return b
 }
 
+// Make a helper that actually maps all these based on the col type for others
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
-	b.rules["(buf.validate.field).required"] = "true"
+	b.options["(buf.validate.field).required"] = "true"
 	return b
 }
 
