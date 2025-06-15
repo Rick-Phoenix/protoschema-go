@@ -1,6 +1,13 @@
 package schemabuilder
 
-import "maps"
+import (
+	"maps"
+	"slices"
+)
+
+var present = struct{}{}
+
+type Set map[string]struct{}
 
 type ProtoService struct {
 	Messages   []ProtoMessage
@@ -12,8 +19,6 @@ type ProtoService struct {
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
 }
-
-type Set map[string]struct{}
 
 type ServiceData struct {
 	Request  ProtoMessageSchema
@@ -38,6 +43,7 @@ type ProtoMessageSchema struct {
 	CelOptions []CelFieldOpts
 	Reserved   []int
 	FieldMask  bool
+	Deprecated bool
 }
 
 type ProtoMessage struct {
@@ -60,8 +66,34 @@ func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) Prot
 	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
 }
 
-func ExtendProtoMessage(mes ProtoMessage, overrides ProtoMessage) {
+func ExtendProtoMessage(s ProtoMessageSchema, override ProtoMessageSchema) ProtoMessageSchema {
+	newFields := make(ProtoFieldsMap)
+	maps.Copy(newFields, s.Fields)
+	maps.Copy(newFields, override.Fields)
 
+	celOptions := slices.Concat(s.CelOptions, override.CelOptions)
+	celOptions = DedupeNonComp(celOptions)
+
+	reserved := slices.Concat(s.Reserved, override.Reserved)
+	reserved = Dedupe(reserved)
+
+	s.Fields = newFields
+	s.Reserved = reserved
+
+	return s
+}
+
+func OmitProtoMessage(s ProtoMessageSchema, keys []string) ProtoMessageSchema {
+	newFields := make(ProtoFieldsMap)
+	maps.Copy(newFields, s.Fields)
+
+	for _, key := range keys {
+		delete(newFields, key)
+	}
+
+	s.Fields = newFields
+
+	return s
 }
 
 type ProtoField struct {
@@ -78,39 +110,50 @@ type ProtoFieldData struct {
 	FieldNr    int
 	CelOptions []CelFieldOpts
 	Name       string
+	Imports    Set
+}
+
+type protoFieldInternal struct {
+	rules      map[string]string
+	celOptions []CelFieldOpts
+	nullable   bool
+	fieldNr    int
+	imports    Set
+	colType    string
+	fieldMask  bool
 }
 
 type ProtoFieldBuilder interface {
 	Build(fieldName string, imports Set) ProtoFieldData
 }
 
+type ProtoFieldExternal struct {
+	*protoFieldInternal
+}
+
 type CelFieldOpts struct {
 	Id, Message, Expression string
 }
 
-type ProtoStringBuilder struct {
-	rules      map[string]string
-	celOptions []CelFieldOpts
-	nullable   bool
-	fieldNr    int
-	imports    Set
-}
-
-type MessageOption map[string]string
-
-func ProtoString(fieldNumber int) *ProtoStringBuilder {
-	return &ProtoStringBuilder{fieldNr: fieldNumber}
-}
-
-func (b *ProtoStringBuilder) Build(fieldName string, imports Set) ProtoFieldData {
-	if b.nullable {
-		b.imports["google/protobuf/wrappers.proto"] = struct{}{}
+func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData {
+	if b.fieldMask {
+		imports["google/protobuf/field_mask.proto"] = present
 	}
 	maps.Copy(imports, b.imports)
+
 	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
-func (b *ProtoStringBuilder) CelField(o CelFieldOpts) *ProtoStringBuilder {
+func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
+	b.nullable = true
+	return b
+}
+
+func ProtoString(fieldNumber int) *ProtoFieldExternal {
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, colType: "string"}}
+}
+
+func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 	b.celOptions = append(b.celOptions, CelFieldOpts{
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
 	})
@@ -118,79 +161,11 @@ func (b *ProtoStringBuilder) CelField(o CelFieldOpts) *ProtoStringBuilder {
 	return b
 }
 
-func (b *ProtoStringBuilder) Nullable() *ProtoStringBuilder {
-	b.nullable = true
-	return b
-}
-
-func (b *ProtoStringBuilder) Required() *ProtoStringBuilder {
+func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 	b.rules["(buf.validate.field).required"] = "true"
 	return b
 }
 
-type ProtoTimestampBuilder struct {
-	rules      map[string]string
-	responses  []string
-	nullable   bool
-	fieldNr    int
-	celOptions []CelFieldOpts
+func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
+	return &ProtoFieldExternal{&protoFieldInternal{colType: "timestamp", fieldNr: fieldNr, fieldMask: true}}
 }
-
-func ProtoTimestamp() *ProtoTimestampBuilder {
-	return &ProtoTimestampBuilder{}
-}
-
-func (b *ProtoTimestampBuilder) Build(fieldName string, imports Set) ProtoFieldData {
-	imports["google/protobuf/field_mask.proto"] = struct{}{}
-	return ProtoFieldData{Name: fieldName, Rules: b.rules, ColType: "timestamp", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
-}
-
-// type Int64ColumnBuilder struct {
-// 	rules    map[string]string
-// 	nullable bool
-// 	fieldNr  int
-// }
-//
-// func Int64Col() *Int64ColumnBuilder {
-// 	return &Int64ColumnBuilder{}
-// }
-//
-// func (b *Int64ColumnBuilder) Nullable() *Int64ColumnBuilder {
-// 	b.nullable = true
-// 	return b
-// }
-//
-// func (b *Int64ColumnBuilder) Build() ProtoFieldData {
-// 	return ProtoFieldData{Rules: b.rules, ColType: "int64", Nullable: b.nullable, FieldNr: b.fieldNr}
-// }
-// type BytesColumnBuilder struct {
-// 	rules     []string
-// 	requests  []string
-// 	responses []string
-// 	nullable  bool
-// }
-//
-// // The generic type parameter is a slice of bytes
-// func (b *BytesColumnBuilder) Build() Column {
-// 	return Column{Rules: b.rules, Requests: b.requests, Responses: b.responses, ColType: "byte[]", Nullable: b.nullable}
-// }
-//
-// func BytesCol() *BytesColumnBuilder {
-// 	return &BytesColumnBuilder{}
-// }
-//
-// func (b *BytesColumnBuilder) Nullable() *BytesColumnBuilder {
-// 	b.nullable = true
-// 	return b
-// }
-//
-// func (b *BytesColumnBuilder) Requests(r ...string) *BytesColumnBuilder {
-// 	b.requests = append(b.requests, r...)
-// 	return b
-// }
-//
-// func (b *BytesColumnBuilder) Responses(r ...string) *BytesColumnBuilder {
-// 	b.responses = append(b.responses, r...)
-// 	return b
-// }
-//

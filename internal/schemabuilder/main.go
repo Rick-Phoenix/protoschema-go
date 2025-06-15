@@ -9,6 +9,12 @@ var UserSchema = ProtoMessageSchema{
 	},
 }
 
+var OverrideSchema = ExtendProtoMessage(UserSchema, ProtoMessageSchema{
+	Fields: ProtoFieldsMap{
+		"name": ProtoString(2),
+	},
+})
+
 type ServicesMap map[string]ProtoServiceSchema
 
 type ServicesData map[string]ProtoService
