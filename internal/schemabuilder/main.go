@@ -2,6 +2,7 @@ package schemabuilder
 
 type FieldData map[string]*ServiceData
 
+// Good way to make these extendable and omittable
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name": ProtoString(1),
@@ -26,8 +27,8 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Get: &ServiceData{
-			Request:  ProtoMessageSchema{},
-			Response: ProtoMessageSchema{},
+			Request:  UserSchema,
+			Response: UserSchema,
 		},
 	},
 }

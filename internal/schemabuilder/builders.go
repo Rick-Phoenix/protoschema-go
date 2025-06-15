@@ -60,6 +60,10 @@ func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) Prot
 	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
 }
 
+func ExtendProtoMessage(mes ProtoMessage, overrides ProtoMessage) {
+
+}
+
 type ProtoField struct {
 	Name       string
 	Type       string
