@@ -105,7 +105,7 @@ type ProtoField struct {
 type ProtoFieldData struct {
 	Options    map[string]string
 	CelOptions []CelFieldOpts
-	ColType    string
+	FieldType  string
 	Nullable   bool
 	FieldNr    int
 	Name       string
@@ -119,7 +119,7 @@ type protoFieldInternal struct {
 	nullable   bool
 	fieldNr    int
 	imports    Set
-	colType    string
+	fieldType  string
 	fieldMask  bool
 	deprecated bool
 }
@@ -137,12 +137,17 @@ type CelFieldOpts struct {
 }
 
 func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData {
-	if b.fieldMask {
+
+	switch b.fieldType {
+	case "fieldmask":
 		imports["google/protobuf/field_mask.proto"] = present
+	case "timestamp":
+		imports["google/protobuf/timestamp.proto"] = present
 	}
+
 	maps.Copy(imports, b.imports)
 
-	return ProtoFieldData{Name: fieldName, Options: b.options, ColType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
+	return ProtoFieldData{Name: fieldName, Options: b.options, FieldType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
 }
 
 func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
@@ -151,12 +156,12 @@ func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
 }
 
 func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
-	b.deprecated = true
+	b.options["deprecated"] = "true"
 	return b
 }
 
 func ProtoString(fieldNumber int) *ProtoFieldExternal {
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, colType: "string"}}
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string"}}
 }
 
 func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
@@ -168,11 +173,16 @@ func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 }
 
 // Make a helper that actually maps all these based on the col type for others
+// So that for example MaxLen accepts an int, and then the map's values should be strings or any
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 	b.options["(buf.validate.field).required"] = "true"
 	return b
 }
 
 func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
-	return &ProtoFieldExternal{&protoFieldInternal{colType: "timestamp", fieldNr: fieldNr, fieldMask: true}}
+	return &ProtoFieldExternal{&protoFieldInternal{fieldType: "timestamp", fieldNr: fieldNr}}
+}
+
+func FieldMask(fieldNr int) *ProtoFieldExternal {
+	return &ProtoFieldExternal{&protoFieldInternal{fieldType: "fieldmask", fieldNr: fieldNr}}
 }
