@@ -10,14 +10,15 @@ var present = struct{}{}
 type Set map[string]struct{}
 
 type ProtoService struct {
-	Messages   []ProtoMessage
-	FieldsFlat []string
-	Imports    []string
-	Options    map[string]string
+	Messages []ProtoMessage
+	Imports  []string
+	Options  map[string]string
+	Name     string
 }
 
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
+	Options                     map[string]string
 }
 
 type ServiceData struct {
@@ -26,7 +27,7 @@ type ServiceData struct {
 }
 
 func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoService {
-	out := &ProtoService{}
+	out := &ProtoService{Options: s.Options, Name: resourceName + "Service"}
 	imports := make(Set)
 	if s.Get != nil {
 		getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request, imports)
@@ -42,7 +43,6 @@ type ProtoMessageSchema struct {
 	Options    map[string]string
 	CelOptions []CelFieldOpts
 	Reserved   []int
-	FieldMask  bool
 }
 
 type ProtoMessage struct {
@@ -58,30 +58,37 @@ func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) Prot
 	for fieldName, fieldBuilder := range s.Fields {
 		protoFields = append(protoFields, fieldBuilder.Build(fieldName, imports))
 	}
-	if s.FieldMask {
-		imports["google/protobuf/field_mask.proto"] = struct{}{}
-	}
+
 	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
 }
 
-func ExtendProtoMessage(s ProtoMessageSchema, override ProtoMessageSchema) ProtoMessageSchema {
+func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *ProtoMessageSchema {
+	if override == nil {
+		return &s
+	}
 	newFields := make(ProtoFieldsMap)
 	maps.Copy(newFields, s.Fields)
 	maps.Copy(newFields, override.Fields)
 
-	celOptions := slices.Concat(s.CelOptions, override.CelOptions)
-	celOptions = DedupeNonComp(celOptions)
+	newOptions := make(map[string]string)
+	maps.Copy(newOptions, s.Options)
+	maps.Copy(newOptions, override.Options)
+
+	newCelOptions := slices.Concat(s.CelOptions, override.CelOptions)
+	newCelOptions = DedupeNonComp(newCelOptions)
 
 	reserved := slices.Concat(s.Reserved, override.Reserved)
 	reserved = Dedupe(reserved)
 
 	s.Fields = newFields
 	s.Reserved = reserved
+	s.Options = newOptions
+	s.CelOptions = newCelOptions
 
-	return s
+	return &s
 }
 
-func OmitProtoMessage(s ProtoMessageSchema, keys []string) ProtoMessageSchema {
+func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 	newFields := make(ProtoFieldsMap)
 	maps.Copy(newFields, s.Fields)
 
@@ -91,7 +98,7 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) ProtoMessageSchema {
 
 	s.Fields = newFields
 
-	return s
+	return &s
 }
 
 type ProtoField struct {
@@ -137,7 +144,6 @@ type CelFieldOpts struct {
 }
 
 func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData {
-
 	switch b.fieldType {
 	case "fieldmask":
 		imports["google/protobuf/field_mask.proto"] = present
@@ -161,7 +167,9 @@ func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
 }
 
 func ProtoString(fieldNumber int) *ProtoFieldExternal {
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string"}}
+	imports := make(Set)
+	options := make(map[string]string)
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}
 }
 
 func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
@@ -180,9 +188,13 @@ func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 }
 
 func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
-	return &ProtoFieldExternal{&protoFieldInternal{fieldType: "timestamp", fieldNr: fieldNr}}
+	imports := make(Set)
+	options := make(map[string]string)
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "timestamp", imports: imports, options: options}}
 }
 
 func FieldMask(fieldNr int) *ProtoFieldExternal {
-	return &ProtoFieldExternal{&protoFieldInternal{fieldType: "fieldmask", fieldNr: fieldNr}}
+	imports := make(Set)
+	options := make(map[string]string)
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
 }
