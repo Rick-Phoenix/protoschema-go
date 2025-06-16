@@ -6,30 +6,19 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
 
-type CompleteServiceData struct {
-	Imports     []string
-	ServiceName string
-	Messages    ProtoMessages
-}
-
 type Options struct {
-	ProtoRoot   string
-	Version     string
-	ProjectName string
-	TmplPath    string
-	ServiceName string
-	Imports     map[string]bool
+	ProtoRoot string
+	TmplPath  string
 }
 
 type ProtoFileData struct {
 	PackageName string
-	Imports     []string
-	Messages    ProtoMessages
-	Resource    string
+	ProtoService
 }
 
 var ProtoTypeMap = map[string]string{
@@ -47,27 +36,13 @@ var ProtoTypeMap = map[string]string{
 	"uint64":    "uint64",
 }
 
-var NullableTypes = map[string]string{
-	"double": "google.protobuf.DoubleValue",
-	"float":  "google.protobuf.FloatValue",
-	"int64":  "google.protobuf.Int64Value",
-	"uint64": "google.protobuf.UInt64Value",
-	"int32":  "google.protobuf.Int32Value",
-	"uint32": "google.protobuf.UInt32Value",
-	"bool":   "google.protobuf.BoolValue",
-	"string": "google.protobuf.StringValue",
-	"byte":   "google.protobuf.BytesValue",
-	"byte[]": "google.protobuf.BytesValue",
-	"uint8":  "google.protobuf.BytesValue",
-}
+func Generate(s ProtoService, o Options) error {
 
-func Generate(s CompleteServiceData, o Options) error {
+	protoPackage := strings.ReplaceAll(path.Dir(s.FileOutput), "/", ".")
 
 	templateData := ProtoFileData{
-		PackageName: fmt.Sprintf("%s.%s", o.ProjectName, o.Version),
-		Resource:    Capitalize(o.ProjectName),
-		Imports:     s.Imports,
-		Messages:    s.Messages,
+		PackageName:  protoPackage,
+		ProtoService: s,
 	}
 
 	funcMap := template.FuncMap{
@@ -84,7 +59,7 @@ func Generate(s CompleteServiceData, o Options) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	outputPath := filepath.Join(o.ProtoRoot, o.ProjectName, o.Version, s.ServiceName+".proto")
+	outputPath := filepath.Join(o.ProtoRoot, s.FileOutput)
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err
 	}

@@ -2,9 +2,6 @@ package schemabuilder
 
 type FieldData map[string]*ServiceData
 
-// Defining an external type (like User) + integrating its importt directly
-// Using separate generic resource messages which then get implemented by GetResponse
-
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name": ProtoString(1),
@@ -40,9 +37,12 @@ var TablesData = ServicesMap{
 			Request: *OverrideSchema,
 			Response: ProtoMessageSchema{
 				Fields: ProtoFieldsMap{
-					"user": ExternalType(1, "User"),
+					"user":      ExternalType(1, "User"),
+					"createdAt": ProtoTimestamp(2).Required(),
 				},
 			},
 		},
 	},
 }
+
+var UserService = NewProtoService("User", TablesData["User"], "myapp/v1")

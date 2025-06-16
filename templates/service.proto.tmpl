@@ -2,25 +2,25 @@ syntax = "proto3";
 
 package {{.PackageName}};
 
-{{range .Imports}}
-import "{{ . }}";
+{{range $importPath, $_ := .Imports}}
+{{if gt (len $importPath) 0}}import "{{ $importPath }}";{{end}}
 {{end}}
 
-{{range .Messages}}
-message {{.Name}} {
-  {{- if .ReservedNumbers}}
-  reserved {{ join .ReservedNumbers ", "}};
-  {{- end}}
-
-  {{- range .Fields}}
-  {{.Type}} {{.Name}} = {{.Number}}
-  {{- if .Options}} [{{.Options}}] {{- end}};
-  {{- end}}
+{{range $msgName, $msgData := .Messages}}
+message {{ $msgName }} {
+{{- if $msgData.Reserved}}
+reserved {{ join $msgData.Reserved ", "}};
+{{end}}
+{{- range $msgData.Fields}}
+  {{.FieldType}} {{.Name}} = {{.FieldNr}}{{- if gt (len .Options) 0 }}[ {{- range .Options}} {{ . }} {{- end}} ]{{- end }};
+{{- end}}
 }
 {{end}}
 
-service {{.Resource}}Service {
-  rpc Get{{.Resource}}(Get{{.Resource}}Request) returns(Get{{.Resource}}Response);
+service {{.Name}}Service {
+  {{- range .Handlers}}
+  rpc {{.}}({{.}}Request) returns({{.}}Response);
+  {{- end}}
 }
 
 

@@ -1,3 +1,3 @@
-[working-directory: "proto"]
+[working-directory("proto")]
 generate:
-  buf generate
+    buf generate

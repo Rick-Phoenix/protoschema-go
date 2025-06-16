@@ -4,30 +4,18 @@ import (
 	"log"
 
 	sb "github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
-	"github.com/Rick-Phoenix/gofirst/internal/schemabuilder/protogen"
 )
-
-var UserSchema = &sb.TableBuilder{
-	Name: "User",
-	Columns: sb.ColumnsMap{
-		"Name":      sb.StringCol().Required().MinLen(3).Requests("create").Responses("get", "create").Nullable(),
-		"Age":       sb.Int64Col().Responses("get").Nullable(),
-		"Blob":      sb.BytesCol().Requests("get"),
-		"CreatedAt": sb.TimestampCol().Responses("get"),
-	},
-}
 
 func main() {
 
 	// Define paths and options.
 	templatePath := "templates/service.proto.tmpl"
 	outputRoot := "gen/proto"
-	version := "v1"
 
-	options := &protogen.Options{TmplPath: templatePath, ProtoRoot: outputRoot, Version: version, ProjectName: "test"}
+	options := &sb.Options{TmplPath: templatePath, ProtoRoot: outputRoot}
 
 	// Run the generator!
-	if err := protogen.Generate(UserSchema, *options); err != nil {
+	if err := sb.Generate(sb.UserService, *options); err != nil {
 		log.Fatalf("🔥 Generation failed: %v", err)
 	}
 }

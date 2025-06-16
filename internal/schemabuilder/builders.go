@@ -13,10 +13,12 @@ type Set map[string]struct{}
 type MessagesMap map[string]ProtoMessage
 
 type ProtoService struct {
-	Messages MessagesMap
-	Imports  Set
-	Options  map[string]string
-	Name     string
+	Messages   MessagesMap
+	Imports    Set
+	Options    map[string]string
+	Name       string
+	FileOutput string
+	Handlers   []string
 }
 
 type ProtoServiceSchema struct {
@@ -40,12 +42,19 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	messages[resourceName] = NewProtoMessage(s.Resource, imports)
 
 	if s.Get != nil {
-		messageName := "Get" + resourceName + "Request"
+		out.Handlers = append(out.Handlers, "Get"+resourceName)
+		requestName := "Get" + resourceName + "Request"
 		getRequest := NewProtoMessage(s.Get.Request, imports)
-		messages[messageName] = getRequest
+		responseName := "Get" + resourceName + "Response"
+		getResponse := NewProtoMessage(s.Get.Response, imports)
+		messages[requestName] = getRequest
+		messages[responseName] = getResponse
 	}
 
-	FileLocations[resourceName] = path.Join(basePath, resourceName+"_service.proto")
+	fileOutput := path.Join(basePath, resourceName+".proto")
+	out.FileOutput = fileOutput
+	FileLocations[resourceName] = fileOutput
+
 	return *out
 }
 
@@ -114,7 +123,7 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 }
 
 type ProtoFieldData struct {
-	Options    map[string]string
+	Options    []string
 	CelOptions []CelFieldOpts
 	FieldType  string
 	Nullable   bool
@@ -149,13 +158,31 @@ type CelFieldOpts struct {
 	Id, Message, Expression string
 }
 
+func GetOptions(optsMap map[string]string) []string {
+	flatOpts := []string{}
+	optNames := slices.Collect(maps.Keys(optsMap))
+
+	for i, name := range optNames {
+		stringOpt := name + " = " + optsMap[name]
+		if i < len(optNames)-1 {
+			stringOpt += ", "
+		}
+
+		flatOpts = append(flatOpts, stringOpt)
+	}
+
+	return flatOpts
+}
+
 func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData {
 	switch b.fieldType {
 	case "fieldmask":
 		imports["google/protobuf/field_mask.proto"] = present
-	case "timestamp":
+	case "google.protobuf.Timestamp":
 		imports["google/protobuf/timestamp.proto"] = present
 	}
+
+	imports["buf/validate/validate.proto"] = present
 
 	if b.repeated {
 		b.nullable = false
@@ -163,7 +190,7 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData
 
 	maps.Copy(imports, b.imports)
 
-	return ProtoFieldData{Name: fieldName, Options: b.options, FieldType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions, Repeated: b.repeated}
+	return ProtoFieldData{Name: fieldName, Options: GetOptions(b.options), FieldType: b.fieldType, Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions, Repeated: b.repeated}
 }
 
 func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
@@ -205,7 +232,7 @@ func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "timestamp", imports: imports, options: options}}
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "google.protobuf.Timestamp", imports: imports, options: options}}
 }
 
 func FieldMask(fieldNr int) *ProtoFieldExternal {
@@ -214,11 +241,10 @@ func FieldMask(fieldNr int) *ProtoFieldExternal {
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
 }
 
-// Way to get the import paths
 func ExternalType(fieldNr int, name string) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
 	importPath := FileLocations[name]
 	imports[importPath] = present
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "external", imports: imports, options: options}}
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
 }
