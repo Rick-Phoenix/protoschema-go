@@ -6,9 +6,12 @@ type FieldData map[string]*ServiceData
 
 // Oneof
 // Service and message level options
+// Make specific builders that have their own methods (embed the generic interface)
+// Repeated options
+// Add ignore options
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name": ProtoString(1).Const("aa"),
+		"name": ProtoString(1).MinLen(2),
 		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",

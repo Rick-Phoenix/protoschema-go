@@ -9,6 +9,9 @@ import "myapp/v1/Post.proto";
 
 
 message GetUserRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 2 
+  ];
   optional google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).required = true, 
     (buf.validate.field).cel = {
@@ -18,7 +21,6 @@ message GetUserRequest {
 		} 
   ];
   repeated Post post = 3;
-  string name = 1;
 }
 
 message GetUserResponse {
@@ -36,7 +38,10 @@ message GetUserResponse {
 }
 
 message User {
-  string name = 1;
+  repeated Post post = 3;
+  string name = 1 [
+    (buf.validate.field).string.min_len = 2 
+  ];
   optional google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).required = true, 
     (buf.validate.field).cel = {
@@ -45,7 +50,6 @@ message User {
 			expression: "this = test"
 		} 
   ];
-  repeated Post post = 3;
 }
 
 

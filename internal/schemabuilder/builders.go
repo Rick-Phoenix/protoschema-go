@@ -7,6 +7,7 @@ import (
 	"path"
 	"reflect"
 	"slices"
+	"strconv"
 )
 
 var present = struct{}{}
@@ -65,7 +66,7 @@ type ProtoFieldsMap map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
 	Fields     ProtoFieldsMap
-	Options    map[string]string
+	Options    []MessageOption
 	CelOptions []CelFieldOpts
 	Reserved   []int
 }
@@ -74,7 +75,7 @@ type ProtoMessage struct {
 	Fields     []ProtoFieldData
 	Reserved   []int
 	CelOptions []CelFieldOpts
-	Options    map[string]string
+	Options    []MessageOption
 }
 
 func NewProtoMessage(s ProtoMessageSchema, imports Set) ProtoMessage {
@@ -94,10 +95,6 @@ func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *Pro
 	maps.Copy(newFields, s.Fields)
 	maps.Copy(newFields, override.Fields)
 
-	newOptions := make(map[string]string)
-	maps.Copy(newOptions, s.Options)
-	maps.Copy(newOptions, override.Options)
-
 	newCelOptions := slices.Concat(s.CelOptions, override.CelOptions)
 	newCelOptions = DedupeNonComp(newCelOptions)
 
@@ -106,7 +103,7 @@ func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *Pro
 
 	s.Fields = newFields
 	s.Reserved = reserved
-	s.Options = newOptions
+	s.Options = override.Options
 	s.CelOptions = newCelOptions
 
 	return &s
@@ -180,17 +177,35 @@ func GetOptions(optsMap map[string]string, celOpts []CelFieldOpts) []string {
 	return flatOpts
 }
 
+type MessageOption struct {
+	Name  string
+	Value string
+}
+
+func MessageCelOption(o CelFieldOpts) MessageOption {
+	return MessageOption{
+		Name: "(buf.validate.field).cel", Value: GetCelOption(o),
+	}
+}
+
+func GetCelOption(opt CelFieldOpts) string {
+	return fmt.Sprintf(
+		`{
+			id: %q
+			message: %q
+			expression: %q
+		}`,
+		opt.Id, opt.Message, opt.Expression)
+
+}
+
 func GetCelOptions(opts []CelFieldOpts) []string {
 	flatOpts := []string{}
 
 	for i, opt := range opts {
 		stringOpt := fmt.Sprintf(
-			`(buf.validate.field).cel = {
-			id: %q
-			message: %q
-			expression: %q
-		}`,
-			opt.Id, opt.Message, opt.Expression)
+			`(buf.validate.field).cel = %s`,
+			GetCelOption(opt))
 		if i < len(opts)-1 {
 			stringOpt += ", "
 		}
@@ -242,12 +257,6 @@ func (b *ProtoFieldExternal) Repeated() *ProtoFieldExternal {
 	return b
 }
 
-func ProtoString(fieldNumber int) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}
-}
-
 // To refine with proto type and go type
 func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
 	valType := reflect.TypeOf(val).String()
@@ -257,8 +266,6 @@ func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
 	return b
 }
 
-// Make a helper that actually maps all these based on the col type for others
-// So that for example MaxLen accepts an int, and then the map's values should be strings or any
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 	b.optional = false
 	b.options["(buf.validate.field).required"] = "true"
@@ -290,4 +297,21 @@ func InternalType(fieldNr int, name string) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
+}
+
+type FieldWithLength struct{}
+
+type StringField struct {
+	*ProtoFieldExternal
+}
+
+func (b *StringField) MinLen(n int) *StringField {
+	b.options["(buf.validate.field).string.min_len"] = strconv.Itoa(n)
+	return b
+}
+
+func ProtoString(fieldNumber int) *StringField {
+	imports := make(Set)
+	options := make(map[string]string)
+	return &StringField{&ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}}
 }
