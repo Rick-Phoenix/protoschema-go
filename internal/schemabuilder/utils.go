@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -153,4 +154,17 @@ func FindItem[T any](s []T, filter func(i T) bool) *T {
 	}
 
 	return item
+}
+
+func JoinIntSlice(s []int, separator string) string {
+	out := ""
+
+	for i, n := range s {
+		out += strconv.Itoa(n)
+		if i != len(s)-1 {
+			out += separator
+		}
+	}
+
+	return out
 }

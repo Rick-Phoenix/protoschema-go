@@ -46,7 +46,10 @@ func Generate(s ProtoService, o Options) error {
 	}
 
 	funcMap := template.FuncMap{
-		"join": strings.Join,
+		"joinInt": JoinIntSlice,
+		"dec": func(i int) int {
+			return i - 1
+		},
 	}
 
 	tmpl, err := template.New(filepath.Base(o.TmplPath)).Funcs(funcMap).ParseFiles(o.TmplPath)

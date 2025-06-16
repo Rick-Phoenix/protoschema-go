@@ -36,13 +36,10 @@ var TablesData = ServicesMap{
 		Get: &ServiceData{
 			Request: *OverrideSchema,
 			Response: ProtoMessageSchema{
+				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
 					"user": ExternalType(1, "User"),
 					"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
-						Id:         "test",
-						Message:    "this is a test",
-						Expression: "this = test",
-					}).CelField(CelFieldOpts{
 						Id:         "test",
 						Message:    "this is a test",
 						Expression: "this = test",

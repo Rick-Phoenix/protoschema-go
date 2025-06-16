@@ -2,13 +2,7 @@ syntax = "proto3";
 
 package myapp.v1;
 
-
-
-
-import "buf/validate/validate.proto";
-
-import "google/protobuf/timestamp.proto";
-
+import "buf/validate/validate.proto";import "google/protobuf/timestamp.proto";
 
 
 message GetUserRequest {
@@ -16,6 +10,8 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
+  reserved 100, 101, 102;
+
   User user = 1;
   google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).required = true, 
@@ -23,13 +19,8 @@ message GetUserResponse {
 			id: "test"
 			message: "this is a test"
 			expression: "this = test"
-		}, 
-    (buf.validate.field).cel = {
-			id: "test"
-			message: "this is a test"
-			expression: "this = test"
-		}
-    ];
+		} 
+  ];
 }
 
 message User {
