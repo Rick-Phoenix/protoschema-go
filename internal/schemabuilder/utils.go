@@ -12,6 +12,15 @@ import (
 	"unicode"
 )
 
+func IsTitleCase(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	firstLetter := rune(s[0])
+
+	return unicode.IsUpper(firstLetter)
+}
+
 func ToSnakeCase(s string) string {
 
 	if s == "" {

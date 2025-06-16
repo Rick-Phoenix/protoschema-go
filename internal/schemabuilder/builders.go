@@ -101,14 +101,6 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 	return &s
 }
 
-type ProtoField struct {
-	Name       string
-	Type       string
-	Options    map[string]string
-	CelOptions []CelFieldOpts
-	Deprecated bool
-}
-
 type ProtoFieldData struct {
 	Options    map[string]string
 	CelOptions []CelFieldOpts
@@ -118,6 +110,7 @@ type ProtoFieldData struct {
 	Name       string
 	Imports    Set
 	Deprecated bool
+	Repeated   bool
 }
 
 type protoFieldInternal struct {
@@ -129,6 +122,7 @@ type protoFieldInternal struct {
 	fieldType  string
 	fieldMask  bool
 	deprecated bool
+	repeated   bool
 }
 
 type ProtoFieldBuilder interface {
@@ -151,9 +145,13 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData
 		imports["google/protobuf/timestamp.proto"] = present
 	}
 
+	if b.repeated {
+		b.nullable = false
+	}
+
 	maps.Copy(imports, b.imports)
 
-	return ProtoFieldData{Name: fieldName, Options: b.options, FieldType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions}
+	return ProtoFieldData{Name: fieldName, Options: b.options, FieldType: "string", Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions, Repeated: b.repeated}
 }
 
 func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
@@ -166,18 +164,23 @@ func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
 	return b
 }
 
-func ProtoString(fieldNumber int) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}
-}
-
 func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 	b.celOptions = append(b.celOptions, CelFieldOpts{
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
 	})
 
 	return b
+}
+
+func (b *ProtoFieldExternal) Repeated() *ProtoFieldExternal {
+	b.repeated = true
+	return b
+}
+
+func ProtoString(fieldNumber int) *ProtoFieldExternal {
+	imports := make(Set)
+	options := make(map[string]string)
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}
 }
 
 // Make a helper that actually maps all these based on the col type for others
@@ -197,4 +200,11 @@ func FieldMask(fieldNr int) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
+}
+
+// Way to get the import paths
+func ExternalType(fieldNr int, name string) *ProtoFieldExternal {
+	imports := make(Set)
+	options := make(map[string]string)
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "external", imports: imports, options: options}}
 }

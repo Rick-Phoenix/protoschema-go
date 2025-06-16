@@ -2,7 +2,9 @@ package schemabuilder
 
 type FieldData map[string]*ServiceData
 
-// Good way to make these extendable and omittable
+// Defining an external type (like User) + integrating its importt directly
+// Using separate generic resource messages which then get implemented by GetResponse
+
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name": ProtoString(1),
@@ -30,6 +32,7 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	return out
 }
 
+// Generate generic message type
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Get: &ServiceData{
