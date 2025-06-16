@@ -2,11 +2,23 @@ syntax = "proto3";
 
 package myapp.v1;
 
-import "buf/validate/validate.proto";import "google/protobuf/timestamp.proto";
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "myapp/v1/Post.proto";
 
 
 message GetUserRequest {
-  string name = 2;
+  optional google.protobuf.Timestamp createdAt = 2 [
+    (buf.validate.field).required = true, 
+    (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		} 
+  ];
+  repeated Post post = 3;
+  string name = 1;
 }
 
 message GetUserResponse {
@@ -25,6 +37,15 @@ message GetUserResponse {
 
 message User {
   string name = 1;
+  optional google.protobuf.Timestamp createdAt = 2 [
+    (buf.validate.field).required = true, 
+    (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		} 
+  ];
+  repeated Post post = 3;
 }
 
 

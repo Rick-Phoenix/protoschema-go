@@ -1,18 +1,31 @@
 package schemabuilder
 
+import "log"
+
 type FieldData map[string]*ServiceData
 
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name": ProtoString(1),
+		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
+			Id:         "test",
+			Message:    "this is a test",
+			Expression: "this = test",
+		}).Optional(),
+		"post": ImportedType(3, "Post", "myapp/v1/Post.proto").Repeated(),
 	},
 }
 
-var OverrideSchema = ExtendProtoMessage(UserSchema, &ProtoMessageSchema{
+var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name": ProtoString(2),
+		"id": ProtoString(1),
+		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
+			Id:         "test",
+			Message:    "this is a test",
+			Expression: "this = test",
+		}),
 	},
-})
+}
 
 type ServicesMap map[string]ProtoServiceSchema
 
@@ -29,16 +42,15 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	return out
 }
 
-// Generate generic message type
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Resource: UserSchema,
 		Get: &ServiceData{
-			Request: *OverrideSchema,
+			Request: UserSchema,
 			Response: ProtoMessageSchema{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
-					"user": ExternalType(1, "User"),
+					"user": InternalType(1, "User"),
 					"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
 						Id:         "test",
 						Message:    "this is a test",
@@ -48,6 +60,32 @@ var TablesData = ServicesMap{
 			},
 		},
 	},
+	"Post": ProtoServiceSchema{
+		Resource: PostSchema,
+		Get: &ServiceData{
+			Request: PostSchema,
+			Response: ProtoMessageSchema{
+				Reserved: []int{100, 101, 102},
+				Fields: ProtoFieldsMap{
+					"user": ImportedType(1, "User", "myapp/v1/User.proto"),
+					"post": InternalType(2, "Post"),
+				},
+			},
+		},
+	},
 }
 
-var UserService = NewProtoService("User", TablesData["User"], "myapp/v1")
+func GenerateProtoFiles() {
+	var Services = BuildFinalServicesMap(TablesData)
+	// Define paths and options.
+	templatePath := "templates/service.proto.tmpl"
+	outputRoot := "gen/proto"
+
+	options := &Options{TmplPath: templatePath, ProtoRoot: outputRoot}
+
+	for _, v := range Services {
+		if err := Generate(v, *options); err != nil {
+			log.Fatalf("🔥 Generation failed: %v", err)
+		}
+	}
+}

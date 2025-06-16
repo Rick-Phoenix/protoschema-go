@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"fmt"
+	"log"
 	"maps"
 	"path"
 	"slices"
@@ -126,7 +127,7 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 type ProtoFieldData struct {
 	Options    []string
 	FieldType  string
-	Nullable   bool
+	Optional   bool
 	FieldNr    int
 	Name       string
 	Imports    Set
@@ -137,7 +138,7 @@ type ProtoFieldData struct {
 type protoFieldInternal struct {
 	options    map[string]string
 	celOptions []CelFieldOpts
-	nullable   bool
+	optional   bool
 	fieldNr    int
 	imports    Set
 	fieldType  string
@@ -210,18 +211,21 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData
 	imports["buf/validate/validate.proto"] = present
 
 	if b.repeated {
-		b.nullable = false
+		if b.optional {
+			log.Fatalf("Field %s cannot be repeated and optional.", fieldName)
+		}
 	}
 
 	maps.Copy(imports, b.imports)
 
 	options := GetOptions(b.options, b.celOptions)
 
-	return ProtoFieldData{Name: fieldName, Options: options, FieldType: b.fieldType, Nullable: b.nullable, FieldNr: b.fieldNr, Repeated: b.repeated}
+	return ProtoFieldData{Name: fieldName, Options: options, FieldType: b.fieldType, Optional: b.optional, FieldNr: b.fieldNr, Repeated: b.repeated}
 }
 
-func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {
-	b.nullable = true
+func (b *ProtoFieldExternal) Optional() *ProtoFieldExternal {
+
+	b.optional = true
 	return b
 }
 
@@ -239,6 +243,7 @@ func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 }
 
 func (b *ProtoFieldExternal) Repeated() *ProtoFieldExternal {
+
 	b.repeated = true
 	return b
 }
@@ -252,6 +257,7 @@ func ProtoString(fieldNumber int) *ProtoFieldExternal {
 // Make a helper that actually maps all these based on the col type for others
 // So that for example MaxLen accepts an int, and then the map's values should be strings or any
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
+	b.optional = false
 	b.options["(buf.validate.field).required"] = "true"
 	return b
 }
@@ -268,10 +274,15 @@ func FieldMask(fieldNr int) *ProtoFieldExternal {
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
 }
 
-func ExternalType(fieldNr int, name string) *ProtoFieldExternal {
+func ImportedType(fieldNr int, name string, importPath string) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
-	importPath := FileLocations[name]
 	imports[importPath] = present
+	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
+}
+
+func InternalType(fieldNr int, name string) *ProtoFieldExternal {
+	imports := make(Set)
+	options := make(map[string]string)
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
 }
