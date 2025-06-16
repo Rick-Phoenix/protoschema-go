@@ -5,6 +5,7 @@ import (
 	"log"
 	"maps"
 	"path"
+	"reflect"
 	"slices"
 )
 
@@ -201,12 +202,6 @@ func GetCelOptions(opts []CelFieldOpts) []string {
 }
 
 func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData {
-	switch b.fieldType {
-	case "fieldmask":
-		imports["google/protobuf/field_mask.proto"] = present
-	case "google.protobuf.Timestamp":
-		imports["google/protobuf/timestamp.proto"] = present
-	}
 
 	imports["buf/validate/validate.proto"] = present
 
@@ -243,7 +238,6 @@ func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
 }
 
 func (b *ProtoFieldExternal) Repeated() *ProtoFieldExternal {
-
 	b.repeated = true
 	return b
 }
@@ -252,6 +246,15 @@ func ProtoString(fieldNumber int) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}
+}
+
+// To refine with proto type and go type
+func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
+	valType := reflect.TypeOf(val).String()
+	if valType != b.fieldType {
+		log.Fatalf("The type for const does not match.")
+	}
+	return b
 }
 
 // Make a helper that actually maps all these based on the col type for others
@@ -265,12 +268,14 @@ func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
+	imports["google/protobuf/timestamp.proto"] = present
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "google.protobuf.Timestamp", imports: imports, options: options}}
 }
 
 func FieldMask(fieldNr int) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
+	imports["google/protobuf/field_mask.proto"] = present
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
 }
 

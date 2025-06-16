@@ -4,9 +4,11 @@ import "log"
 
 type FieldData map[string]*ServiceData
 
+// Oneof
+// Service and message level options
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name": ProtoString(1),
+		"name": ProtoString(1).Const("aa"),
 		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
