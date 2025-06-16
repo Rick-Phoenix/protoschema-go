@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"fmt"
 	"maps"
 	"path"
 	"slices"
@@ -124,7 +125,6 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 
 type ProtoFieldData struct {
 	Options    []string
-	CelOptions []CelFieldOpts
 	FieldType  string
 	Nullable   bool
 	FieldNr    int
@@ -158,13 +158,38 @@ type CelFieldOpts struct {
 	Id, Message, Expression string
 }
 
-func GetOptions(optsMap map[string]string) []string {
+func GetOptions(optsMap map[string]string, celOpts []CelFieldOpts) []string {
 	flatOpts := []string{}
 	optNames := slices.Collect(maps.Keys(optsMap))
 
 	for i, name := range optNames {
 		stringOpt := name + " = " + optsMap[name]
-		if i < len(optNames)-1 {
+		if i < len(optNames)-1 || len(celOpts) > 0 {
+			stringOpt += ", "
+		}
+
+		flatOpts = append(flatOpts, stringOpt)
+	}
+
+	flatCelOpts := GetCelOptions(celOpts)
+
+	flatOpts = slices.Concat(flatOpts, flatCelOpts)
+
+	return flatOpts
+}
+
+func GetCelOptions(opts []CelFieldOpts) []string {
+	flatOpts := []string{}
+
+	for i, opt := range opts {
+		stringOpt := fmt.Sprintf(
+			`(buf.validate.field).cel = {
+			id: %q
+			message: %q
+			expression: %q
+		}`,
+			opt.Id, opt.Message, opt.Expression)
+		if i < len(opts)-1 {
 			stringOpt += ", "
 		}
 
@@ -190,7 +215,9 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) ProtoFieldData
 
 	maps.Copy(imports, b.imports)
 
-	return ProtoFieldData{Name: fieldName, Options: GetOptions(b.options), FieldType: b.fieldType, Nullable: b.nullable, FieldNr: b.fieldNr, CelOptions: b.celOptions, Repeated: b.repeated}
+	options := GetOptions(b.options, b.celOptions)
+
+	return ProtoFieldData{Name: fieldName, Options: options, FieldType: b.fieldType, Nullable: b.nullable, FieldNr: b.fieldNr, Repeated: b.repeated}
 }
 
 func (b *ProtoFieldExternal) Nullable() *ProtoFieldExternal {

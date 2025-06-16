@@ -17,7 +17,19 @@ message GetUserRequest {
 
 message GetUserResponse {
   User user = 1;
-  google.protobuf.Timestamp createdAt = 2[ (buf.validate.field).required = true ];
+  google.protobuf.Timestamp createdAt = 2 [
+    (buf.validate.field).required = true, 
+    (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		}, 
+    (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		}
+    ];
 }
 
 message User {

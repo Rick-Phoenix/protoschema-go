@@ -4,11 +4,11 @@ package schemabuilder
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 type Options struct {
