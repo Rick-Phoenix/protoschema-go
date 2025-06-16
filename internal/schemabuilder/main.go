@@ -26,7 +26,7 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	out := make(ServicesData)
 
 	for resource, serviceSchema := range m {
-		out[resource] = NewProtoService(resource, serviceSchema)
+		out[resource] = NewProtoService(resource, serviceSchema, "myapp/v1")
 	}
 
 	return out
@@ -35,9 +35,14 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 // Generate generic message type
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
+		Resource: UserSchema,
 		Get: &ServiceData{
-			Request:  UserSchema,
-			Response: *OverrideSchema,
+			Request: *OverrideSchema,
+			Response: ProtoMessageSchema{
+				Fields: ProtoFieldsMap{
+					"user": ExternalType(1, "User"),
+				},
+			},
 		},
 	},
 }

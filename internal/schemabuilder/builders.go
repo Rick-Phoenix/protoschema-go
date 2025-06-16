@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"maps"
+	"path"
 	"slices"
 )
 
@@ -9,15 +10,18 @@ var present = struct{}{}
 
 type Set map[string]struct{}
 
+type MessagesMap map[string]ProtoMessage
+
 type ProtoService struct {
-	Messages []ProtoMessage
-	Imports  []string
+	Messages MessagesMap
+	Imports  Set
 	Options  map[string]string
 	Name     string
 }
 
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
+	Resource                    ProtoMessageSchema
 	Options                     map[string]string
 }
 
@@ -26,13 +30,22 @@ type ServiceData struct {
 	Response ProtoMessageSchema
 }
 
-func NewProtoService(resourceName string, s ProtoServiceSchema) ProtoService {
-	out := &ProtoService{Options: s.Options, Name: resourceName + "Service"}
+var FileLocations = map[string]string{}
+
+func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) ProtoService {
 	imports := make(Set)
+	messages := make(MessagesMap)
+	out := &ProtoService{Options: s.Options, Name: resourceName + "Service", Imports: imports, Messages: messages}
+
+	messages[resourceName] = NewProtoMessage(s.Resource, imports)
+
 	if s.Get != nil {
-		getRequest := NewProtoMessage("Get"+resourceName+"Request", s.Get.Request, imports)
-		out.Messages = append(out.Messages, getRequest)
+		messageName := "Get" + resourceName + "Request"
+		getRequest := NewProtoMessage(s.Get.Request, imports)
+		messages[messageName] = getRequest
 	}
+
+	FileLocations[resourceName] = path.Join(basePath, resourceName+"_service.proto")
 	return *out
 }
 
@@ -46,20 +59,19 @@ type ProtoMessageSchema struct {
 }
 
 type ProtoMessage struct {
-	Name       string
 	Fields     []ProtoFieldData
 	Reserved   []int
 	CelOptions []CelFieldOpts
 	Options    map[string]string
 }
 
-func NewProtoMessage(messageName string, s ProtoMessageSchema, imports Set) ProtoMessage {
+func NewProtoMessage(s ProtoMessageSchema, imports Set) ProtoMessage {
 	var protoFields []ProtoFieldData
 	for fieldName, fieldBuilder := range s.Fields {
 		protoFields = append(protoFields, fieldBuilder.Build(fieldName, imports))
 	}
 
-	return ProtoMessage{Fields: protoFields, Name: messageName, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
+	return ProtoMessage{Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}
 }
 
 func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *ProtoMessageSchema {
@@ -206,5 +218,7 @@ func FieldMask(fieldNr int) *ProtoFieldExternal {
 func ExternalType(fieldNr int, name string) *ProtoFieldExternal {
 	imports := make(Set)
 	options := make(map[string]string)
+	importPath := FileLocations[name]
+	imports[importPath] = present
 	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "external", imports: imports, options: options}}
 }
