@@ -16,19 +16,44 @@ type Set map[string]struct{}
 
 type MessagesMap map[string]ProtoMessage
 
+type OptionExtensions struct {
+	Service []CustomOption
+	Message []CustomOption
+	Field   []CustomOption
+	File    []CustomOption
+}
+
 type ProtoService struct {
-	Messages   MessagesMap
-	Imports    Set
-	Options    map[string]string
-	Name       string
-	FileOutput string
-	Handlers   []string
+	Messages         MessagesMap
+	Imports          Set
+	ServiceOptions   []ProtoOption
+	FileOptions      []ProtoOption
+	OptionExtensions OptionExtensions
+	Name             string
+	FileOutput       string
+	Handlers         []string
+}
+
+type ProtoOption struct {
+	Name  string
+	Value string
+}
+
+type CustomOption struct {
+	Name     string
+	Type     string
+	FieldNr  int
+	Optional bool
+	Repeated bool
 }
 
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
 	Resource                    ProtoMessageSchema
-	Options                     map[string]string
+	// If not empty, add the imports for import "google/protobuf/descriptor.proto";
+	ServiceOptions   []ProtoOption
+	FileOptions      []ProtoOption
+	OptionExtensions OptionExtensions
 }
 
 type ServiceData struct {
@@ -41,9 +66,13 @@ var FileLocations = map[string]string{}
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) ProtoService {
 	imports := make(Set)
 	messages := make(MessagesMap)
-	out := &ProtoService{Options: s.Options, Name: resourceName + "Service", Imports: imports, Messages: messages}
+	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, Messages: messages, OptionExtensions: s.OptionExtensions}
 
 	messages[resourceName] = NewProtoMessage(s.Resource, imports)
+
+	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field) > 0 {
+		imports["google/protobuf/descriptor.proto"] = present
+	}
 
 	if s.Get != nil {
 		out.Handlers = append(out.Handlers, "Get"+resourceName)
@@ -188,6 +217,10 @@ func MessageCelOption(o CelFieldOpts) MessageOption {
 	}
 }
 
+var DisableValidation = MessageOption{
+	Name: "(buf.validate.message).disabled", Value: "true",
+}
+
 func GetCelOption(opt CelFieldOpts) string {
 	return fmt.Sprintf(
 		`{
@@ -239,6 +272,21 @@ func (b *ProtoFieldExternal) Optional() *ProtoFieldExternal {
 	return b
 }
 
+func (b *ProtoFieldExternal) IgnoreIfUnpopulated() *ProtoFieldExternal {
+	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_UNPOPULATED"
+	return b
+}
+
+func (b *ProtoFieldExternal) IgnoreIfDefaultValue() *ProtoFieldExternal {
+	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_DEFAULT_VALUE"
+	return b
+}
+
+func (b *ProtoFieldExternal) IgnoreAlways() *ProtoFieldExternal {
+	b.options["(buf.validate.field).ignore"] = "IGNORE_ALWAYS"
+	return b
+}
+
 func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
 	b.options["deprecated"] = "true"
 	return b
@@ -269,6 +317,12 @@ func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
 	b.optional = false
 	b.options["(buf.validate.field).required"] = "true"
+	return b
+}
+
+func (b *ProtoFieldExternal) Example(e string) *ProtoFieldExternal {
+	// Make this specific to the single validators
+	b.options["(buf.validate.field).timestamp.example"] = e
 	return b
 }
 

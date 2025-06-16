@@ -1,19 +1,49 @@
 syntax = "proto3";
 
-package myapp.v1;
-
 
 import "buf/validate/validate.proto";
+import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
+package myapp.v1;
+
+
+option myoption = true;
+
+
+extend google.protobuf.FileOptions {
+  optional string testopt = 1;
+}
+
+extend google.protobuf.ServiceOptions {
+  optional string testopt = 1;
+}
+
+extend google.protobuf.MessageOptions {
+  optional string testopt = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  optional string testopt = 1;
+}
+
 
 message GetUserRequest {
+  option (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		};
+
+  option (buf.validate.message).disabled = true;
+
   string name = 1 [
     (buf.validate.field).string.min_len = 2 
   ];
   optional google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).required = true, 
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED, 
     (buf.validate.field).cel = {
 			id: "test"
 			message: "this is a test"
@@ -38,11 +68,19 @@ message GetUserResponse {
 }
 
 message User {
-  repeated Post post = 3;
+  option (buf.validate.field).cel = {
+			id: "test"
+			message: "this is a test"
+			expression: "this = test"
+		};
+
+  option (buf.validate.message).disabled = true;
+
   string name = 1 [
     (buf.validate.field).string.min_len = 2 
   ];
   optional google.protobuf.Timestamp createdAt = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED, 
     (buf.validate.field).required = true, 
     (buf.validate.field).cel = {
 			id: "test"
@@ -50,10 +88,13 @@ message User {
 			expression: "this = test"
 		} 
   ];
+  repeated Post post = 3;
 }
 
 
 service UserServiceService {
+  option myoption = true;
+
   rpc GetUser(GetUserRequest) returns(GetUserResponse);
 }
 

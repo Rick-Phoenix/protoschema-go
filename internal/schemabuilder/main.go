@@ -4,10 +4,9 @@ import "log"
 
 type FieldData map[string]*ServiceData
 
+// Reusable handlers that give the shared functions like len
 // Oneof
-// Service and message level options
 // Make specific builders that have their own methods (embed the generic interface)
-// Repeated options
 // Add ignore options
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
@@ -47,9 +46,21 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	return out
 }
 
+var MyOptions = []CustomOption{{
+	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
+}}
+
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
-		Resource: UserSchema,
+		OptionExtensions: OptionExtensions{
+			Field:   MyOptions,
+			Message: MyOptions,
+			File:    MyOptions,
+			Service: MyOptions,
+		},
+		FileOptions:    []ProtoOption{{Name: "myoption", Value: "true"}},
+		ServiceOptions: []ProtoOption{{Name: "myoption", Value: "true"}},
+		Resource:       UserSchema,
 		Get: &ServiceData{
 			Request: UserSchema,
 			Response: ProtoMessageSchema{

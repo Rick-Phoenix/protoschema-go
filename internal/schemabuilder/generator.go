@@ -50,6 +50,22 @@ func Generate(s ProtoService, o Options) error {
 		"dec": func(i int) int {
 			return i - 1
 		},
+		"ternary": func(condition bool, trueVal any, falseVal any) any {
+			if condition {
+				return trueVal
+			} else {
+				return falseVal
+			}
+		},
+		"keyword": func(isOptional bool, isRepeated bool) string {
+			if isOptional {
+				return "optional "
+			} else if isRepeated {
+				return "repeated "
+			}
+
+			return ""
+		},
 	}
 
 	tmpl, err := template.New(filepath.Base(o.TmplPath)).Funcs(funcMap).ParseFiles(o.TmplPath)

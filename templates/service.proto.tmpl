@@ -1,9 +1,37 @@
 syntax = "proto3";
 
+{{ range $importPath, $_ := .Imports }}
+{{ if gt (len $importPath) 0 -}}import "{{ $importPath }}";{{end}}
+{{- end }}
+
 package {{ .PackageName }};
 
-{{ range $importPath, $_ := .Imports }}
-{{ if gt (len $importPath) 0 }}import "{{ $importPath }}";{{end}}
+{{ range .FileOptions }}
+option {{ .Name }} = {{ .Value }};
+{{- end }}
+
+{{ range .OptionExtensions.File }}
+extend google.protobuf.FileOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{- range .OptionExtensions.Service }}
+extend google.protobuf.ServiceOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{- range .OptionExtensions.Message }}
+extend google.protobuf.MessageOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{- range .OptionExtensions.Field }}
+extend google.protobuf.FieldOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
 {{- end }}
 
 {{ range $msgName, $msgData := .Messages }}
@@ -11,8 +39,11 @@ message {{ $msgName }} {
 {{- if $msgData.Reserved}}
   reserved {{ joinInt $msgData.Reserved ", "}};
 {{ end }}
+{{- range .Options}}
+  option {{ .Name }} = {{ .Value }};
+{{ end }}
 {{- range $_, $field := $msgData.Fields}}
-  {{ if .Repeated }}repeated {{else if .Optional}}optional {{end}}{{.FieldType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
+  {{ keyword .Optional .Repeated }}{{.FieldType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
     {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{"\n    "}}{{end}}{{ end }} 
   ]{{- end -}};
   {{- end }}
@@ -20,6 +51,9 @@ message {{ $msgName }} {
 {{ end }}
 
 service {{.Name}}Service {
+{{- range .ServiceOptions}}
+  option {{ .Name }} = {{ .Value }};
+{{ end }}
   {{- range .Handlers}}
   rpc {{.}}({{.}}Request) returns({{.}}Response);
   {{- end}}
