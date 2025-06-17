@@ -1,6 +1,10 @@
 package schemabuilder
 
-import "log"
+import (
+	"fmt"
+	"log"
+	"os"
+)
 
 type FieldData map[string]*ServiceData
 
@@ -23,11 +27,11 @@ var UserSchema = ProtoMessageSchema{
 var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"id": ProtoString(1),
-		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
+		"createdAt": ProtoTimestamp(2).CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
-		}),
+		}).Optional().Repeated(),
 	},
 }
 
@@ -38,9 +42,24 @@ type ServicesData map[string]ProtoService
 // Make something that reflects the db field names and types and checks if the messages are correct
 func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	out := make(ServicesData)
+	serviceErrors := []error{}
 
 	for resource, serviceSchema := range m {
-		out[resource] = NewProtoService(resource, serviceSchema, "myapp/v1")
+		serviceData, err := NewProtoService(resource, serviceSchema, "myapp/v1")
+
+		if err != nil {
+			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the schema %s:\n%s", resource, IndentString(err.Error())))
+		}
+		out[resource] = serviceData
+	}
+
+	if len(serviceErrors) > 0 {
+		fmt.Printf("The following errors occurred:\n\n")
+		for _, err := range serviceErrors {
+			fmt.Println(err)
+		}
+
+		os.Exit(1)
 	}
 
 	return out

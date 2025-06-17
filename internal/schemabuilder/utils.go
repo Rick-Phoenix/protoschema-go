@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
@@ -167,4 +168,20 @@ func JoinIntSlice(s []int, separator string) string {
 	}
 
 	return out
+}
+
+func IndentString(s string) string {
+	sb := strings.Builder{}
+
+	scanner := bufio.NewScanner(strings.NewReader(s))
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		sb.WriteString(fmt.Sprintf("%s%s\n", indent, line))
+		if err := scanner.Err(); err != nil {
+			fmt.Printf("Error scanning string: %v\n", err)
+		}
+	}
+
+	return sb.String()
 }

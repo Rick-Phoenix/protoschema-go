@@ -51,10 +51,9 @@ type CustomOption struct {
 type ProtoServiceSchema struct {
 	Create, Get, Update, Delete *ServiceData
 	Resource                    ProtoMessageSchema
-	// If not empty, add the imports for import "google/protobuf/descriptor.proto";
-	ServiceOptions   []ProtoOption
-	FileOptions      []ProtoOption
-	OptionExtensions OptionExtensions
+	ServiceOptions              []ProtoOption
+	FileOptions                 []ProtoOption
+	OptionExtensions            OptionExtensions
 }
 
 type ServiceData struct {
@@ -63,20 +62,6 @@ type ServiceData struct {
 }
 
 var FileLocations = map[string]string{}
-
-func IndentString(s string) string {
-	sb := strings.Builder{}
-	lines := strings.Split(s, "\n")
-
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		sb.WriteString(fmt.Sprintf("%s%s\n", indent, line))
-	}
-
-	return sb.String()
-}
 
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
@@ -88,7 +73,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 
 	if len(err) > 0 {
 		messageErrors := strings.Builder{}
-		messageErrors.WriteString(fmt.Sprintf("The following errors occurred for the %s schema:\n", resourceName))
+		messageErrors.WriteString(fmt.Sprintf("The following errors occurred for the %s message schema:\n", resourceName))
 		for _, errGroup := range err {
 			messageErrors.WriteString(IndentString(errGroup.Error()))
 		}
@@ -136,6 +121,7 @@ type ProtoMessage struct {
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
 	var protoFields []ProtoFieldData
 	var errors Errors
+
 	for fieldName, fieldBuilder := range s.Fields {
 		field, err := fieldBuilder.Build(fieldName, imports)
 		if err != nil {
@@ -209,6 +195,7 @@ type protoFieldInternal struct {
 	deprecated bool
 	repeated   bool
 	errors     Errors
+	required   bool
 }
 
 type ProtoFieldBuilder interface {
@@ -295,7 +282,7 @@ const indent3 = "      "
 func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
 	if len(b.errors) > 0 {
 		fieldErrors := strings.Builder{}
-		fieldErrors.WriteString(fmt.Sprintf("The following errors occurred for field %s:\n", fieldName))
+		fieldErrors.WriteString(fmt.Sprintf("Errors for field %s:\n", fieldName))
 		for _, err := range b.errors {
 			fieldErrors.WriteString(fmt.Sprintf("%s- %s\n", indent, err.Error()))
 		}
@@ -314,6 +301,9 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 func (b *ProtoFieldExternal) Optional() *ProtoFieldExternal {
 	if b.repeated {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be repeated and optional."))
+	}
+	if b.required {
+		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
 	}
 	b.optional = true
 	return b
@@ -366,8 +356,11 @@ func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
 }
 
 func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
-	b.optional = false
+	if b.optional {
+		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
+	}
 	b.options["(buf.validate.field).required"] = "true"
+	b.required = true
 	return b
 }
 
