@@ -10,6 +10,8 @@ type FieldData map[string]*ServiceData
 
 // Oneof
 // Add ignore options
+// Repeated = true for repeated options
+// Or separate array
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":  ProtoString(1).MinLen(2).Required(),

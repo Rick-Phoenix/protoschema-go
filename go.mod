@@ -2,7 +2,10 @@ module github.com/Rick-Phoenix/gofirst
 
 go 1.24.4
 
-require modernc.org/sqlite v1.38.0
+require (
+	google.golang.org/protobuf v1.36.6
+	modernc.org/sqlite v1.38.0
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
