@@ -35,9 +35,12 @@ message User {
   }
 
   Post post = 4;
-  repeated string name = 1 [(buf.validate.field).repeated.items = {
-    string: {min_len: 2}
-  }];
+  repeated string name = 1 [
+    (buf.validate.field).repeated.items = {
+      string: {min_len: 2}
+    },
+    (buf.validate.field).repeated.unique = true
+  ];
   string name2 = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 2

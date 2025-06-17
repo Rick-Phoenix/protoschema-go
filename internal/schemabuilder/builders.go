@@ -69,6 +69,13 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules}, nil
 }
 
+func (b *ProtoFieldExternal[BuilderT, ValueT]) Options(o []ProtoOption) *BuilderT {
+	for _, op := range o {
+		b.options[op.Name] = op.Value
+	}
+	return b.self
+}
+
 func (b *ProtoFieldExternal[BuilderT, ValueT]) IgnoreIfUnpopulated() *BuilderT {
 	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_UNPOPULATED"
 	return b.self
@@ -286,13 +293,13 @@ func InternalType(fieldNr int, name string) *GenericField[any] {
 }
 
 type ProtoRepeatedBuilder struct {
-	rules map[string]string
+	rules map[string]any
 	field ProtoFieldBuilder
 }
 
 func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	return &ProtoRepeatedBuilder{
-		rules: map[string]string{}, field: b,
+		rules: map[string]any{}, field: b,
 	}
 }
 
@@ -319,5 +326,15 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 
 		options = append(options, stringRule.String())
 	}
+
+	for rule, value := range b.rules {
+		options = append(options, fmt.Sprintf("%s = %s", rule, formatRuleValue(value)))
+	}
+
 	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options}, nil
+}
+
+func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
+	b.rules["(buf.validate.field).repeated.unique"] = true
+	return b
 }

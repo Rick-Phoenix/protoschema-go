@@ -14,7 +14,7 @@ type FieldData map[string]*ServiceData
 // Or separate array
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name":  RepeatedField(ProtoString(1).MinLen(2)),
+		"name":  RepeatedField(ProtoString(1).MinLen(2)).Unique(),
 		"name2": ProtoString(2).Required().MinLen(2),
 		"createdAt": ProtoTimestamp(3).Required().CelField(CelFieldOpts{
 			Id:         "test",

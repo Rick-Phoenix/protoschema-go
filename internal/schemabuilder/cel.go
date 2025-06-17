@@ -52,11 +52,8 @@ func GetOptions(optsMap map[string]string, celOpts []CelFieldOpts) []string {
 	flatOpts := []string{}
 	optNames := slices.Collect(maps.Keys(optsMap))
 
-	for i, name := range optNames {
+	for _, name := range optNames {
 		stringOpt := name + " = " + optsMap[name]
-		if i < len(optNames)-1 || len(celOpts) > 0 {
-			stringOpt += ", "
-		}
 
 		flatOpts = append(flatOpts, stringOpt)
 	}
