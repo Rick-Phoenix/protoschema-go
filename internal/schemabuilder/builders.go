@@ -201,31 +201,29 @@ func ProtoBytes(fieldNumber int) *BytesField {
 		self:               bf,
 	}
 	bf.LengthableField = &LengthableField[BytesField]{
-		internal:     internal,
-		self:         bf,
-		optionPrefix: "(buf.validate.field).bytes.",
+		internal: internal,
+		self:     bf,
 	}
 	return bf
 }
 
 type LengthableField[T any] struct {
-	internal     *protoFieldInternal
-	self         *T
-	optionPrefix string
+	internal *protoFieldInternal
+	self     *T
 }
 
 func (l *LengthableField[T]) MinLen(n int) *T {
-	l.internal.options[l.optionPrefix+"min_len"] = strconv.Itoa(n)
+	l.internal.options[l.internal.fieldType+"min_len"] = strconv.Itoa(n)
 	return l.self
 }
 
 func (l *LengthableField[T]) MaxLen(n int) *T {
-	l.internal.options[l.optionPrefix+"max_len"] = strconv.Itoa(n)
+	l.internal.options[l.internal.fieldType+"max_len"] = strconv.Itoa(n)
 	return l.self
 }
 
 func (l *LengthableField[T]) Len(n int) *T {
-	l.internal.options[l.optionPrefix+"len"] = strconv.Itoa(n)
+	l.internal.options[l.internal.fieldType+"len"] = strconv.Itoa(n)
 	return l.self
 }
 
@@ -245,9 +243,8 @@ func ProtoString(fieldNumber int) *StringField {
 		self:               sf,
 	}
 	sf.LengthableField = &LengthableField[StringField]{
-		internal:     internal,
-		self:         sf,
-		optionPrefix: "(buf.validate.field).string.",
+		internal: internal,
+		self:     sf,
 	}
 	return sf
 }
