@@ -15,9 +15,9 @@ message Post {
   string id = 1;
   optional google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).cel = {
-			id: "test"
-			message: "this is a test"
-			expression: "this = test"
+		id: "test"
+		message: "this is a test"
+		expression: "this = test"
 		} 
   ];
 }

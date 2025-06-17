@@ -120,17 +120,17 @@ type LengthableField[T any] struct {
 }
 
 func (l *LengthableField[T]) MinLen(n int) *T {
-	l.internal.options[l.internal.protoType+"min_len"] = strconv.Itoa(n)
+	l.internal.options["(buf.validate.field)."+l.internal.protoType+".min_len"] = strconv.Itoa(n)
 	return l.self
 }
 
 func (l *LengthableField[T]) MaxLen(n int) *T {
-	l.internal.options[l.internal.protoType+"max_len"] = strconv.Itoa(n)
+	l.internal.options["(buf.validate.field)."+l.internal.protoType+".max_len"] = strconv.Itoa(n)
 	return l.self
 }
 
 func (l *LengthableField[T]) Len(n int) *T {
-	l.internal.options[l.internal.protoType+"len"] = strconv.Itoa(n)
+	l.internal.options["(buf.validate.field)."+l.internal.protoType+".len"] = strconv.Itoa(n)
 	return l.self
 }
 
@@ -290,4 +290,23 @@ func InternalType(fieldNr int, name string) *GenericField[any] {
 		self:               gf,
 	}
 	return gf
+}
+
+type ProtoOneOfData struct {
+	Name    string
+	Choices []ProtoFieldData
+	Options []ProtoOption
+}
+
+type ProtoOneOfSchema struct {
+	Name    string
+	Choices ProtoOneOfsMap
+	Options []ProtoOption
+}
+
+type ProtoOneOfsMap map[string]ProtoFieldBuilder
+
+var OneOfRequired = ProtoOption{
+	Name:  "(buf.validate.oneof).required",
+	Value: "true",
 }

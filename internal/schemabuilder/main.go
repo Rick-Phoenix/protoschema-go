@@ -15,14 +15,20 @@ type FieldData map[string]*ServiceData
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":  ProtoString(1).MinLen(2).Required(),
-		"name2": ProtoString(1).Required().MinLen(2),
-		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
+		"name2": ProtoString(2).Required().MinLen(2),
+		"createdAt": ProtoTimestamp(3).Required().CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post": ImportedType(3, "Post", "myapp/v1/Post.proto").Repeated(),
+		"post": ImportedType(4, "Post", "myapp/v1/Post.proto").Repeated(),
 	},
+	OneOfs: []ProtoOneOfSchema{{
+		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{
+			"choice1": ProtoString(5),
+			"choice2": ProtoInt(6),
+		},
+	}},
 }
 
 var PostSchema = ProtoMessageSchema{

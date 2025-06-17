@@ -14,6 +14,7 @@ type MessageOption struct {
 
 type ProtoMessageSchema struct {
 	Fields     ProtoFieldsMap
+	OneOfs     []ProtoOneOfSchema
 	Options    []MessageOption
 	CelOptions []CelFieldOpts
 	Reserved   []int
@@ -21,6 +22,7 @@ type ProtoMessageSchema struct {
 
 type ProtoMessage struct {
 	Fields     []ProtoFieldData
+	OneOfs     []ProtoOneOfData
 	Reserved   []int
 	CelOptions []CelFieldOpts
 	Options    []MessageOption
@@ -39,11 +41,30 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
 		}
 	}
 
+	oneOfs := []ProtoOneOfData{}
+
+	for _, oneof := range s.OneOfs {
+		data := ProtoOneOfData{}
+		data.Name = oneof.Name
+		data.Options = oneof.Options
+
+		for name, field := range oneof.Choices {
+			oneOfField, err := field.Build(name, imports)
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				data.Choices = append(data.Choices, oneOfField)
+			}
+		}
+
+		oneOfs = append(oneOfs, data)
+	}
+
 	if len(errors) > 0 {
 		return ProtoMessage{}, errors
 	}
 
-	return ProtoMessage{Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions}, nil
+	return ProtoMessage{Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions, OneOfs: oneOfs}, nil
 }
 
 func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *ProtoMessageSchema {
