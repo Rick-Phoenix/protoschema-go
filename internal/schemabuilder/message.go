@@ -1,8 +1,10 @@
 package schemabuilder
 
 import (
+	"fmt"
 	"maps"
 	"slices"
+	"strings"
 )
 
 type ProtoFieldsMap map[string]ProtoFieldBuilder
@@ -35,6 +37,9 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
 	for fieldName, fieldBuilder := range s.Fields {
 		field, err := fieldBuilder.Build(fieldName, imports)
 		if err != nil {
+			fieldErrors := strings.Builder{}
+			fieldErrors.WriteString(fmt.Sprintf("Errors for field %s:\n", fieldName))
+			fieldErrors.WriteString(IndentString(err.Error()))
 			errors = append(errors, err)
 		} else {
 			protoFields = append(protoFields, field)

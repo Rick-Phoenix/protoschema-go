@@ -8,6 +8,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -226,4 +227,14 @@ func formatProtoConstValue(val any, protoTypeName string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported Go type %T for %s const validation", val, protoTypeName)
 	}
+}
+
+func formatRuleValue(val any) string {
+	valType := reflect.TypeOf(val).String()
+
+	if valType == "string" {
+		return fmt.Sprintf("%q", val)
+	}
+
+	return fmt.Sprintf("%v", val)
 }

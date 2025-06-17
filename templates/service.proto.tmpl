@@ -55,7 +55,7 @@ message {{ $msgName }} {
   oneof {{ .Name }} {
     {{ range $idx, $field := .Choices -}}
       {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
-    {{- range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{"\n    "}}{{end}}{{ end -}} 
+    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{"\n    "}}{{end}}{{- end -}} 
   ]{{- end -}};
   {{ end -}}
   }

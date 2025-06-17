@@ -14,14 +14,14 @@ type FieldData map[string]*ServiceData
 // Or separate array
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name":  ProtoString(1).MinLen(2).Required(),
+		"name":  RepeatedField(ProtoString(1).MinLen(2)),
 		"name2": ProtoString(2).Required().MinLen(2),
 		"createdAt": ProtoTimestamp(3).Required().CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post": ImportedType(4, "Post", "myapp/v1/Post.proto").Repeated(),
+		"post": ImportedType(4, "Post", "myapp/v1/Post.proto"),
 	},
 	OneOfs: []ProtoOneOfSchema{{
 		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{

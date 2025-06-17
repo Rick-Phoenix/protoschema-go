@@ -20,6 +20,7 @@ type Set map[string]struct{}
 type Errors []error
 
 type ProtoFieldData struct {
+	Rules      map[string]any
 	Options    []string
 	ProtoType  string
 	GoType     string
@@ -33,6 +34,7 @@ type ProtoFieldData struct {
 
 type protoFieldInternal struct {
 	options    map[string]string
+	rules      map[string]any
 	celOptions []CelFieldOpts
 	optional   bool
 	fieldNr    int
@@ -41,7 +43,6 @@ type protoFieldInternal struct {
 	goType     string
 	fieldMask  bool
 	deprecated bool
-	repeated   bool
 	errors     Errors
 	required   bool
 }
@@ -53,9 +54,8 @@ type ProtoFieldBuilder interface {
 func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
 	if len(b.errors) > 0 {
 		fieldErrors := strings.Builder{}
-		fieldErrors.WriteString(fmt.Sprintf("Errors for field %s:\n", fieldName))
 		for _, err := range b.errors {
-			fieldErrors.WriteString(fmt.Sprintf("%s- %s\n", indent, err.Error()))
+			fieldErrors.WriteString(fmt.Sprintf("- %s\n", err.Error()))
 		}
 
 		return ProtoFieldData{}, errors.New(fieldErrors.String())
@@ -66,7 +66,7 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 	options := GetOptions(b.options, b.celOptions)
 
-	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Repeated: b.repeated}, nil
+	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules}, nil
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) IgnoreIfUnpopulated() *BuilderT {
@@ -97,14 +97,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) CelField(o CelFieldOpts) *Builder
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Repeated() *BuilderT {
-	if b.optional {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be repeated and optional."))
-	}
-	b.repeated = true
-	return b.self
-}
-
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
 	if b.optional {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
@@ -121,16 +113,19 @@ type LengthableField[T any] struct {
 
 func (l *LengthableField[T]) MinLen(n int) *T {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".min_len"] = strconv.Itoa(n)
+	l.internal.rules["min_len"] = n
 	return l.self
 }
 
 func (l *LengthableField[T]) MaxLen(n int) *T {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".max_len"] = strconv.Itoa(n)
+	l.internal.rules["max_len"] = n
 	return l.self
 }
 
 func (l *LengthableField[T]) Len(n int) *T {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".len"] = strconv.Itoa(n)
+	l.internal.rules["len"] = n
 	return l.self
 }
 
@@ -140,9 +135,6 @@ type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
-	if b.repeated {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be repeated and optional."))
-	}
 	if b.required {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
 	}
@@ -196,8 +188,9 @@ type StringField struct {
 
 func ProtoString(fieldNumber int) *StringField {
 	imports := make(Set)
+	rules := make(map[string]any)
 	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", imports: imports, options: options}
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", imports: imports, options: options, rules: rules}
 
 	sf := &StringField{}
 	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField, string]{
@@ -290,4 +283,41 @@ func InternalType(fieldNr int, name string) *GenericField[any] {
 		self:               gf,
 	}
 	return gf
+}
+
+type ProtoRepeatedBuilder struct {
+	rules map[string]string
+	field ProtoFieldBuilder
+}
+
+func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
+	return &ProtoRepeatedBuilder{
+		rules: map[string]string{}, field: b,
+	}
+}
+
+func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+	fieldData, err := b.field.Build(fieldName, imports)
+	if fieldData.Optional {
+		err = errors.New(fmt.Sprintf("- A field cannot be optional and repeated.\n%s", err.Error()))
+
+		return ProtoFieldData{}, err
+	}
+
+	options := []string{}
+
+	if len(fieldData.Rules) > 0 {
+
+		stringRule := strings.Builder{}
+		stringRule.WriteString("(buf.validate.field).repeated.items = {\n")
+		stringRule.WriteString(fmt.Sprintf("  %s: {\n", fieldData.ProtoType))
+		for name, value := range fieldData.Rules {
+			stringValue := formatRuleValue(value)
+			stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
+		}
+		stringRule.WriteString("}\n}")
+
+		options = append(options, stringRule.String())
+	}
+	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options}, nil
 }
