@@ -8,9 +8,7 @@ import (
 
 type FieldData map[string]*ServiceData
 
-// Reusable handlers that give the shared functions like len
 // Oneof
-// Make specific builders that have their own methods (embed the generic interface)
 // Add ignore options
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
