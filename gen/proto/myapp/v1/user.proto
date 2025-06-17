@@ -16,15 +16,14 @@ extend google.protobuf.FileOptions {
   optional string testopt = 1;
 }
 
-extend google.protobuf.ServiceOptions {
-  optional string testopt = 1;
-}
-
 extend google.protobuf.MessageOptions {
   optional string testopt = 1;
 }
 
 extend google.protobuf.FieldOptions {
+  optional string testopt = 1;
+}
+extend google.protobuf.OneofOptions {
   optional string testopt = 1;
 }
 
@@ -40,6 +39,7 @@ message User {
   int32 choice2 = 6;
   }
 
+  repeated Post post = 4;
   string name = 1 [
     (buf.validate.field).string.min_len = 2, 
     (buf.validate.field).required = true 
@@ -56,7 +56,6 @@ message User {
 		expression: "this = test"
 		} 
   ];
-  repeated Post post = 4;
 }
 
 

@@ -12,6 +12,7 @@ type OptionExtensions struct {
 	Message []CustomOption
 	Field   []CustomOption
 	File    []CustomOption
+	OneOf   []CustomOption
 }
 
 type MessagesMap map[string]ProtoMessage
@@ -73,7 +74,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		return ProtoService{}, errors.New(messageErrors.String())
 	}
 
-	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field) > 0 {
+	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {
 		imports["google/protobuf/descriptor.proto"] = present
 	}
 
@@ -87,7 +88,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	// 	messages[responseName] = getResponse
 	// }
 
-	fileOutput := path.Join(basePath, resourceName+".proto")
+	fileOutput := path.Join(basePath, strings.ToLower(resourceName)+".proto")
 	out.FileOutput = fileOutput
 	FileLocations[resourceName] = fileOutput
 

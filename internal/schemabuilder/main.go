@@ -82,7 +82,7 @@ var TablesData = ServicesMap{
 			Field:   MyOptions,
 			Message: MyOptions,
 			File:    MyOptions,
-			Service: MyOptions,
+			OneOf:   MyOptions,
 		},
 		FileOptions:    []ProtoOption{{Name: "myoption", Value: "true"}},
 		ServiceOptions: []ProtoOption{{Name: "myoption", Value: "true"}},

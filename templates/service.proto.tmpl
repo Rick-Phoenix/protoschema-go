@@ -34,6 +34,12 @@ extend google.protobuf.FieldOptions {
 }
 {{- end }}
 
+{{- range .OptionExtensions.OneOf }}
+extend google.protobuf.OneofOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{- end }}
+
 {{ range $msgName, $msgData := .Messages }}
 message {{ $msgName }} {
 {{- if $msgData.Reserved}}
