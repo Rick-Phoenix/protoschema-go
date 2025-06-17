@@ -239,11 +239,11 @@ type GenericField[ValueT any] struct {
 	*ProtoFieldExternal[GenericField[ValueT], ValueT]
 }
 
-func MessageType(fieldNr int, name string, importPath *string) *GenericField[any] {
+func MessageType(fieldNr int, name string, importPath string) *GenericField[any] {
 	imports := make(Set)
 	options := make(map[string]string)
-	if importPath != nil {
-		imports[*importPath] = present
+	if importPath != "" {
+		imports[importPath] = present
 	}
 	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: name, goType: "any", imports: imports, options: options, isNonScalar: true}
 

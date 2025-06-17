@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
 )
 
 type ProtoFieldsMap map[string]ProtoFieldBuilder
@@ -37,9 +36,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
 	for fieldName, fieldBuilder := range s.Fields {
 		field, err := fieldBuilder.Build(fieldName, imports)
 		if err != nil {
-			fieldErrors := strings.Builder{}
-			fieldErrors.WriteString(fmt.Sprintf("Errors for field %s:\n", fieldName))
-			fieldErrors.WriteString(IndentString(err.Error()))
+			err := fmt.Errorf("Errors for field %s:\n%s", fieldName, IndentString(err.Error()))
 			errors = append(errors, err)
 		} else {
 			protoFields = append(protoFields, field)
@@ -57,6 +54,15 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
 			oneOfField, err := field.Build(name, imports)
 			if err != nil {
 				errors = append(errors, err)
+			}
+			if oneOfField.Optional {
+				errors = append(errors, fmt.Errorf("Oneof field %q cannot be optional.", name))
+			}
+			if oneOfField.Repeated {
+				errors = append(errors, fmt.Errorf("Oneof field %q cannot be repeated.", name))
+			}
+			if oneOfField.ProtoType == "map" {
+				errors = append(errors, fmt.Errorf("Oneof field %q cannot be a map.", name))
 			} else {
 				data.Choices = append(data.Choices, oneOfField)
 			}

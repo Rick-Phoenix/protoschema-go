@@ -40,24 +40,24 @@ message User {
   }
 
   repeated string name = 1 [
+    (buf.validate.field).repeated.unique = true,
     (buf.validate.field).repeated.items = {
   string: {
     min_len: 2
 }
-},
-    (buf.validate.field).repeated.unique = true 
+} 
   ];
-  optional string name2 = 2 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).required = true 
+  string name2 = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 2 
   ];
-  optional google.protobuf.Timestamp createdAt = 3 [
+  google.protobuf.Timestamp createdAt = 3 [
+    (buf.validate.field).required = true,
     (buf.validate.field).cel = {
 		id: "test"
 		message: "this is a test"
 		expression: "this = test"
-		},
-    (buf.validate.field).required = true 
+		} 
   ];
   Post post = 4;
 }

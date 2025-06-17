@@ -6,7 +6,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
+	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"reflect"
 	"slices"
@@ -175,20 +177,38 @@ func JoinIntSlice(s []int, separator string) string {
 	return out
 }
 
-func IndentString(s string) string {
-	sb := strings.Builder{}
-
-	scanner := bufio.NewScanner(strings.NewReader(s))
-
+func IndentLines(reader io.Reader, writer io.Writer) error {
+	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
-		sb.WriteString(fmt.Sprintf("%s%s\n", indent, line))
-		if err := scanner.Err(); err != nil {
-			fmt.Printf("Error scanning string: %v\n", err)
+		_, err := fmt.Fprintf(writer, "%s%s\n", indent, line)
+		if err != nil {
+			return fmt.Errorf("failed to write indented line: %w", err)
 		}
 	}
+	return scanner.Err()
+}
 
+func IndentString(s string) string {
+	var sb strings.Builder
+	err := IndentLines(strings.NewReader(s), &sb)
+	if err != nil {
+		fmt.Printf("Internal error indenting string: %v\n", err)
+		return s // Fallback to unindented string
+	}
 	return sb.String()
+}
+
+func IndentErrors(errs Errors) error {
+	if len(errs) == 0 {
+		return nil
+	}
+
+	var sb strings.Builder
+	for _, err := range errs {
+		sb.WriteString(fmt.Sprintf("%s%s\n", indent, IndentString(err.Error())))
+	}
+	return errors.New(sb.String())
 }
 
 func formatProtoConstValue(val any, protoTypeName string) (string, error) {
@@ -237,4 +257,8 @@ func formatRuleValue(val any) string {
 	}
 
 	return fmt.Sprintf("%v", val)
+}
+
+func StringPtr(s string) *string {
+	return &s
 }
