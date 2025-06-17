@@ -8,8 +8,8 @@ import (
 
 type FieldData map[string]*ServiceData
 
-// Oneof
-// Add ignore options
+// Oneof should not accept optional or required fields
+// Applying deprecated to services and messages
 // Repeated = true for repeated options
 // Or separate array
 var UserSchema = ProtoMessageSchema{
@@ -21,7 +21,7 @@ var UserSchema = ProtoMessageSchema{
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post": ImportedType(4, "Post", "myapp/v1/Post.proto"),
+		"post": MessageType(4, "Post", "myapp/v1/Post.proto"),
 	},
 	OneOfs: []ProtoOneOfSchema{{
 		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{
@@ -109,7 +109,7 @@ var TablesData = ServicesMap{
 			Response: ProtoMessageSchema{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
-					"user": ImportedType(1, "User", "myapp/v1/User.proto"),
+					"user": MessageType(1, "User", "myapp/v1/User.proto"),
 					"post": InternalType(2, "Post"),
 				},
 			},

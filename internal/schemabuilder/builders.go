@@ -14,37 +14,41 @@ import (
 var present = struct{}{}
 
 const indent = "  "
+const indent2 = "    "
 
 type Set map[string]struct{}
 
 type Errors []error
 
 type ProtoFieldData struct {
-	Rules      map[string]any
-	Options    []string
-	ProtoType  string
-	GoType     string
-	Optional   bool
-	FieldNr    int
-	Name       string
-	Imports    Set
-	Deprecated bool
-	Repeated   bool
-	Required   bool
+	Rules       map[string]any
+	Options     []string
+	ProtoType   string
+	GoType      string
+	Optional    bool
+	FieldNr     int
+	Name        string
+	Imports     Set
+	Deprecated  bool
+	Repeated    bool
+	Required    bool
+	IsNonScalar bool
 }
 
 type protoFieldInternal struct {
-	options    map[string]string
-	rules      map[string]any
-	celOptions []CelFieldOpts
-	optional   bool
-	fieldNr    int
-	imports    Set
-	protoType  string
-	goType     string
-	fieldMask  bool
-	deprecated bool
-	errors     Errors
+	options     map[string]string
+	rules       map[string]any
+	celOptions  []CelFieldOpts
+	optional    bool
+	fieldNr     int
+	imports     Set
+	protoType   string
+	goType      string
+	fieldMask   bool
+	deprecated  bool
+	errors      Errors
+	required    bool
+	isNonScalar bool
 }
 
 type ProtoFieldBuilder interface {
@@ -66,7 +70,7 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 	options := GetOptions(b.options, b.celOptions)
 
-	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules}, nil
+	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar}, nil
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Options(o []ProtoOption) *BuilderT {
@@ -101,6 +105,20 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) CelField(o CelFieldOpts) *Builder
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
 	})
 
+	return b.self
+}
+
+func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
+	if b.optional {
+		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
+	}
+	b.options["(buf.validate.field).required"] = "true"
+	b.required = true
+	return b.self
+}
+
+func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
+	b.optional = true
 	return b.self
 }
 
@@ -221,11 +239,13 @@ type GenericField[ValueT any] struct {
 	*ProtoFieldExternal[GenericField[ValueT], ValueT]
 }
 
-func ImportedType(fieldNr int, name string, importPath string) *GenericField[any] {
+func MessageType(fieldNr int, name string, importPath *string) *GenericField[any] {
 	imports := make(Set)
 	options := make(map[string]string)
-	imports[importPath] = present
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: name, goType: "any", imports: imports, options: options}
+	if importPath != nil {
+		imports[*importPath] = present
+	}
+	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: name, goType: "any", imports: imports, options: options, isNonScalar: true}
 
 	gf := &GenericField[any]{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[any], any]{
@@ -239,7 +259,7 @@ func ProtoTimestamp(fieldNr int) *GenericField[*timestamppb.Timestamp] {
 	imports := make(Set)
 	options := make(map[string]string)
 	imports["google/protobuf/timestamp.proto"] = present
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: imports, options: options}
+	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: imports, options: options, isNonScalar: true}
 
 	gf := &GenericField[*timestamppb.Timestamp]{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[*timestamppb.Timestamp], *timestamppb.Timestamp]{
@@ -253,7 +273,7 @@ func FieldMask(fieldNr int) *GenericField[*fieldmaskpb.FieldMask] {
 	imports := make(Set)
 	options := make(map[string]string)
 	imports["google/protobuf/field_mask.proto"] = present
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.FieldMask", goType: "fieldmask", imports: imports, options: options}
+	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.FieldMask", goType: "fieldmask", imports: imports, options: options, isNonScalar: true}
 
 	gf := &GenericField[*fieldmaskpb.FieldMask]{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[*fieldmaskpb.FieldMask], *fieldmaskpb.FieldMask]{
@@ -263,22 +283,10 @@ func FieldMask(fieldNr int) *GenericField[*fieldmaskpb.FieldMask] {
 	return gf
 }
 
-func InternalType(fieldNr int, name string) *GenericField[any] {
-	imports := make(Set)
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: name, goType: "any", imports: imports, options: options}
-
-	gf := &GenericField[any]{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[any], any]{
-		protoFieldInternal: internal,
-		self:               gf,
-	}
-	return gf
-}
-
 type ProtoRepeatedBuilder struct {
-	rules map[string]any
-	field ProtoFieldBuilder
+	rules  map[string]any
+	field  ProtoFieldBuilder
+	unique bool
 }
 
 func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
@@ -290,25 +298,42 @@ func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldName, imports)
 	if fieldData.Optional {
-		err = errors.New(fmt.Sprintf("- A field cannot be optional and repeated.\n%s", err.Error()))
-
-		return ProtoFieldData{}, err
+		err = fmt.Errorf("- A field cannot be optional and repeated.\n%w", err)
 	}
 
 	options := []string{}
 
-	if len(fieldData.Rules) > 0 {
+	if b.unique {
+		if fieldData.IsNonScalar {
+			err = fmt.Errorf("- Cannot apply contraint 'unique' to a non-scalar repeated field.\n%w", err)
+		}
+		options = append(options, "(buf.validate.field).repeated.unique = true")
+	}
 
+	if err != nil {
+		return ProtoFieldData{}, err
+	}
+
+	if len(fieldData.Rules) > 0 {
+		processedRules := 0
 		stringRule := strings.Builder{}
 		stringRule.WriteString("(buf.validate.field).repeated.items = {\n")
 		stringRule.WriteString(fmt.Sprintf("  %s: {\n", fieldData.ProtoType))
 		for name, value := range fieldData.Rules {
+			if name == "required" {
+				options = append(options, "(buf.validate.field).required = true")
+				continue
+			}
+
 			stringValue := formatRuleValue(value)
 			stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
+			processedRules++
 		}
 		stringRule.WriteString("}\n}")
 
-		options = append(options, stringRule.String())
+		if processedRules > 0 {
+			options = append(options, stringRule.String())
+		}
 	}
 
 	for rule, value := range b.rules {
@@ -319,27 +344,6 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
-	b.rules["(buf.validate.field).repeated.unique"] = true
+	b.unique = true
 	return b
-}
-
-type ProtoOptionalBuilder struct {
-	field ProtoFieldBuilder
-}
-
-func OptionalField(b ProtoFieldBuilder) *ProtoOptionalBuilder {
-	return &ProtoOptionalBuilder{
-		field: b,
-	}
-}
-
-func (b *ProtoOptionalBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	fieldData, err := b.field.Build(fieldName, imports)
-	if fieldData.Required {
-		err = errors.New(fmt.Sprintf("- A field cannot be optional and required.\n%s", err.Error()))
-
-		return ProtoFieldData{}, err
-	}
-
-	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "*" + fieldData.GoType, Optional: true, FieldNr: fieldData.FieldNr, Repeated: fieldData.Repeated, Options: fieldData.Options, Rules: fieldData.Rules, Required: fieldData.Repeated}, nil
 }
