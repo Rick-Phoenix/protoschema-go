@@ -22,18 +22,32 @@ type ProtoFileData struct {
 }
 
 var ProtoTypeMap = map[string]string{
-	"string":    "string",
-	"int64":     "int64",
-	"int32":     "int32",
-	"bool":      "bool",
-	"byte":      "bytes",
-	"byte[]":    "bytes",
-	"uint8":     "bytes",
-	"timestamp": "google.protobuf.Timestamp",
-	"float32":   "float",
-	"float64":   "double",
-	"uint32":    "uint32",
-	"uint64":    "uint64",
+	// Scalar Protobuf Types
+	"string":   "string",
+	"bytes":    "bytes",
+	"bool":     "bool",
+	"float":    "float",
+	"double":   "double",
+	"int32":    "int32",
+	"int64":    "int64",
+	"uint32":   "uint32",
+	"uint64":   "uint64",
+	"sint32":   "sint32",
+	"sint64":   "sint64",
+	"fixed32":  "fixed32",
+	"fixed64":  "fixed64",
+	"sfixed32": "sfixed32",
+	"sfixed64": "sfixed64",
+	// Well-Known Types
+	"google.protobuf.Timestamp": "timestamp",
+	"google.protobuf.Duration":  "duration",
+	"google.protobuf.FieldMask": "field_mask",
+	"google.protobuf.Any":       "any",
+	// Note: For other well-known types (like Struct, Value, Wrappers),
+	// or custom message/enum types, `protovalidate` might use different
+	// rule categories (e.g., `message`, `map`, `repeated`, `wrapper`, `enum`).
+	// If you plan to add `const` validation for enums, you would map
+	// your enum's proto type name (e.g., `com.example.MyEnum`) to "enum".
 }
 
 func Generate(s ProtoService, o Options) error {
