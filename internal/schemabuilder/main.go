@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
 type FieldData map[string]*ServiceData
@@ -22,11 +24,11 @@ var UserSchema = ProtoMessageSchema{
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post": MessageType(4, "Post", "myapp/v1/Post.proto"),
+		"post": MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
 	},
 	OneOfs: []ProtoOneOfSchema{{
 		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{
-			"choice1": ProtoString(5).Optional(),
+			"choice1": ProtoString(5),
 			"choice2": ProtoInt(6),
 		},
 	}},
@@ -93,7 +95,7 @@ var TablesData = ServicesMap{
 			Response: ProtoMessageSchema{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
-					"user": MessageType(1, "User", ""),
+					"user": MessageType[gofirst.User](1, "User"),
 					"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
 						Id:         "test",
 						Message:    "this is a test",
@@ -110,8 +112,8 @@ var TablesData = ServicesMap{
 			Response: ProtoMessageSchema{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
-					"user": MessageType(1, "User", "myapp/v1/User.proto"),
-					"post": MessageType(2, "Post", ""),
+					"user": MessageType[gofirst.User](1, "User", WithImportPath("myapp/v1/Post.proto")),
+					"post": MessageType[gofirst.Post](2, "Post"),
 				},
 			},
 		},

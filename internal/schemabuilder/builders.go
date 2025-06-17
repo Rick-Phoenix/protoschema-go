@@ -173,23 +173,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
 	return b.self
 }
 
-type IntField struct {
-	*ProtoFieldExternal[IntField, int32]
-}
-
-func ProtoInt(fieldNumber int) *IntField {
-	imports := make(Set)
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "int32", goType: "int32", imports: imports, options: options}
-
-	integerField := &IntField{}
-	integerField.ProtoFieldExternal = &ProtoFieldExternal[IntField, int32]{
-		protoFieldInternal: internal,
-		self:               integerField,
-	}
-	return integerField
-}
-
 type StringField struct {
 	*ProtoFieldExternal[StringField, string]
 	*LengthableField[StringField]
@@ -239,22 +222,6 @@ type GenericField[ValueT any] struct {
 	*ProtoFieldExternal[GenericField[ValueT], ValueT]
 }
 
-func MessageType(fieldNr int, name string, importPath string) *GenericField[any] {
-	imports := make(Set)
-	options := make(map[string]string)
-	if importPath != "" {
-		imports[importPath] = present
-	}
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: name, goType: "any", imports: imports, options: options, isNonScalar: true}
-
-	gf := &GenericField[any]{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[any], any]{
-		protoFieldInternal: internal,
-		self:               gf,
-	}
-	return gf
-}
-
 func ProtoTimestamp(fieldNr int) *GenericField[*timestamppb.Timestamp] {
 	imports := make(Set)
 	options := make(map[string]string)
@@ -297,6 +264,7 @@ func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 
 func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldName, imports)
+
 	if fieldData.Optional {
 		err = fmt.Errorf("- A field cannot be optional and repeated.\n%w", err)
 	}
@@ -340,7 +308,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, fmt.Sprintf("%s = %s", rule, formatRuleValue(value)))
 	}
 
-	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options}, nil
+	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
