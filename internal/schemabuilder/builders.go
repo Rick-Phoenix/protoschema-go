@@ -30,6 +30,7 @@ type ProtoFieldData struct {
 	Imports    Set
 	Deprecated bool
 	Repeated   bool
+	Required   bool
 }
 
 type protoFieldInternal struct {
@@ -44,7 +45,6 @@ type protoFieldInternal struct {
 	fieldMask  bool
 	deprecated bool
 	errors     Errors
-	required   bool
 }
 
 type ProtoFieldBuilder interface {
@@ -104,15 +104,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) CelField(o CelFieldOpts) *Builder
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
-	if b.optional {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
-	}
-	b.options["(buf.validate.field).required"] = "true"
-	b.required = true
-	return b.self
-}
-
 type LengthableField[T any] struct {
 	internal *protoFieldInternal
 	self     *T
@@ -141,14 +132,7 @@ type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 	self *BuilderT
 }
 
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
-	if b.required {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
-	}
-	b.optional = true
-	return b.self
-}
-
+// Just for scalars
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
 	formattedVal, err := formatProtoConstValue(val, b.protoType)
 	if err != nil {
@@ -337,4 +321,25 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
 	b.rules["(buf.validate.field).repeated.unique"] = true
 	return b
+}
+
+type ProtoOptionalBuilder struct {
+	field ProtoFieldBuilder
+}
+
+func OptionalField(b ProtoFieldBuilder) *ProtoOptionalBuilder {
+	return &ProtoOptionalBuilder{
+		field: b,
+	}
+}
+
+func (b *ProtoOptionalBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+	fieldData, err := b.field.Build(fieldName, imports)
+	if fieldData.Required {
+		err = errors.New(fmt.Sprintf("- A field cannot be optional and required.\n%s", err.Error()))
+
+		return ProtoFieldData{}, err
+	}
+
+	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "*" + fieldData.GoType, Optional: true, FieldNr: fieldData.FieldNr, Repeated: fieldData.Repeated, Options: fieldData.Options, Rules: fieldData.Rules, Required: fieldData.Repeated}, nil
 }

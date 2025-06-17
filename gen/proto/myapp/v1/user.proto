@@ -1,13 +1,16 @@
 syntax = "proto3";
 
-package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
+package myapp.v1;
+
+
 option myoption = true;
+
 
 extend google.protobuf.FileOptions {
   optional string testopt = 1;
@@ -24,37 +27,45 @@ extend google.protobuf.OneofOptions {
   optional string testopt = 1;
 }
 
+
 message User {
+  
   option myopt = true;
-
+  
   option (buf.validate.oneof).required = true;
-
+  
   oneof myoneof {
     string choice1 = 5;
-    int32 choice2 = 6;
+  int32 choice2 = 6;
   }
 
-  Post post = 4;
   repeated string name = 1 [
     (buf.validate.field).repeated.items = {
-      string: {min_len: 2}
-    },
-    (buf.validate.field).repeated.unique = true
-  ];
-  string name2 = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 2
-  ];
-  google.protobuf.Timestamp createdAt = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).cel = {
-      id: "test"
-      message: "this is a test"
-      expression: "this = test"
-    }
-  ];
+  string: {
+    min_len: 2
 }
+},
+    (buf.validate.field).repeated.unique = true 
+  ];
+  optional string name2 = 2 [
+    (buf.validate.field).string.min_len = 2,
+    (buf.validate.field).required = true 
+  ];
+  optional google.protobuf.Timestamp createdAt = 3 [
+    (buf.validate.field).cel = {
+		id: "test"
+		message: "this is a test"
+		expression: "this = test"
+		},
+    (buf.validate.field).required = true 
+  ];
+  Post post = 4;
+}
+
 
 service UserServiceService {
   option myoption = true;
+
 }
+
+
