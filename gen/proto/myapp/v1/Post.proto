@@ -14,7 +14,6 @@ package myapp.v1;
 message Post {
   string id = 1;
   optional google.protobuf.Timestamp createdAt = 2 [
-    (buf.validate.field).required = true, 
     (buf.validate.field).cel = {
 			id: "test"
 			message: "this is a test"

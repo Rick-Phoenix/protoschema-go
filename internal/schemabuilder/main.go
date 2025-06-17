@@ -14,12 +14,13 @@ type FieldData map[string]*ServiceData
 // Add ignore options
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name": ProtoString(1).MinLen(2),
+		"name":  ProtoString(1).MinLen(2).Required(),
+		"name2": ProtoString(1).Required().MinLen(2),
 		"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
-		}).Optional(),
+		}),
 		"post": ImportedType(3, "Post", "myapp/v1/Post.proto").Repeated(),
 	},
 }
@@ -31,7 +32,7 @@ var PostSchema = ProtoMessageSchema{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
-		}).Optional().Repeated(),
+		}).Optional(),
 	},
 }
 
