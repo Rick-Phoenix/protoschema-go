@@ -291,22 +291,3 @@ func InternalType(fieldNr int, name string) *GenericField[any] {
 	}
 	return gf
 }
-
-type ProtoOneOfData struct {
-	Name    string
-	Choices []ProtoFieldData
-	Options []ProtoOption
-}
-
-type ProtoOneOfSchema struct {
-	Name    string
-	Choices ProtoOneOfsMap
-	Options []ProtoOption
-}
-
-type ProtoOneOfsMap map[string]ProtoFieldBuilder
-
-var OneOfRequired = ProtoOption{
-	Name:  "(buf.validate.oneof).required",
-	Value: "true",
-}

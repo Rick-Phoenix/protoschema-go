@@ -101,3 +101,5 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 
 	return &s
 }
+
+var DisableValidator = MessageOption{Name: "(buf.validate.message).disabled", Value: "true"}
