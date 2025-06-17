@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"path"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -202,10 +201,6 @@ type ProtoFieldBuilder interface {
 	Build(fieldName string, imports Set) (ProtoFieldData, error)
 }
 
-type ProtoFieldExternal struct {
-	*protoFieldInternal
-}
-
 type CelFieldOpts struct {
 	Id, Message, Expression string
 }
@@ -298,7 +293,12 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 	return ProtoFieldData{Name: fieldName, Options: options, FieldType: b.fieldType, Optional: b.optional, FieldNr: b.fieldNr, Repeated: b.repeated}, nil
 }
 
-func (b *ProtoFieldExternal) Optional() *ProtoFieldExternal {
+type ProtoFieldExternal[T any] struct {
+	*protoFieldInternal    // Embed the non-generic internal data structure
+	self                *T // This will hold a reference back to the concrete type (e.g., *StringField)
+}
+
+func (b *ProtoFieldExternal[T]) Optional() *T {
 	if b.repeated {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be repeated and optional."))
 	}
@@ -306,110 +306,123 @@ func (b *ProtoFieldExternal) Optional() *ProtoFieldExternal {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
 	}
 	b.optional = true
-	return b
+	return b.self // Returns the specific type (e.g., *StringField)
 }
 
-func (b *ProtoFieldExternal) IgnoreIfUnpopulated() *ProtoFieldExternal {
+func (b *ProtoFieldExternal[T]) IgnoreIfUnpopulated() *T {
 	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_UNPOPULATED"
-	return b
+	return b.self
 }
 
-func (b *ProtoFieldExternal) IgnoreIfDefaultValue() *ProtoFieldExternal {
-	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_DEFAULT_VALUE"
-	return b
-}
+// ... other common methods will follow this pattern ...
 
-func (b *ProtoFieldExternal) IgnoreAlways() *ProtoFieldExternal {
-	b.options["(buf.validate.field).ignore"] = "IGNORE_ALWAYS"
-	return b
-}
-
-func (b *ProtoFieldExternal) Deprecated() *ProtoFieldExternal {
-	b.options["deprecated"] = "true"
-	return b
-}
-
-func (b *ProtoFieldExternal) CelField(o CelFieldOpts) *ProtoFieldExternal {
-	b.celOptions = append(b.celOptions, CelFieldOpts{
-		Id: o.Id, Expression: o.Expression, Message: o.Message,
-	})
-
-	return b
-}
-
-func (b *ProtoFieldExternal) Repeated() *ProtoFieldExternal {
-	if b.optional {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be repeated and optional."))
-	}
-	b.repeated = true
-	return b
-}
-
-// To refine with proto type and go type
-func (b *ProtoFieldExternal) Const(val any) *ProtoFieldExternal {
-	valType := reflect.TypeOf(val).String()
-	if valType != b.fieldType {
-		err := fmt.Errorf("The type for const does not match.\nField type: %s\nConst type: %s", b.fieldType, valType)
-		b.errors = append(b.errors, err)
-	}
-	return b
-}
-
-func (b *ProtoFieldExternal) Required() *ProtoFieldExternal {
+func (b *ProtoFieldExternal[T]) Required() *T {
 	if b.optional {
 		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
 	}
 	b.options["(buf.validate.field).required"] = "true"
 	b.required = true
+	return b.self
+}
+
+func (b *StringField) MaxLen(l int) *StringField {
+	b.options["len"] = "3"
 	return b
 }
 
-func (b *ProtoFieldExternal) Example(e string) *ProtoFieldExternal {
-	// Make this specific to the single validators
-	b.options["(buf.validate.field).timestamp.example"] = e
+var example = ProtoString(1).Required().MaxLen(4).Len(1)
+var ex2 = ProtoInt(2).Required().NonNegative().Optional()
+var ex3 = ProtoBytes(3).Len(2).Required()
+
+type IntField struct {
+	*ProtoFieldExternal[IntField]
+}
+
+func ProtoInt(fieldNumber int) *IntField {
+	imports := make(Set)
+	options := make(map[string]string)
+	internal := &protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}
+
+	// Create the StringField instance first
+	sf := &IntField{}
+	// Initialize its embedded ProtoFieldExternal, setting 'self' to the StringField instance itself
+	sf.ProtoFieldExternal = &ProtoFieldExternal[IntField]{
+		protoFieldInternal: internal,
+		self:               sf,
+	}
+	return sf
+}
+
+func (b *IntField) NonNegative() *IntField {
+	b.options["negative"] = "false"
 	return b
 }
 
-func ProtoTimestamp(fieldNr int) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	imports["google/protobuf/timestamp.proto"] = present
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "google.protobuf.Timestamp", imports: imports, options: options}}
+type LengthableField[T any] struct {
+	internal     *protoFieldInternal // Reference to the shared internal data
+	self         *T                  // Reference back to the concrete type (e.g., *StringField)
+	optionPrefix string              // e.g., "(buf.validate.field).string." or "(buf.validate.field).bytes."
 }
 
-func FieldMask(fieldNr int) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	imports["google/protobuf/field_mask.proto"] = present
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: "fieldmask", imports: imports, options: options}}
+func (l *LengthableField[T]) MinLen(n int) *T {
+	l.internal.options[l.optionPrefix+"min_len"] = strconv.Itoa(n)
+	return l.self
 }
 
-func ImportedType(fieldNr int, name string, importPath string) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	imports[importPath] = present
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
+func (l *LengthableField[T]) MaxLen(n int) *T {
+	l.internal.options[l.optionPrefix+"max_len"] = strconv.Itoa(n)
+	return l.self
 }
 
-func InternalType(fieldNr int, name string) *ProtoFieldExternal {
-	imports := make(Set)
-	options := make(map[string]string)
-	return &ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNr, fieldType: name, imports: imports, options: options}}
+func (l *LengthableField[T]) Len(n int) *T {
+	l.internal.options[l.optionPrefix+"len"] = strconv.Itoa(n)
+	return l.self
 }
-
-type FieldWithLength struct{}
 
 type StringField struct {
-	*ProtoFieldExternal
-}
-
-func (b *StringField) MinLen(n int) *StringField {
-	b.options["(buf.validate.field).string.min_len"] = strconv.Itoa(n)
-	return b
+	*ProtoFieldExternal[StringField]
+	*LengthableField[StringField] // Embed the new LengthableField
 }
 
 func ProtoString(fieldNumber int) *StringField {
 	imports := make(Set)
 	options := make(map[string]string)
-	return &StringField{&ProtoFieldExternal{&protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}}}
+	internal := &protoFieldInternal{fieldNr: fieldNumber, fieldType: "string", imports: imports, options: options}
+
+	sf := &StringField{}
+	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField]{
+		protoFieldInternal: internal,
+		self:               sf,
+	}
+	// Initialize LengthableField, passing the shared internal data and the specific option prefix
+	sf.LengthableField = &LengthableField[StringField]{
+		internal:     internal,
+		self:         sf,
+		optionPrefix: "(buf.validate.field).string.",
+	}
+	return sf
+}
+
+// Example for a hypothetical BytesField
+type BytesField struct {
+	*ProtoFieldExternal[BytesField]
+	*LengthableField[BytesField]
+}
+
+func ProtoBytes(fieldNumber int) *BytesField {
+	imports := make(Set)
+	options := make(map[string]string)
+	internal := &protoFieldInternal{fieldNr: fieldNumber, fieldType: "bytes", imports: imports, options: options}
+
+	bf := &BytesField{}
+	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField]{
+		protoFieldInternal: internal,
+		self:               bf,
+	}
+	bf.LengthableField = &LengthableField[BytesField]{
+		internal:     internal,
+		self:         bf,
+		optionPrefix: "(buf.validate.field).bytes.",
+	}
+	return bf
 }
