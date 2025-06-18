@@ -18,23 +18,30 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Const(val ValueT) *Builde
 		return b.self
 	}
 
-	// For duration and timestam pthis should not be the entire name but only the last part
-	b.internal.options[fmt.Sprintf("(buf.validate.field).%s.const", b.internal.protoType)] = formattedVal
+	fieldName := b.internal.protoType
+	switch b.internal.protoType {
+	case "google.protobuf.Duration":
+		fieldName = "duration"
+	}
+
+	b.internal.options[fmt.Sprintf("(buf.validate.field).%s.const", fieldName)] = formattedVal
 	return b.self
 }
 
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
-	if b.internal.protoType == "any" {
-		b.internal.errors = append(b.internal.errors, fmt.Errorf("Method 'Example()' is not supposed for google.protobuf.Any."))
-	}
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.internal.errors = append(b.internal.errors, err)
 		return b.self
 	}
 
-	// Make this repeatable
-	b.internal.repeatedOptions = append(b.internal.repeatedOptions, fmt.Sprintf("(buf.validate.field).%s.example = %s", b.internal.protoType, formattedVal))
+	fieldName := b.internal.protoType
+	switch b.internal.protoType {
+	case "google.protobuf.Duration":
+		fieldName = "duration"
+	}
+
+	b.internal.options[fmt.Sprintf("(buf.validate.field).%s.example", fieldName)] = formattedVal
 	return b.self
 }
 

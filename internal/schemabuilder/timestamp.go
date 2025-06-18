@@ -101,3 +101,19 @@ func (tf *TimestampField) GtNow() *TimestampField {
 	tf.hasGtOrGte = true
 	return tf.self
 }
+
+func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
+	if val == nil {
+		tf.errors = append(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
+	}
+	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.example = { seconds: %d }", val.GetSeconds()))
+	return tf.self
+}
+
+func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
+	if val == nil {
+		tf.errors = append(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
+	}
+	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.const = { seconds: %d }", val.GetSeconds()))
+	return tf.self
+}
