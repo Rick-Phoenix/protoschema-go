@@ -8,6 +8,8 @@ import (
 
 type AnyField struct {
 	*ProtoFieldExternal[AnyField, any]
+	in    string
+	notIn string
 }
 
 func ProtoAny(fieldNr uint) *AnyField {
@@ -24,8 +26,7 @@ func (af *AnyField) In(values ...string) *AnyField {
 	if err != nil {
 		af.errors = append(af.errors, err)
 	}
-	// Requires separate parsing
-	af.options["in"] = list
+	af.in = list
 	return af.self
 }
 
@@ -34,7 +35,7 @@ func (af *AnyField) NotIn(values ...string) *AnyField {
 	if err != nil {
 		af.errors = append(af.errors, err)
 	}
-	af.options["not_in"] = list
+	af.notIn = list
 	return af.self
 }
 
@@ -53,6 +54,21 @@ func (af *AnyField) Build(fieldName string, imports Set) (ProtoFieldData, error)
 	imports["google/protobuf/any.proto"] = present
 
 	options := GetOptions(af.options, af.repeatedOptions)
+
+	if af.in != "" || af.notIn != "" {
+		var sb strings.Builder
+		sb.WriteString("{\n")
+		if af.in != "" {
+			sb.WriteString(fmt.Sprintf("in: %s\n", af.in))
+		}
+
+		if af.notIn != "" {
+			sb.WriteString(fmt.Sprintf("not_in: %s\n", af.notIn))
+		}
+		sb.WriteString("}")
+
+		options = append(options, sb.String())
+	}
 
 	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: af.protoType, GoType: af.goType, Optional: af.optional, FieldNr: af.fieldNr, Rules: af.rules, IsNonScalar: af.isNonScalar}, nil
 }
