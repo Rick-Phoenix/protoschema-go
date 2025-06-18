@@ -23,31 +23,25 @@ type ProtoFileData struct {
 
 var ProtoTypeMap = map[string]string{
 	// Scalar Protobuf Types
-	"string":   "string",
-	"bytes":    "bytes",
-	"bool":     "bool",
-	"float":    "float",
-	"double":   "double",
-	"int32":    "int32",
-	"int64":    "int64",
-	"uint32":   "uint32",
-	"uint64":   "uint64",
-	"sint32":   "sint32",
-	"sint64":   "sint64",
-	"fixed32":  "fixed32",
-	"fixed64":  "fixed64",
-	"sfixed32": "sfixed32",
-	"sfixed64": "sfixed64",
-	// Well-Known Types
-	"google.protobuf.Timestamp": "timestamp",
-	"google.protobuf.Duration":  "duration",
+	"string":                    "string",
+	"bytes":                     "[]byte",
+	"bool":                      "bool",
+	"float":                     "float32",
+	"double":                    "float64",
+	"int32":                     "int32",
+	"int64":                     "int64",
+	"uint32":                    "uint32",
+	"uint64":                    "uint64",
+	"sint32":                    "int32",
+	"sint64":                    "int64",
+	"fixed32":                   "uint32",
+	"fixed64":                   "uint64",
+	"sfixed32":                  "int32",
+	"sfixed64":                  "int64",
+	"google.protobuf.Timestamp": "timestamppb.Timestamp",
+	"google.protobuf.Duration":  "durationpb.Duration",
 	"google.protobuf.FieldMask": "field_mask",
 	"google.protobuf.Any":       "any",
-	// Note: For other well-known types (like Struct, Value, Wrappers),
-	// or custom message/enum types, `protovalidate` might use different
-	// rule categories (e.g., `message`, `map`, `repeated`, `wrapper`, `enum`).
-	// If you plan to add `const` validation for enums, you would map
-	// your enum's proto type name (e.g., `com.example.MyEnum`) to "enum".
 }
 
 func Generate(s ProtoService, o Options) error {

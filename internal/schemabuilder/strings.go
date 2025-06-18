@@ -7,16 +7,16 @@ import (
 
 type StringField struct {
 	*ProtoFieldExternal[StringField, string]
-	*ByteOrStringField[StringField]
+	*ByteOrStringField[StringField, string]
 }
 
-type ByteOrStringField[T any] struct {
+type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	internal         *protoFieldInternal
-	self             *T
+	self             *BuilderT
 	hasWellKnownRule bool
 }
 
-func (b *ByteOrStringField[T]) setWellKnownRule(ruleName string, ruleValue any) {
+func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
 	if b.hasWellKnownRule {
 		b.internal.errors = append(b.internal.errors, fmt.Errorf("A string field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
 		return
@@ -25,52 +25,62 @@ func (b *ByteOrStringField[T]) setWellKnownRule(ruleName string, ruleValue any) 
 	b.hasWellKnownRule = true
 }
 
-func (b *ByteOrStringField[T]) Prefix(s string) *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s string) *BuilderT {
 	b.internal.rules["prefix"] = s
 	return b.self
 }
-func (b *ByteOrStringField[T]) Suffix(s string) *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s string) *BuilderT {
 	b.internal.rules["suffix"] = s
 	return b.self
 }
-func (b *ByteOrStringField[T]) Contains(s string) *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Contains(s string) *BuilderT {
 	b.internal.rules["contains"] = s
 	return b.self
 }
 
-func (b *ByteOrStringField[T]) Ip() *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Ip() *BuilderT {
 	b.setWellKnownRule("ip", true)
 	return b.self
 }
-func (b *ByteOrStringField[T]) Ipv4() *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Ipv4() *BuilderT {
 	b.setWellKnownRule("ipv4", true)
 	return b.self
 }
-func (b *ByteOrStringField[T]) Ipv6() *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Ipv6() *BuilderT {
 	b.setWellKnownRule("ipv6", true)
 	return b.self
 }
 
-func (l *ByteOrStringField[T]) MinLen(n int) *T {
+func (l *ByteOrStringField[BuilderT, ValueT]) MinLen(n int) *BuilderT {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".min_len"] = strconv.Itoa(n)
 	l.internal.rules["min_len"] = n
 	return l.self
 }
 
-func (l *ByteOrStringField[T]) MaxLen(n int) *T {
+func (l *ByteOrStringField[BuilderT, ValueT]) MaxLen(n int) *BuilderT {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".max_len"] = strconv.Itoa(n)
 	l.internal.rules["max_len"] = n
 	return l.self
 }
 
-func (l *ByteOrStringField[T]) Len(n int) *T {
+func (l *ByteOrStringField[BuilderT, ValueT]) Len(n int) *BuilderT {
 	l.internal.options["(buf.validate.field)."+l.internal.protoType+".len"] = strconv.Itoa(n)
 	l.internal.rules["len"] = n
 	return l.self
 }
 
-func (b *ByteOrStringField[T]) Pattern(regex string) *T {
+func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	b.internal.rules["pattern"] = regex
+	return b.self
+}
+
+// Must be properly formatted for a list
+func (b *ByteOrStringField[BuilderT, ValueT]) In(values ...string) *BuilderT {
+	b.internal.rules["in"] = values
+	return b.self
+}
+func (b *ByteOrStringField[BuilderT, ValueT]) NotIn(values ...string) *BuilderT {
+	b.internal.rules["not_in"] = values
 	return b.self
 }
 
@@ -85,7 +95,7 @@ func ProtoString(fieldNumber int) *StringField {
 		protoFieldInternal: internal,
 		self:               sf,
 	}
-	sf.ByteOrStringField = &ByteOrStringField[StringField]{
+	sf.ByteOrStringField = &ByteOrStringField[StringField, string]{
 		internal: internal,
 		self:     sf,
 	}
@@ -94,20 +104,20 @@ func ProtoString(fieldNumber int) *StringField {
 
 type BytesField struct {
 	*ProtoFieldExternal[BytesField, []byte]
-	*ByteOrStringField[BytesField]
+	*ByteOrStringField[BytesField, []byte]
 }
 
 func ProtoBytes(fieldNumber int) *BytesField {
 	imports := make(Set)
 	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "byte[]", imports: imports, options: options}
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", imports: imports, options: options}
 
 	bf := &BytesField{}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
 		protoFieldInternal: internal,
 		self:               bf,
 	}
-	bf.ByteOrStringField = &ByteOrStringField[BytesField]{
+	bf.ByteOrStringField = &ByteOrStringField[BytesField, []byte]{
 		internal: internal,
 		self:     bf,
 	}
@@ -130,15 +140,6 @@ func (b *StringField) MaxBytes(n int) *StringField {
 
 func (b *StringField) NotContains(s string) *StringField {
 	b.internal.rules["not_contains"] = s
-	return b
-}
-
-func (b *StringField) In(values ...string) *StringField {
-	b.internal.rules["in"] = values
-	return b
-}
-func (b *StringField) NotIn(values ...string) *StringField {
-	b.internal.rules["not_in"] = values
 	return b
 }
 
@@ -171,27 +172,27 @@ func (b *StringField) TUUID() *StringField {
 	b.setWellKnownRule("tuuid", true)
 	return b
 }
-func (b *StringField) IpWithPrefixLen() *StringField {
+func (b *StringField) IpWithMask() *StringField {
 	b.setWellKnownRule("ip_with_prefixlen", true)
 	return b
 }
-func (b *StringField) Ipv4WithPrefixLen() *StringField {
+func (b *StringField) Ipv4WithMask() *StringField {
 	b.setWellKnownRule("ipv4_with_prefixlen", true)
 	return b
 }
-func (b *StringField) Ipv6WithPrefixLen() *StringField {
+func (b *StringField) Ipv6WithMask() *StringField {
 	b.setWellKnownRule("ipv6_with_prefixlen", true)
 	return b
 }
-func (b *StringField) IpRange() *StringField {
+func (b *StringField) IpPrefix() *StringField {
 	b.setWellKnownRule("ip_prefix", true)
 	return b
 }
-func (b *StringField) Ipv4Range() *StringField {
+func (b *StringField) Ipv4Prefix() *StringField {
 	b.setWellKnownRule("ipv4_prefix", true)
 	return b
 }
-func (b *StringField) Ipv6Range() *StringField {
+func (b *StringField) Ipv6Prefix() *StringField {
 	b.setWellKnownRule("ipv6_prefix", true)
 	return b
 }
