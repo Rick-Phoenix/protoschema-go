@@ -91,6 +91,7 @@ func (tf *DurationField) In(values ...string) *DurationField {
 	tf.rules["in"] = list
 	return tf.self
 }
+
 func (tf *DurationField) NotIn(values ...string) *DurationField {
 	for _, v := range values {
 		err := ValidateDurationString(v)

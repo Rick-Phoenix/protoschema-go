@@ -12,6 +12,7 @@ type ProtoMapBuilder struct {
 	maxPairs uint
 }
 
+// Add cel and ignore options to this and others not implementing external
 func ProtoMap(fieldNr uint, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
 	return &ProtoMapBuilder{
 		keys: keys, values: values,

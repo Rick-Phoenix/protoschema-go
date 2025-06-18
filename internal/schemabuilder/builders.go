@@ -126,6 +126,9 @@ type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
+	if b.protoType == "any" {
+		b.errors = append(b.errors, fmt.Errorf("Method 'Const()' is not supposed for google.protobuf.Any."))
+	}
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.errors = append(b.errors, err)
@@ -138,6 +141,9 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
+	if b.protoType == "any" {
+		b.errors = append(b.errors, fmt.Errorf("Method 'Example()' is not supposed for google.protobuf.Any."))
+	}
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.errors = append(b.errors, err)
