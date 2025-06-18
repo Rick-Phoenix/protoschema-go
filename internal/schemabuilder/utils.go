@@ -302,3 +302,13 @@ func ValidateDurationString(durationStr string) error {
 	}
 	return nil
 }
+
+func SliceIntersects[T comparable](s1 []T, s2 []T) bool {
+	for _, v := range s1 {
+		if slices.Contains(s2, v) {
+			return true
+		}
+	}
+
+	return false
+}

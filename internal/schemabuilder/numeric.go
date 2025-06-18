@@ -70,24 +70,6 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	return nf.self
 }
 
-func (nf *NumericField[BuilderT, ValueT]) In(vals ...ValueT) *BuilderT {
-	list, err := formatProtoList(vals)
-	if err != nil {
-		nf.errors = append(nf.errors, err)
-	}
-	nf.rules["in"] = list
-	return nf.self
-}
-
-func (nf *NumericField[BuilderT, ValueT]) NotIn(vals ...ValueT) *BuilderT {
-	list, err := formatProtoList(vals)
-	if err != nil {
-		nf.errors = append(nf.errors, err)
-	}
-	nf.rules["not_in"] = list
-	return nf.self
-}
-
 func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	if !nf.isFloatType {
 		nf.errors = append(nf.errors, fmt.Errorf("'finite' rule is only applicable to float and double types."))

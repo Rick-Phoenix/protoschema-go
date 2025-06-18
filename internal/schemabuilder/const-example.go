@@ -2,7 +2,6 @@ package schemabuilder
 
 import (
 	"fmt"
-	"slices"
 )
 
 type FieldWithConst[BuilderT, ValueT any, SingleValT comparable] struct {
@@ -39,16 +38,6 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Example(val ValueT) *Buil
 	return b.self
 }
 
-func SliceIntersects[T comparable](s1 []T, s2 []T) bool {
-	for _, v := range s1 {
-		if slices.Contains(s2, v) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *BuilderT {
 	if len(b.notIn) > 0 {
 		overlaps := SliceIntersects(vals, b.notIn)
@@ -66,6 +55,13 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *B
 }
 
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT) *BuilderT {
+	if len(b.in) > 0 {
+		overlaps := SliceIntersects(vals, b.notIn)
+
+		if overlaps {
+			b.internal.errors = append(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
+		}
+	}
 	list, err := formatProtoList(vals)
 	if err != nil {
 		b.internal.errors = append(b.internal.errors, err)
