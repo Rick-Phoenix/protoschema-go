@@ -14,6 +14,7 @@ type FieldData map[string]*ServiceData
 // Applying deprecated to services and messages
 // Repeated = true for repeated options
 // Or separate array
+// Enums
 // (buf.validate.message).oneof
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
