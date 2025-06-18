@@ -69,50 +69,6 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar}, nil
 }
 
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Options(o []ProtoOption) *BuilderT {
-	for _, op := range o {
-		b.options[op.Name] = op.Value
-	}
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) IgnoreIfUnpopulated() *BuilderT {
-	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_UNPOPULATED"
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) IgnoreIfDefaultValue() *BuilderT {
-	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_DEFAULT_VALUE"
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) IgnoreAlways() *BuilderT {
-	b.options["(buf.validate.field).ignore"] = "IGNORE_ALWAYS"
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Deprecated() *BuilderT {
-	b.options["deprecated"] = "true"
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) CelOption(o CelFieldOpts) *BuilderT {
-	b.repeatedOptions = append(b.repeatedOptions, GetCelOption(CelFieldOpts{
-		Id: o.Id, Expression: o.Expression, Message: o.Message,
-	}))
-
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
-	if b.optional {
-		b.errors = append(b.errors, fmt.Errorf("A field cannot be required and optional."))
-	}
-	b.options["(buf.validate.field).required"] = "true"
-	b.required = true
-	return b.self
-}
-
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
 	b.optional = true
 	return b.self
@@ -121,36 +77,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
 type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 	*protoFieldInternal
 	self *BuilderT
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
-	if b.protoType == "any" {
-		b.errors = append(b.errors, fmt.Errorf("Method 'Const()' is not supposed for google.protobuf.Any."))
-	}
-	formattedVal, err := formatProtoValue(val)
-	if err != nil {
-		b.errors = append(b.errors, err)
-		return b.self
-	}
-
-	// For duration and timestam pthis should not be the entire name but only the last part
-	b.options[fmt.Sprintf("(buf.validate.field).%s.const", b.protoType)] = formattedVal
-	return b.self
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
-	if b.protoType == "any" {
-		b.errors = append(b.errors, fmt.Errorf("Method 'Example()' is not supposed for google.protobuf.Any."))
-	}
-	formattedVal, err := formatProtoValue(val)
-	if err != nil {
-		b.errors = append(b.errors, err)
-		return b.self
-	}
-
-	// Make this repeatable
-	b.repeatedOptions = append(b.repeatedOptions, fmt.Sprintf("(buf.validate.field).%s.example = %s", b.protoType, formattedVal))
-	return b.self
 }
 
 type GenericField[ValueT any] struct {
