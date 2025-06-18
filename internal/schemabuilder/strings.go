@@ -25,16 +25,28 @@ func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, 
 	b.hasWellKnownRule = true
 }
 
-func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s string) *BuilderT {
-	b.internal.rules["prefix"] = s
+func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s ValueT) *BuilderT {
+	protoVal, err := formatProtoValue(s)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["prefix"] = protoVal
 	return b.self
 }
-func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s string) *BuilderT {
-	b.internal.rules["suffix"] = s
+func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s ValueT) *BuilderT {
+	protoVal, err := formatProtoValue(s)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["suffix"] = protoVal
 	return b.self
 }
-func (b *ByteOrStringField[BuilderT, ValueT]) Contains(s string) *BuilderT {
-	b.internal.rules["contains"] = s
+func (b *ByteOrStringField[BuilderT, ValueT]) Contains(s ValueT) *BuilderT {
+	protoVal, err := formatProtoValue(s)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["contains"] = protoVal
 	return b.self
 }
 
@@ -74,13 +86,12 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	return b.self
 }
 
-// Must be properly formatted for a list
 func (b *ByteOrStringField[BuilderT, ValueT]) In(values ...string) *BuilderT {
-	b.internal.rules["in"] = values
+	b.internal.rules["in"] = formatProtoList(values)
 	return b.self
 }
 func (b *ByteOrStringField[BuilderT, ValueT]) NotIn(values ...string) *BuilderT {
-	b.internal.rules["not_in"] = values
+	b.internal.rules["not_in"] = formatProtoList(values)
 	return b.self
 }
 

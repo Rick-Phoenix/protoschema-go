@@ -210,7 +210,7 @@ func IndentErrors(errs Errors) error {
 	return errors.New(sb.String())
 }
 
-func formatProtoValue(value interface{}) (string, error) {
+func formatProtoValue(value any) (string, error) {
 	if value == nil {
 		return "", nil
 	}
@@ -247,4 +247,16 @@ func formatBytesAsProtoLiteral(b []byte) string {
 	}
 	buf.WriteByte('"')
 	return buf.String()
+}
+
+func formatProtoList[T any](l []T) string {
+	var sb strings.Builder
+	sb.WriteString("[")
+	for _, v := range l {
+		protoVal, _ := formatProtoValue(v)
+		sb.WriteString(fmt.Sprintf("%s, ", protoVal))
+	}
+	sb.WriteString("]")
+
+	return sb.String()
 }
