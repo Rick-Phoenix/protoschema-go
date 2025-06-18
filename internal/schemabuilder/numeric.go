@@ -5,8 +5,8 @@ import (
 )
 
 type Number interface {
-	int | int8 | int16 | int32 | int64 |
-		uint | uint8 | uint16 | uint32 | uint64 |
+	uint | int8 | int16 | int32 | int64 |
+		uint8 | uint16 | uint32 | uint64 |
 		float32 | float64
 }
 
@@ -30,6 +30,7 @@ func newNumericField[BuilderT any, ValueT any](pfi *protoFieldInternal, self *Bu
 
 func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
+		// Check if larger than gt
 		nf.errors = append(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
 	}
 	nf.rules["lt"] = val
@@ -95,7 +96,7 @@ type IntField struct {
 	*NumericField[IntField, int32]
 }
 
-func ProtoInt32(fieldNumber int) *IntField {
+func ProtoInt32(fieldNumber uint) *IntField {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -123,7 +124,7 @@ type FloatField struct {
 	*NumericField[FloatField, float32]
 }
 
-func ProtoFloat(fieldNumber int) *FloatField {
+func ProtoFloat(fieldNumber uint) *FloatField {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -151,7 +152,7 @@ type DoubleField struct {
 	*NumericField[DoubleField, float64]
 }
 
-func ProtoDouble(fieldNumber int) *DoubleField {
+func ProtoDouble(fieldNumber uint) *DoubleField {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -179,7 +180,7 @@ type Int64Field struct {
 	*NumericField[Int64Field, int64]
 }
 
-func ProtoInt64(fieldNumber int) *Int64Field {
+func ProtoInt64(fieldNumber uint) *Int64Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -207,7 +208,7 @@ type UInt32Field struct {
 	*NumericField[UInt32Field, uint32]
 }
 
-func ProtoUInt32(fieldNumber int) *UInt32Field {
+func ProtoUInt32(fieldNumber uint) *UInt32Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -235,7 +236,7 @@ type UInt64Field struct {
 	*NumericField[UInt64Field, uint64]
 }
 
-func ProtoUInt64(fieldNumber int) *UInt64Field {
+func ProtoUInt64(fieldNumber uint) *UInt64Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -263,7 +264,7 @@ type SInt32Field struct {
 	*NumericField[SInt32Field, int32]
 }
 
-func ProtoSInt32(fieldNumber int) *SInt32Field {
+func ProtoSInt32(fieldNumber uint) *SInt32Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -291,7 +292,7 @@ type SInt64Field struct {
 	*NumericField[SInt64Field, int64]
 }
 
-func ProtoSInt64(fieldNumber int) *SInt64Field {
+func ProtoSInt64(fieldNumber uint) *SInt64Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -319,7 +320,7 @@ type Fixed32Field struct {
 	*NumericField[Fixed32Field, uint32]
 }
 
-func ProtoFixed32(fieldNumber int) *Fixed32Field {
+func ProtoFixed32(fieldNumber uint) *Fixed32Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -347,7 +348,7 @@ type Fixed64Field struct {
 	*NumericField[Fixed64Field, uint64]
 }
 
-func ProtoFixed64(fieldNumber int) *Fixed64Field {
+func ProtoFixed64(fieldNumber uint) *Fixed64Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -375,7 +376,7 @@ type SFixed32Field struct {
 	*NumericField[SFixed32Field, int32]
 }
 
-func ProtoSFixed32(fieldNumber int) *SFixed32Field {
+func ProtoSFixed32(fieldNumber uint) *SFixed32Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
@@ -403,7 +404,7 @@ type SFixed64Field struct {
 	*NumericField[SFixed64Field, int64]
 }
 
-func ProtoSFixed64(fieldNumber int) *SFixed64Field {
+func ProtoSFixed64(fieldNumber uint) *SFixed64Field {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)

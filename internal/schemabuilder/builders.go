@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var present = struct{}{}
@@ -25,7 +24,7 @@ type ProtoFieldData struct {
 	ProtoType   string
 	GoType      string
 	Optional    bool
-	FieldNr     int
+	FieldNr     uint
 	Name        string
 	Imports     Set
 	Deprecated  bool
@@ -39,7 +38,7 @@ type protoFieldInternal struct {
 	rules           map[string]any
 	repeatedOptions []string
 	optional        bool
-	fieldNr         int
+	fieldNr         uint
 	imports         Set
 	protoType       string
 	goType          string
@@ -154,21 +153,7 @@ type GenericField[ValueT any] struct {
 	*ProtoFieldExternal[GenericField[ValueT], ValueT]
 }
 
-func ProtoTimestamp(fieldNr int) *GenericField[*timestamppb.Timestamp] {
-	imports := make(Set)
-	options := make(map[string]string)
-	imports["google/protobuf/timestamp.proto"] = present
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: imports, options: options, isNonScalar: true}
-
-	gf := &GenericField[*timestamppb.Timestamp]{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[*timestamppb.Timestamp], *timestamppb.Timestamp]{
-		protoFieldInternal: internal,
-		self:               gf,
-	}
-	return gf
-}
-
-func FieldMask(fieldNr int) *GenericField[*fieldmaskpb.FieldMask] {
+func FieldMask(fieldNr uint) *GenericField[*fieldmaskpb.FieldMask] {
 	imports := make(Set)
 	options := make(map[string]string)
 	imports["google/protobuf/field_mask.proto"] = present

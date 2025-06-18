@@ -15,6 +15,8 @@ type FieldData map[string]*ServiceData
 // Repeated = true for repeated options
 // Or separate array
 // Enums
+// Remove all other rules with const (or make separate builder directly)
+// Handling rules from message side
 // (buf.validate.message).oneof
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{

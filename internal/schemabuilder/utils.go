@@ -230,9 +230,9 @@ func formatProtoValue(value any) (string, error) {
 		return fmt.Sprintf("%v", v), nil
 	case bool:
 		return fmt.Sprintf("%t", v), nil
-	case durationpb.Duration:
+	case *durationpb.Duration:
 		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
-	case timestamppb.Timestamp:
+	case *timestamppb.Timestamp:
 		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
 	default:
 		return "", fmt.Errorf("unsupported type for Protobuf literal formatting: %v", reflect.TypeOf(value))
@@ -272,4 +272,24 @@ func formatProtoList[T any](l []T) (string, error) {
 	sb.WriteString("]")
 
 	return sb.String(), nil
+}
+
+func formatProtoDict(d map[string]any) (string, error) {
+	if len(d) == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString("{\n")
+	for k, v := range d {
+		protoV, err := formatProtoValue(v)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(fmt.Sprintf("%s: %s\n", k, protoV))
+	}
+	sb.WriteString("}")
+
+	return sb.String(), nil
+
 }
