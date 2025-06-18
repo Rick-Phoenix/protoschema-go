@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -292,4 +293,12 @@ func formatProtoDict(d map[string]any) (string, error) {
 
 	return sb.String(), nil
 
+}
+
+func ValidateDurationString(durationStr string) error {
+	_, err := time.ParseDuration(durationStr)
+	if err != nil {
+		return fmt.Errorf("Invalid duration format '%s': %w", durationStr, err)
+	}
+	return nil
 }
