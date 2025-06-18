@@ -6,7 +6,6 @@ import (
 )
 
 type ProtoRepeatedBuilder struct {
-	rules    map[string]any
 	field    ProtoFieldBuilder
 	unique   bool
 	minItems uint
@@ -15,7 +14,7 @@ type ProtoRepeatedBuilder struct {
 
 func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	return &ProtoRepeatedBuilder{
-		rules: map[string]any{}, field: b,
+		field: b,
 	}
 }
 
@@ -59,7 +58,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		stringRule.WriteString(fmt.Sprintf("  %s: {\n", fieldData.ProtoType))
 		for name, value := range fieldData.Rules {
 			if name == "required" {
-				options = append(options, "(buf.validate.field).required = true")
+				fmt.Printf("Ignoring 'required' for repeated type %s...", fieldName)
 				continue
 			}
 
@@ -75,15 +74,6 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 
 		if processedRules > 0 {
 			options = append(options, stringRule.String())
-		}
-	}
-
-	for rule, value := range b.rules {
-		stringValue, fmtErr := formatProtoValue(value)
-		if fmtErr != nil {
-			err = fmt.Errorf("- %s\n%w", fmtErr, err)
-		} else {
-			options = append(options, fmt.Sprintf("%s = %s", rule, stringValue))
 		}
 	}
 
