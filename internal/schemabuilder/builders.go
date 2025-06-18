@@ -35,19 +35,19 @@ type ProtoFieldData struct {
 }
 
 type protoFieldInternal struct {
-	options     map[string]string
-	rules       map[string]any
-	celOptions  []CelFieldOpts
-	optional    bool
-	fieldNr     int
-	imports     Set
-	protoType   string
-	goType      string
-	fieldMask   bool
-	deprecated  bool
-	errors      Errors
-	required    bool
-	isNonScalar bool
+	options         map[string]string
+	rules           map[string]any
+	repeatedOptions []string
+	optional        bool
+	fieldNr         int
+	imports         Set
+	protoType       string
+	goType          string
+	fieldMask       bool
+	deprecated      bool
+	errors          Errors
+	required        bool
+	isNonScalar     bool
 }
 
 type ProtoFieldBuilder interface {
@@ -67,7 +67,7 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 	maps.Copy(imports, b.imports)
 
-	options := GetOptions(b.options, b.celOptions)
+	options := GetOptions(b.options, b.repeatedOptions)
 
 	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar}, nil
 }
@@ -99,10 +99,10 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Deprecated() *BuilderT {
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT, ValueT]) CelField(o CelFieldOpts) *BuilderT {
-	b.celOptions = append(b.celOptions, CelFieldOpts{
+func (b *ProtoFieldExternal[BuilderT, ValueT]) CelOption(o CelFieldOpts) *BuilderT {
+	b.repeatedOptions = append(b.repeatedOptions, GetCelOption(CelFieldOpts{
 		Id: o.Id, Expression: o.Expression, Message: o.Message,
-	})
+	}))
 
 	return b.self
 }
@@ -133,6 +133,7 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
 		return b.self
 	}
 
+	// For duration and timestam pthis should not be the entire name but only the last part
 	b.options[fmt.Sprintf("(buf.validate.field).%s.const", b.protoType)] = formattedVal
 	return b.self
 }
@@ -145,7 +146,7 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
 	}
 
 	// Make this repeatable
-	b.options[fmt.Sprintf("(buf.validate.field).%s.example", b.protoType)] = formattedVal
+	b.repeatedOptions = append(b.repeatedOptions, fmt.Sprintf("(buf.validate.field).%s.example = %s", b.protoType, formattedVal))
 	return b.self
 }
 

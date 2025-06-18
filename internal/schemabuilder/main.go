@@ -19,7 +19,7 @@ var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":  RepeatedField(ProtoString(1).MinLen(2)).Unique(),
 		"name2": ProtoString(2).Required().MinLen(2),
-		"createdAt": ProtoTimestamp(3).Required().CelField(CelFieldOpts{
+		"createdAt": ProtoTimestamp(3).Required().CelOption(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
@@ -37,7 +37,7 @@ var UserSchema = ProtoMessageSchema{
 var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"id": ProtoString(1),
-		"createdAt": ProtoTimestamp(2).CelField(CelFieldOpts{
+		"createdAt": ProtoTimestamp(2).CelOption(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
@@ -96,7 +96,7 @@ var TablesData = ServicesMap{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
 					"user": MessageType[gofirst.User](1, "User"),
-					"createdAt": ProtoTimestamp(2).Required().CelField(CelFieldOpts{
+					"createdAt": ProtoTimestamp(2).Required().CelOption(CelFieldOpts{
 						Id:         "test",
 						Message:    "this is a test",
 						Expression: "this = test",

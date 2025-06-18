@@ -48,7 +48,7 @@ type CelFieldOpts struct {
 	Id, Message, Expression string
 }
 
-func GetOptions(optsMap map[string]string, celOpts []CelFieldOpts) []string {
+func GetOptions(optsMap map[string]string, repeatedOpts []string) []string {
 	flatOpts := []string{}
 	optNames := slices.Collect(maps.Keys(optsMap))
 
@@ -58,9 +58,7 @@ func GetOptions(optsMap map[string]string, celOpts []CelFieldOpts) []string {
 		flatOpts = append(flatOpts, stringOpt)
 	}
 
-	flatCelOpts := GetCelOptions(celOpts)
-
-	flatOpts = slices.Concat(flatOpts, flatCelOpts)
+	flatOpts = slices.Concat(flatOpts, repeatedOpts)
 
 	return flatOpts
 }
