@@ -13,15 +13,12 @@ type TimestampField struct {
 	hasGtOrGte bool
 }
 
-// Needs its own example and const handlers
 func ProtoTimestamp(fieldNr uint) *TimestampField {
-	imports := make(Set)
 	options := make(map[string]string)
-	imports["google/protobuf/timestamp.proto"] = present
 
 	gf := &TimestampField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]{
-		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: imports, options: options, isNonScalar: true}, gf,
+		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true}, gf,
 	}
 	return gf
 }
@@ -29,9 +26,10 @@ func ProtoTimestamp(fieldNr uint) *TimestampField {
 func (tf *TimestampField) Within(t *timestamppb.Timestamp) *TimestampField {
 	if t == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
+		return tf.self
 	}
 	tf.rules["within"] = t
-	return tf
+	return tf.self
 }
 
 func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
@@ -40,6 +38,7 @@ func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
 	}
 	if t == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Lt()' received a nil pointer."))
+		return tf.self
 	}
 	tf.rules["lt"] = t
 	tf.hasLtOrLte = true
@@ -52,6 +51,7 @@ func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
 	}
 	if t == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Lte()' received a nil pointer."))
+		return tf.self
 	}
 	tf.rules["lte"] = t
 	tf.hasLtOrLte = true
@@ -74,6 +74,7 @@ func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
 	}
 	if t == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Gt()' received a nil pointer."))
+		return tf.self
 	}
 	tf.rules["gt"] = t
 	tf.hasGtOrGte = true
@@ -105,6 +106,7 @@ func (tf *TimestampField) GtNow() *TimestampField {
 func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
+		return tf.self
 	}
 	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.example = { seconds: %d }", val.GetSeconds()))
 	return tf.self
@@ -113,6 +115,7 @@ func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
 		tf.errors = append(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
+		return tf.self
 	}
 	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.const = { seconds: %d }", val.GetSeconds()))
 	return tf.self

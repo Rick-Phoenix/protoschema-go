@@ -84,7 +84,6 @@ type IntField struct {
 }
 
 func ProtoInt32(fieldNumber uint) *IntField {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -92,7 +91,6 @@ func ProtoInt32(fieldNumber uint) *IntField {
 		fieldNr:   fieldNumber,
 		protoType: "int32",
 		goType:    "int32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -112,7 +110,6 @@ type FloatField struct {
 }
 
 func ProtoFloat(fieldNumber uint) *FloatField {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -120,7 +117,6 @@ func ProtoFloat(fieldNumber uint) *FloatField {
 		fieldNr:   fieldNumber,
 		protoType: "float",
 		goType:    "float32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -140,7 +136,6 @@ type DoubleField struct {
 }
 
 func ProtoDouble(fieldNumber uint) *DoubleField {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -148,7 +143,6 @@ func ProtoDouble(fieldNumber uint) *DoubleField {
 		fieldNr:   fieldNumber,
 		protoType: "double",
 		goType:    "float64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -168,7 +162,6 @@ type Int64Field struct {
 }
 
 func ProtoInt64(fieldNumber uint) *Int64Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -176,7 +169,6 @@ func ProtoInt64(fieldNumber uint) *Int64Field {
 		fieldNr:   fieldNumber,
 		protoType: "int64",
 		goType:    "int64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -196,7 +188,6 @@ type UInt32Field struct {
 }
 
 func ProtoUInt32(fieldNumber uint) *UInt32Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -204,7 +195,6 @@ func ProtoUInt32(fieldNumber uint) *UInt32Field {
 		fieldNr:   fieldNumber,
 		protoType: "uint32",
 		goType:    "uint32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -224,7 +214,6 @@ type UInt64Field struct {
 }
 
 func ProtoUInt64(fieldNumber uint) *UInt64Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -232,7 +221,6 @@ func ProtoUInt64(fieldNumber uint) *UInt64Field {
 		fieldNr:   fieldNumber,
 		protoType: "uint64",
 		goType:    "uint64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -252,7 +240,6 @@ type SInt32Field struct {
 }
 
 func ProtoSInt32(fieldNumber uint) *SInt32Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -260,7 +247,6 @@ func ProtoSInt32(fieldNumber uint) *SInt32Field {
 		fieldNr:   fieldNumber,
 		protoType: "sint32",
 		goType:    "int32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -280,7 +266,6 @@ type SInt64Field struct {
 }
 
 func ProtoSInt64(fieldNumber uint) *SInt64Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -288,7 +273,6 @@ func ProtoSInt64(fieldNumber uint) *SInt64Field {
 		fieldNr:   fieldNumber,
 		protoType: "sint64",
 		goType:    "int64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -308,7 +292,6 @@ type Fixed32Field struct {
 }
 
 func ProtoFixed32(fieldNumber uint) *Fixed32Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -316,7 +299,6 @@ func ProtoFixed32(fieldNumber uint) *Fixed32Field {
 		fieldNr:   fieldNumber,
 		protoType: "fixed32",
 		goType:    "uint32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -336,7 +318,6 @@ type Fixed64Field struct {
 }
 
 func ProtoFixed64(fieldNumber uint) *Fixed64Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -344,7 +325,6 @@ func ProtoFixed64(fieldNumber uint) *Fixed64Field {
 		fieldNr:   fieldNumber,
 		protoType: "fixed64",
 		goType:    "uint64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -364,7 +344,6 @@ type SFixed32Field struct {
 }
 
 func ProtoSFixed32(fieldNumber uint) *SFixed32Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -372,7 +351,6 @@ func ProtoSFixed32(fieldNumber uint) *SFixed32Field {
 		fieldNr:   fieldNumber,
 		protoType: "sfixed32",
 		goType:    "int32",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}
@@ -392,7 +370,6 @@ type SFixed64Field struct {
 }
 
 func ProtoSFixed64(fieldNumber uint) *SFixed64Field {
-	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
 
@@ -400,7 +377,6 @@ func ProtoSFixed64(fieldNumber uint) *SFixed64Field {
 		fieldNr:   fieldNumber,
 		protoType: "sfixed64",
 		goType:    "int64",
-		imports:   imports,
 		options:   options,
 		rules:     rules,
 	}

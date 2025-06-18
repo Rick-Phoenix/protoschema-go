@@ -3,7 +3,6 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"strings"
 )
 
@@ -24,7 +23,7 @@ type ProtoFieldData struct {
 	Optional    bool
 	FieldNr     uint
 	Name        string
-	Imports     Set
+	Imports     []string
 	Deprecated  bool
 	Repeated    bool
 	Required    bool
@@ -37,10 +36,9 @@ type protoFieldInternal struct {
 	repeatedOptions []string
 	optional        bool
 	fieldNr         uint
-	imports         Set
+	imports         []string
 	protoType       string
 	goType          string
-	fieldMask       bool
 	deprecated      bool
 	errors          Errors
 	required        bool
@@ -60,9 +58,10 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 		return ProtoFieldData{}, errors.New(fieldErrors.String())
 	}
-	imports["buf/validate/validate.proto"] = present
 
-	maps.Copy(imports, b.imports)
+	for _, v := range b.imports {
+		imports[v] = present
+	}
 
 	options := GetOptions(b.options, b.repeatedOptions)
 

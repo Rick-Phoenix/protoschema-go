@@ -2,8 +2,7 @@ package schemabuilder
 
 import "reflect"
 
-func MessageType[ValueT any](fieldNr int, name string, opts ...FieldPathGetter) *GenericField[ValueT] {
-	imports := make(Set)
+func MessageType[ValueT any](fieldNr uint, name string, opts ...FieldPathGetter) *GenericField[ValueT] {
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -11,7 +10,6 @@ func MessageType[ValueT any](fieldNr int, name string, opts ...FieldPathGetter) 
 		protoType:   name,
 		goType:      reflect.TypeOf((*ValueT)(nil)).Elem().String(),
 		isNonScalar: true,
-		imports:     imports,
 		rules:       rules,
 	}
 
@@ -31,6 +29,6 @@ type FieldPathGetter func(*protoFieldInternal)
 
 func WithImportPath(path string) FieldPathGetter {
 	return func(pfi *protoFieldInternal) {
-		pfi.imports[path] = present
+		pfi.imports = append(pfi.imports, path)
 	}
 }

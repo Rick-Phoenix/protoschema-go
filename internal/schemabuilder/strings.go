@@ -92,10 +92,9 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 }
 
 func ProtoString(fieldNumber uint) *StringField {
-	imports := make(Set)
 	rules := make(map[string]any)
 	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", imports: imports, options: options, rules: rules}
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", options: options, rules: rules}
 
 	sf := &StringField{}
 	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField, string]{
@@ -220,9 +219,8 @@ type BytesField struct {
 }
 
 func ProtoBytes(fieldNumber uint) *BytesField {
-	imports := make(Set)
 	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", imports: imports, options: options}
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", options: options}
 
 	bf := &BytesField{}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
