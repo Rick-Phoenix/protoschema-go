@@ -219,7 +219,11 @@ func formatProtoValue(value any) (string, error) {
 	case string:
 		return fmt.Sprintf("%q", v), nil
 	case []byte:
-		return formatBytesAsProtoLiteral(v), nil
+		byteString, err := formatBytesAsProtoLiteral(v)
+		if err != nil {
+			return "", err
+		}
+		return byteString, nil
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("%v", v), nil
 	case float32, float64:
@@ -235,28 +239,37 @@ func formatProtoValue(value any) (string, error) {
 	}
 }
 
-func formatBytesAsProtoLiteral(b []byte) string {
+func formatBytesAsProtoLiteral(b []byte) (string, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('"')
+	var err error
 	for _, char := range b {
 		if char >= 32 && char <= 126 && char != '\\' && char != '"' {
-			buf.WriteByte(char)
+			err = buf.WriteByte(char)
 		} else {
-			buf.WriteString(fmt.Sprintf("\\x%02x", char))
+			_, err = buf.WriteString(fmt.Sprintf("\\x%02x", char))
 		}
 	}
 	buf.WriteByte('"')
-	return buf.String()
+
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
-func formatProtoList[T any](l []T) string {
+func formatProtoList[T any](l []T) (string, error) {
 	var sb strings.Builder
 	sb.WriteString("[")
 	for _, v := range l {
-		protoVal, _ := formatProtoValue(v)
+		protoVal, err := formatProtoValue(v)
+		if err != nil {
+			return "", err
+		}
 		sb.WriteString(fmt.Sprintf("%s, ", protoVal))
 	}
 	sb.WriteString("]")
 
-	return sb.String()
+	return sb.String(), nil
 }

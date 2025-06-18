@@ -33,6 +33,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s ValueT) *BuilderT {
 	b.internal.rules["prefix"] = protoVal
 	return b.self
 }
+
 func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s ValueT) *BuilderT {
 	protoVal, err := formatProtoValue(s)
 	if err != nil {
@@ -41,6 +42,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s ValueT) *BuilderT {
 	b.internal.rules["suffix"] = protoVal
 	return b.self
 }
+
 func (b *ByteOrStringField[BuilderT, ValueT]) Contains(s ValueT) *BuilderT {
 	protoVal, err := formatProtoValue(s)
 	if err != nil {
@@ -54,10 +56,12 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Ip() *BuilderT {
 	b.setWellKnownRule("ip", true)
 	return b.self
 }
+
 func (b *ByteOrStringField[BuilderT, ValueT]) Ipv4() *BuilderT {
 	b.setWellKnownRule("ipv4", true)
 	return b.self
 }
+
 func (b *ByteOrStringField[BuilderT, ValueT]) Ipv6() *BuilderT {
 	b.setWellKnownRule("ipv6", true)
 	return b.self
@@ -87,11 +91,19 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 }
 
 func (b *ByteOrStringField[BuilderT, ValueT]) In(values ...string) *BuilderT {
-	b.internal.rules["in"] = formatProtoList(values)
+	list, err := formatProtoList(values)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["in"] = list
 	return b.self
 }
 func (b *ByteOrStringField[BuilderT, ValueT]) NotIn(values ...string) *BuilderT {
-	b.internal.rules["not_in"] = formatProtoList(values)
+	list, err := formatProtoList(values)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["not_in"] = list
 	return b.self
 }
 
@@ -212,23 +224,23 @@ func (b *StringField) HostAndPort() *StringField {
 	return b
 }
 
-func (b *StringField) HttpHeaderName() *StringField {
+func (b *StringField) HttpHeaderNameStrict() *StringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_NAME")
 	return b
 }
 
-func (b *StringField) HttpHeaderNameLoose() *StringField {
+func (b *StringField) HttpHeaderName() *StringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_NAME")
 	b.rules["strict"] = false
 	return b
 }
 
-func (b *StringField) HttpHeaderValue() *StringField {
+func (b *StringField) HttpHeaderValueStrict() *StringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_VALUE")
 	return b
 }
 
-func (b *StringField) HttpHeaderValueLoose() *StringField {
+func (b *StringField) HttpHeaderValue() *StringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_VALUE")
 	b.rules["strict"] = false
 	return b

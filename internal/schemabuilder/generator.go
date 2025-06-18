@@ -22,7 +22,6 @@ type ProtoFileData struct {
 }
 
 var ProtoTypeMap = map[string]string{
-	// Scalar Protobuf Types
 	"string":                    "string",
 	"bytes":                     "[]byte",
 	"bool":                      "bool",

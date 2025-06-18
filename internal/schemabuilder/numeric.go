@@ -57,12 +57,20 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 }
 
 func (nf *NumericField[BuilderT, ValueT]) In(vals ...ValueT) *BuilderT {
-	nf.rules["in"] = vals
+	list, err := formatProtoList(vals)
+	if err != nil {
+		nf.errors = append(nf.errors, err)
+	}
+	nf.rules["in"] = list
 	return nf.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) NotIn(vals ...ValueT) *BuilderT {
-	nf.rules["not_in"] = vals
+	list, err := formatProtoList(vals)
+	if err != nil {
+		nf.errors = append(nf.errors, err)
+	}
+	nf.rules["not_in"] = list
 	return nf.self
 }
 
@@ -79,7 +87,7 @@ type IntField struct {
 	*NumericField[IntField, int32]
 }
 
-func ProtoInt(fieldNumber int) *IntField {
+func ProtoInt32(fieldNumber int) *IntField {
 	imports := make(Set)
 	options := make(map[string]string)
 	rules := make(map[string]any)
