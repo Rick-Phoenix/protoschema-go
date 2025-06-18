@@ -107,7 +107,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) NotIn(values ...string) *BuilderT 
 	return b.self
 }
 
-func ProtoString(fieldNumber int) *StringField {
+func ProtoString(fieldNumber uint) *StringField {
 	imports := make(Set)
 	rules := make(map[string]any)
 	options := make(map[string]string)
@@ -130,7 +130,7 @@ type BytesField struct {
 	*ByteOrStringField[BytesField, []byte]
 }
 
-func ProtoBytes(fieldNumber int) *BytesField {
+func ProtoBytes(fieldNumber uint) *BytesField {
 	imports := make(Set)
 	options := make(map[string]string)
 	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", imports: imports, options: options}

@@ -77,6 +77,35 @@ func (tf *DurationField) Gte(d string) *DurationField {
 	return tf.self
 }
 
+func (tf *DurationField) In(values ...string) *DurationField {
+	for _, v := range values {
+		err := ValidateDurationString(v)
+		if err != nil {
+			tf.errors = append(tf.errors, err)
+		}
+	}
+	list, err := formatProtoList(values)
+	if err != nil {
+		tf.errors = append(tf.errors, err)
+	}
+	tf.rules["in"] = list
+	return tf.self
+}
+func (tf *DurationField) NotIn(values ...string) *DurationField {
+	for _, v := range values {
+		err := ValidateDurationString(v)
+		if err != nil {
+			tf.errors = append(tf.errors, err)
+		}
+	}
+	list, err := formatProtoList(values)
+	if err != nil {
+		tf.errors = append(tf.errors, err)
+	}
+	tf.rules["not_in"] = list
+	return tf.self
+}
+
 func (tf *DurationField) Const(d string) *DurationField {
 	err := ValidateDurationString(d)
 	if err != nil {
