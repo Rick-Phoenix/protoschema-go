@@ -13,6 +13,7 @@ type Number interface {
 type NumericField[BuilderT any, ValueT comparable] struct {
 	*protoFieldInternal
 	*FieldWithConst[BuilderT, ValueT, ValueT]
+	*OptionalField[BuilderT]
 	self *BuilderT
 
 	hasLtOrLte bool
@@ -27,6 +28,10 @@ func newNumericField[BuilderT any, ValueT comparable](pfi *protoFieldInternal, s
 		self:               self,
 		isFloatType:        isFloat,
 		FieldWithConst: &FieldWithConst[BuilderT, ValueT, ValueT]{
+			internal: pfi,
+			self:     self,
+		},
+		OptionalField: &OptionalField[BuilderT]{
 			internal: pfi,
 			self:     self,
 		},

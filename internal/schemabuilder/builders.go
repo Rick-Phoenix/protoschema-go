@@ -1,11 +1,5 @@
 package schemabuilder
 
-import (
-	"errors"
-	"fmt"
-	"strings"
-)
-
 var present = struct{}{}
 
 const indent = "  "
@@ -46,17 +40,13 @@ type protoFieldInternal struct {
 }
 
 type ProtoFieldBuilder interface {
-	Build(fieldName string, imports Set) (ProtoFieldData, error)
+	Build(fieldName string, imports Set) (ProtoFieldData, Errors)
 }
 
-func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, Errors) {
 	if len(b.errors) > 0 {
-		fieldErrors := strings.Builder{}
-		for _, err := range b.errors {
-			fieldErrors.WriteString(fmt.Sprintf("- %s\n", err.Error()))
-		}
 
-		return ProtoFieldData{}, errors.New(fieldErrors.String())
+		return ProtoFieldData{}, b.errors
 	}
 
 	for _, v := range b.imports {
@@ -65,12 +55,7 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 	options := GetOptions(b.options, b.repeatedOptions)
 
-	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, Optional: b.optional, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar}, nil
-}
-
-func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
-	b.optional = true
-	return b.self
+	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional}, nil
 }
 
 type ProtoFieldExternal[BuilderT any, ValueT any] struct {

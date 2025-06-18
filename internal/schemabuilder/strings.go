@@ -15,6 +15,7 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	internal         *protoFieldInternal
 	self             *BuilderT
 	hasWellKnownRule bool
+	*OptionalField[BuilderT]
 }
 
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
@@ -109,6 +110,9 @@ func ProtoString(fieldNumber uint) *StringField {
 		internal: internal,
 		self:     sf,
 	}
+	sf.OptionalField = &OptionalField[StringField]{
+		internal: internal,
+		self:     sf}
 
 	return sf
 }
@@ -235,5 +239,8 @@ func ProtoBytes(fieldNumber uint) *BytesField {
 		internal: internal,
 		self:     bf,
 	}
+	bf.OptionalField = &OptionalField[BytesField]{
+		internal: internal,
+		self:     bf}
 	return bf
 }
