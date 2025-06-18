@@ -10,9 +10,9 @@ type Number interface {
 		float32 | float64
 }
 
-type NumericField[BuilderT any, ValueT any] struct {
+type NumericField[BuilderT any, ValueT comparable] struct {
 	*protoFieldInternal
-	*FieldWithConst[BuilderT, ValueT]
+	*FieldWithConst[BuilderT, ValueT, ValueT]
 	self *BuilderT
 
 	hasLtOrLte bool
@@ -21,12 +21,12 @@ type NumericField[BuilderT any, ValueT any] struct {
 	isFloatType bool
 }
 
-func newNumericField[BuilderT any, ValueT any](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
+func newNumericField[BuilderT any, ValueT comparable](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
 		protoFieldInternal: pfi,
 		self:               self,
 		isFloatType:        isFloat,
-		FieldWithConst: &FieldWithConst[BuilderT, ValueT]{
+		FieldWithConst: &FieldWithConst[BuilderT, ValueT, ValueT]{
 			internal: pfi,
 			self:     self,
 		},

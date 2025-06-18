@@ -8,13 +8,13 @@ import (
 type StringField struct {
 	*ProtoFieldExternal[StringField, string]
 	*ByteOrStringField[StringField, string]
+	*FieldWithConst[StringField, string, string]
 }
 
 type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	internal         *protoFieldInternal
 	self             *BuilderT
 	hasWellKnownRule bool
-	*FieldWithConst[BuilderT, ValueT]
 }
 
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
@@ -91,23 +91,6 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	return b.self
 }
 
-func (b *ByteOrStringField[BuilderT, ValueT]) In(values ...string) *BuilderT {
-	list, err := formatProtoList(values)
-	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
-	}
-	b.internal.rules["in"] = list
-	return b.self
-}
-func (b *ByteOrStringField[BuilderT, ValueT]) NotIn(values ...string) *BuilderT {
-	list, err := formatProtoList(values)
-	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
-	}
-	b.internal.rules["not_in"] = list
-	return b.self
-}
-
 func ProtoString(fieldNumber uint) *StringField {
 	imports := make(Set)
 	rules := make(map[string]any)
@@ -122,57 +105,31 @@ func ProtoString(fieldNumber uint) *StringField {
 	sf.ByteOrStringField = &ByteOrStringField[StringField, string]{
 		internal: internal,
 		self:     sf,
-		FieldWithConst: &FieldWithConst[StringField, string]{
-			internal: internal,
-			self:     sf,
-		},
+	}
+	sf.FieldWithConst = &FieldWithConst[StringField, string, string]{
+		internal: internal,
+		self:     sf,
 	}
 
 	return sf
 }
 
-type BytesField struct {
-	*ProtoFieldExternal[BytesField, []byte]
-	*ByteOrStringField[BytesField, []byte]
-}
-
-func ProtoBytes(fieldNumber uint) *BytesField {
-	imports := make(Set)
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", imports: imports, options: options}
-
-	bf := &BytesField{}
-	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
-		protoFieldInternal: internal,
-		self:               bf,
-	}
-	bf.ByteOrStringField = &ByteOrStringField[BytesField, []byte]{
-		internal: internal,
-		self:     bf,
-		FieldWithConst: &FieldWithConst[BytesField, []byte]{
-			internal: internal,
-			self:     bf,
-		},
-	}
-	return bf
-}
-
 func (b *StringField) LenBytes(n int) *StringField {
-	b.internal.rules["len_bytes"] = n
+	b.protoFieldInternal.rules["len_bytes"] = n
 	return b
 }
 func (b *StringField) MinBytes(n int) *StringField {
-	b.internal.rules["min_bytes"] = n
+	b.protoFieldInternal.rules["min_bytes"] = n
 	return b
 }
 
 func (b *StringField) MaxBytes(n int) *StringField {
-	b.internal.rules["max_bytes"] = n
+	b.protoFieldInternal.rules["max_bytes"] = n
 	return b
 }
 
 func (b *StringField) NotContains(s string) *StringField {
-	b.internal.rules["not_contains"] = s
+	b.protoFieldInternal.rules["not_contains"] = s
 	return b
 }
 
@@ -254,4 +211,31 @@ func (b *StringField) HttpHeaderValue() *StringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_VALUE")
 	b.rules["strict"] = false
 	return b
+}
+
+type BytesField struct {
+	*ProtoFieldExternal[BytesField, []byte]
+	*ByteOrStringField[BytesField, []byte]
+	*FieldWithConst[BytesField, []byte, byte]
+}
+
+func ProtoBytes(fieldNumber uint) *BytesField {
+	imports := make(Set)
+	options := make(map[string]string)
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", imports: imports, options: options}
+
+	bf := &BytesField{}
+	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
+		protoFieldInternal: internal,
+		self:               bf,
+	}
+	bf.ByteOrStringField = &ByteOrStringField[BytesField, []byte]{
+		internal: internal,
+		self:     bf,
+	}
+	bf.FieldWithConst = &FieldWithConst[BytesField, []byte, byte]{
+		internal: internal,
+		self:     bf,
+	}
+	return bf
 }

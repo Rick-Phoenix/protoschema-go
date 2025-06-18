@@ -1,13 +1,18 @@
 package schemabuilder
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
-type FieldWithConst[BuilderT any, ValueT any] struct {
+type FieldWithConst[BuilderT, ValueT any, SingleValT comparable] struct {
 	internal *protoFieldInternal
 	self     *BuilderT
+	in       []SingleValT
+	notIn    []SingleValT
 }
 
-func (b *FieldWithConst[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
+func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.internal.errors = append(b.internal.errors, err)
@@ -19,7 +24,7 @@ func (b *FieldWithConst[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
 	return b.self
 }
 
-func (b *FieldWithConst[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
+func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
 	if b.internal.protoType == "any" {
 		b.internal.errors = append(b.internal.errors, fmt.Errorf("Method 'Example()' is not supposed for google.protobuf.Any."))
 	}
@@ -31,5 +36,40 @@ func (b *FieldWithConst[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
 
 	// Make this repeatable
 	b.internal.repeatedOptions = append(b.internal.repeatedOptions, fmt.Sprintf("(buf.validate.field).%s.example = %s", b.internal.protoType, formattedVal))
+	return b.self
+}
+
+func SliceIntersects[T comparable](s1 []T, s2 []T) bool {
+	for _, v := range s1 {
+		if slices.Contains(s2, v) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *BuilderT {
+	if len(b.notIn) > 0 {
+		overlaps := SliceIntersects(vals, b.notIn)
+
+		if overlaps {
+			b.internal.errors = append(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
+		}
+	}
+	list, err := formatProtoList(vals)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["in"] = list
+	return b.self
+}
+
+func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT) *BuilderT {
+	list, err := formatProtoList(vals)
+	if err != nil {
+		b.internal.errors = append(b.internal.errors, err)
+	}
+	b.internal.rules["not_in"] = list
 	return b.self
 }
