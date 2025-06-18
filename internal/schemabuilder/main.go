@@ -29,7 +29,7 @@ var UserSchema = ProtoMessageSchema{
 	OneOfs: []ProtoOneOfSchema{{
 		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{
 			"choice1": ProtoString(5),
-			"choice2": ProtoInt(6),
+			// "choice2": ProtoInt(6),
 		},
 	}},
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -122,29 +121,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Optional() *BuilderT {
 	return b.self
 }
 
-type LengthableField[T any] struct {
-	internal *protoFieldInternal
-	self     *T
-}
-
-func (l *LengthableField[T]) MinLen(n int) *T {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".min_len"] = strconv.Itoa(n)
-	l.internal.rules["min_len"] = n
-	return l.self
-}
-
-func (l *LengthableField[T]) MaxLen(n int) *T {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".max_len"] = strconv.Itoa(n)
-	l.internal.rules["max_len"] = n
-	return l.self
-}
-
-func (l *LengthableField[T]) Len(n int) *T {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".len"] = strconv.Itoa(n)
-	l.internal.rules["len"] = n
-	return l.self
-}
-
 type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 	*protoFieldInternal
 	self *BuilderT
@@ -171,51 +147,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
 
 	b.options[fmt.Sprintf("(buf.validate.field).%s.example", b.protoType)] = formattedVal
 	return b.self
-}
-
-type StringField struct {
-	*ProtoFieldExternal[StringField, string]
-	*LengthableField[StringField]
-}
-
-func ProtoString(fieldNumber int) *StringField {
-	imports := make(Set)
-	rules := make(map[string]any)
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", imports: imports, options: options, rules: rules}
-
-	sf := &StringField{}
-	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField, string]{
-		protoFieldInternal: internal,
-		self:               sf,
-	}
-	sf.LengthableField = &LengthableField[StringField]{
-		internal: internal,
-		self:     sf,
-	}
-	return sf
-}
-
-type BytesField struct {
-	*ProtoFieldExternal[BytesField, []byte]
-	*LengthableField[BytesField]
-}
-
-func ProtoBytes(fieldNumber int) *BytesField {
-	imports := make(Set)
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "bytes", imports: imports, options: options}
-
-	bf := &BytesField{}
-	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{ // Specify '[]byte' for ValueT
-		protoFieldInternal: internal,
-		self:               bf,
-	}
-	bf.LengthableField = &LengthableField[BytesField]{
-		internal: internal,
-		self:     bf,
-	}
-	return bf
 }
 
 type GenericField[ValueT any] struct {
