@@ -92,6 +92,11 @@ func ProtoString(fieldNumber int) *StringField {
 	return sf
 }
 
+type BytesField struct {
+	*ProtoFieldExternal[BytesField, []byte]
+	*ByteOrStringField[BytesField]
+}
+
 func ProtoBytes(fieldNumber int) *BytesField {
 	imports := make(Set)
 	options := make(map[string]string)
@@ -107,11 +112,6 @@ func ProtoBytes(fieldNumber int) *BytesField {
 		self:     bf,
 	}
 	return bf
-}
-
-type BytesField struct {
-	*ProtoFieldExternal[BytesField, []byte]
-	*ByteOrStringField[BytesField]
 }
 
 func (b *StringField) LenBytes(n int) *StringField {

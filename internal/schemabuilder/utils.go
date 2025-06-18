@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -211,54 +210,41 @@ func IndentErrors(errs Errors) error {
 	return errors.New(sb.String())
 }
 
-func formatProtoConstValue(val any, protoTypeName string) (string, error) {
-	switch protoTypeName {
-	case "string":
-		strVal, ok := val.(string)
-		if !ok {
-			return "", fmt.Errorf("expected string for %s const, got %T", protoTypeName, val)
-		}
-		return strconv.Quote(strVal), nil // Strings need to be quoted in proto options
-	case "int32", "int64", "uint32", "uint64", "double", "float", "bool", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64":
-		return fmt.Sprintf("%v", val), nil
-	case "bytes":
-		byteVal, ok := val.([]byte)
-		if !ok {
-			return "", fmt.Errorf("expected []byte for %s const, got %T", protoTypeName, val)
-		}
-		// Protobuf bytes constants in string form are usually base64 encoded.
-		return strconv.Quote(base64.StdEncoding.EncodeToString(byteVal)), nil
-	case "timestamp":
-		tsVal, ok := val.(*timestamppb.Timestamp)
-		if !ok {
-			return "", fmt.Errorf("expected *timestamppb.Timestamp for %s const, got %T", protoTypeName, val)
-		}
-		// protovalidate typically expects timestamp constants in RFC3339 format or similar for simple const.
-		// If `protovalidate` expects a timestamp literal like `{seconds: 123, nanos: 456}`,
-		// this formatting would need to return that specific literal string.
-		return strconv.Quote(tsVal.AsTime().Format(time.RFC3339Nano)), nil // RFC3339 with nanoseconds and quotes
-	case "duration":
-		durVal, ok := val.(*durationpb.Duration)
-		if !ok {
-			return "", fmt.Errorf("expected *durationpb.Duration for %s const, got %T", protoTypeName, val)
-		}
-		// Assuming standard Go duration string format (e.g., "1h30m") quoted.
-		return strconv.Quote(durVal.AsDuration().String()), nil
+func formatProtoValue(value interface{}) (string, error) {
+	if value == nil {
+		return "", nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		return fmt.Sprintf("%q", v), nil
+	case []byte:
+		return formatBytesAsProtoLiteral(v), nil
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%v", v), nil
+	case float32, float64:
+		return fmt.Sprintf("%v", v), nil
+	case bool:
+		return fmt.Sprintf("%t", v), nil
+	case durationpb.Duration:
+		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
+	case timestamppb.Timestamp:
+		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
 	default:
-		return "", fmt.Errorf("unsupported Go type %T for %s const validation", val, protoTypeName)
+		return "", fmt.Errorf("unsupported type for Protobuf literal formatting: %v", reflect.TypeOf(value))
 	}
 }
 
-func formatRuleValue(val any) string {
-	valType := reflect.TypeOf(val).String()
-
-	if valType == "string" {
-		return fmt.Sprintf("%q", val)
+func formatBytesAsProtoLiteral(b []byte) string {
+	var buf bytes.Buffer
+	buf.WriteByte('"')
+	for _, char := range b {
+		if char >= 32 && char <= 126 && char != '\\' && char != '"' {
+			buf.WriteByte(char)
+		} else {
+			buf.WriteString(fmt.Sprintf("\\x%02x", char))
+		}
 	}
-
-	return fmt.Sprintf("%v", val)
-}
-
-func StringPtr(s string) *string {
-	return &s
+	buf.WriteByte('"')
+	return buf.String()
 }

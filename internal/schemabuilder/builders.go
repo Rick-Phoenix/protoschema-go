@@ -126,9 +126,8 @@ type ProtoFieldExternal[BuilderT any, ValueT any] struct {
 	self *BuilderT
 }
 
-// Just for scalars
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
-	formattedVal, err := formatProtoConstValue(val, b.protoType)
+	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.errors = append(b.errors, err)
 		return b.self
@@ -139,12 +138,13 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Const(val ValueT) *BuilderT {
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
-	formattedVal, err := formatProtoConstValue(val, b.protoType)
+	formattedVal, err := formatProtoValue(val)
 	if err != nil {
 		b.errors = append(b.errors, err)
 		return b.self
 	}
 
+	// Make this repeatable
 	b.options[fmt.Sprintf("(buf.validate.field).%s.example", b.protoType)] = formattedVal
 	return b.self
 }
@@ -224,9 +224,13 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 				continue
 			}
 
-			stringValue := formatRuleValue(value)
-			stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
-			processedRules++
+			stringValue, fmtErr := formatProtoValue(value)
+			if fmtErr != nil {
+				err = fmt.Errorf("- %s\n%w", fmtErr, err)
+			} else {
+				stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
+				processedRules++
+			}
 		}
 		stringRule.WriteString("}\n}")
 
@@ -236,7 +240,12 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 	}
 
 	for rule, value := range b.rules {
-		options = append(options, fmt.Sprintf("%s = %s", rule, formatRuleValue(value)))
+		stringValue, fmtErr := formatProtoValue(value)
+		if fmtErr != nil {
+			err = fmt.Errorf("- %s\n%w", fmtErr, err)
+		} else {
+			options = append(options, fmt.Sprintf("%s = %s", rule, stringValue))
+		}
 	}
 
 	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
