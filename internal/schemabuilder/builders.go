@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"strings"
-
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 var present = struct{}{}
@@ -157,18 +155,4 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Example(val ValueT) *BuilderT {
 
 type GenericField[ValueT any] struct {
 	*ProtoFieldExternal[GenericField[ValueT], ValueT]
-}
-
-func FieldMask(fieldNr uint) *GenericField[*fieldmaskpb.FieldMask] {
-	imports := make(Set)
-	options := make(map[string]string)
-	imports["google/protobuf/field_mask.proto"] = present
-	internal := &protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.FieldMask", goType: "fieldmask", imports: imports, options: options, isNonScalar: true}
-
-	gf := &GenericField[*fieldmaskpb.FieldMask]{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[*fieldmaskpb.FieldMask], *fieldmaskpb.FieldMask]{
-		protoFieldInternal: internal,
-		self:               gf,
-	}
-	return gf
 }

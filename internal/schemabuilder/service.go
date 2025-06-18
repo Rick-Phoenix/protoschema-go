@@ -17,6 +17,7 @@ type OptionExtensions struct {
 
 type MessagesMap map[string]ProtoMessage
 
+// Allow for protoempty as a response
 type ProtoService struct {
 	Messages         MessagesMap
 	Imports          Set
@@ -47,6 +48,7 @@ type ProtoServiceSchema struct {
 	ServiceOptions              []ProtoOption
 	FileOptions                 []ProtoOption
 	OptionExtensions            OptionExtensions
+	Enums                       ProtoEnumMap
 }
 
 type ServiceData struct {

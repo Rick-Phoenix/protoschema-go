@@ -10,14 +10,19 @@ import (
 
 type FieldData map[string]*ServiceData
 
+// Separate embedded types for const and examples which most fields have
+// Make imports a map with a lookup, remove them from fields
 // Oneof should not accept optional or required fields
 // Applying deprecated to services and messages
-// Repeated = true for repeated options
 // Or separate array
 // Enums
 // Remove all other rules with const (or make separate builder directly)
+// Check if cel, ignore and required can be applied globally
 // Handling rules from message side
 // (buf.validate.message).oneof
+// Restructure definition of handlers so they can accept strings and not schemas necessarily
+// Abstract proto dic creation/retrieval to remove a ton of reused code to specific builders
+// Handle potentially missing maps
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":  RepeatedField(ProtoString(1).MinLen(2)).Unique(),
