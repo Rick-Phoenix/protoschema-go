@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"fmt"
+	"slices"
 
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -11,6 +12,8 @@ type DurationField struct {
 
 	hasLtOrLte bool
 	hasGtOrGte bool
+	in         []string
+	notIn      []string
 }
 
 func ProtoDuration(fieldNr uint) *DurationField {
@@ -83,6 +86,10 @@ func (tf *DurationField) In(values ...string) *DurationField {
 		if err != nil {
 			tf.errors = append(tf.errors, err)
 		}
+		if slices.Contains(tf.notIn, v) {
+			tf.errors = append(tf.errors, fmt.Errorf("field %s cannot be inside of 'in' and 'not_in' at the same time.", v))
+			return tf.self
+		}
 	}
 	list, err := formatProtoList(values)
 	if err != nil {
@@ -97,6 +104,10 @@ func (tf *DurationField) NotIn(values ...string) *DurationField {
 		err := ValidateDurationString(v)
 		if err != nil {
 			tf.errors = append(tf.errors, err)
+		}
+		if slices.Contains(tf.in, v) {
+			tf.errors = append(tf.errors, fmt.Errorf("field %s cannot be inside of 'in' and 'not_in' at the same time.", v))
+			return tf.self
 		}
 	}
 	list, err := formatProtoList(values)

@@ -13,6 +13,7 @@ type TimestampField struct {
 	hasGtOrGte bool
 }
 
+// Needs its own example and const handlers
 func ProtoTimestamp(fieldNr uint) *TimestampField {
 	imports := make(Set)
 	options := make(map[string]string)
