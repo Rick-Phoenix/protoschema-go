@@ -18,18 +18,18 @@ func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	}
 }
 
-func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, Errors) {
 	fieldData, err := b.field.Build(fieldName, imports)
 
 	if fieldData.Optional {
-		err = fmt.Errorf("- A field cannot be optional and repeated.\n%w", err)
+		err = append(err, fmt.Errorf("A field cannot be optional and repeated."))
 	}
 
 	options := []string{}
 
 	if b.unique {
 		if fieldData.IsNonScalar {
-			err = fmt.Errorf("- Cannot apply contraint 'unique' to a non-scalar repeated field.\n%w", err)
+			err = append(err, fmt.Errorf("Cannot apply contraint 'unique' to a non-scalar repeated field."))
 		}
 		options = append(options, "(buf.validate.field).repeated.unique = true")
 	}
@@ -40,7 +40,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 
 	if b.maxItems > 0 {
 		if b.maxItems < b.minItems {
-			err = fmt.Errorf("- max_items cannot be smaller than min_items.\n%w", err)
+			err = append(err, fmt.Errorf("max_items cannot be smaller than min_items."))
 		}
 
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.max_items = %d", b.minItems))
@@ -64,7 +64,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 
 			stringValue, fmtErr := formatProtoValue(value)
 			if fmtErr != nil {
-				err = fmt.Errorf("- %s\n%w", fmtErr, err)
+				err = append(err, fmtErr)
 			} else {
 				stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
 				processedRules++
