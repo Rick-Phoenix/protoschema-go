@@ -67,7 +67,6 @@ type ProtoServiceSchema struct {
 var FileLocations = map[string]string{}
 
 // Message schema constructor for easy overriding
-// Add message from handlers to messages if not already processed or present there
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
 	var processedMessages []string
@@ -81,12 +80,20 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 
 	for name, h := range s.Handlers {
 		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
-		if !slices.Contains(processedMessages, h.Request.Name) {
+		if h.Request.ReferenceOnly {
+			for _, im := range h.Request.Imports {
+				imports[im] = present
+			}
+		} else if !slices.Contains(processedMessages, h.Request.Name) {
 			messages = append(s.Messages, h.Request)
 			processedMessages = append(processedMessages, h.Request.Name)
 		}
 
-		if !slices.Contains(processedMessages, h.Response.Name) {
+		if h.Response.ReferenceOnly {
+			for _, im := range h.Response.Imports {
+				imports[im] = present
+			}
+		} else if !slices.Contains(processedMessages, h.Response.Name) {
 			messages = append(s.Messages, h.Response)
 			processedMessages = append(processedMessages, h.Response.Name)
 		}

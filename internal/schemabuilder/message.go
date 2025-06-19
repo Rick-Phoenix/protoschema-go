@@ -10,12 +10,14 @@ import (
 type ProtoFieldsMap map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
-	Name       string
-	Fields     ProtoFieldsMap
-	OneOfs     []ProtoOneOfBuilder
-	Options    []ProtoOption
-	CelOptions []CelFieldOpts
-	Reserved   []int
+	Name          string
+	Fields        ProtoFieldsMap
+	OneOfs        []ProtoOneOfBuilder
+	Options       []ProtoOption
+	CelOptions    []CelFieldOpts
+	Reserved      []int
+	ReferenceOnly bool
+	Imports       []string
 }
 
 type ProtoMessage struct {
@@ -57,6 +59,14 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	}
 
 	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions, OneOfs: oneOfs}, nil
+}
+
+func ProtoMessageReference(name string, imports ...string) ProtoMessageSchema {
+	return ProtoMessageSchema{Name: name, ReferenceOnly: true, Imports: imports}
+}
+
+func ProtoEmpty() ProtoMessageSchema {
+	return ProtoMessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, Imports: []string{"google/protobuf/empty.proto"}}
 }
 
 func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *ProtoMessageSchema {

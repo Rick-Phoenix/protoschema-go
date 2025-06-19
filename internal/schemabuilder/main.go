@@ -84,9 +84,8 @@ var MyOptions = []CustomOption{{
 
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
-		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
-			"GetUser": {UserSchema, UserSchema},
+			"GetUser": {ProtoEmpty(), UserSchema},
 		},
 	},
 	"Post": ProtoServiceSchema{
