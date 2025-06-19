@@ -3,7 +3,6 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 type StringField struct {
@@ -71,19 +70,16 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Ipv6() *BuilderT {
 }
 
 func (l *ByteOrStringField[BuilderT, ValueT]) MinLen(n int) *BuilderT {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".min_len"] = strconv.Itoa(n)
 	l.internal.rules["min_len"] = n
 	return l.self
 }
 
 func (l *ByteOrStringField[BuilderT, ValueT]) MaxLen(n int) *BuilderT {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".max_len"] = strconv.Itoa(n)
 	l.internal.rules["max_len"] = n
 	return l.self
 }
 
 func (l *ByteOrStringField[BuilderT, ValueT]) Len(n int) *BuilderT {
-	l.internal.options["(buf.validate.field)."+l.internal.protoType+".len"] = strconv.Itoa(n)
 	l.internal.rules["len"] = n
 	return l.self
 }

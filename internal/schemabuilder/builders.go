@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"errors"
+	"fmt"
 	"maps"
 )
 
@@ -63,7 +64,22 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 
 	optsCollector := make(map[string]any)
 	maps.Copy(optsCollector, b.options)
-	maps.Copy(optsCollector, b.rules)
+
+	if len(b.rules) > 0 {
+		imports["buf/validate/validate.proto"] = present
+
+		protoName := b.protoType
+		switch protoName {
+		case "google.protobuf.Duration":
+			protoName = "duration"
+		case "google.protobuf.Timestamp":
+			protoName = "timestamp"
+		}
+
+		for rule, value := range b.rules {
+			optsCollector[fmt.Sprintf("(buf.validate.field).%s.%s", protoName, rule)] = value
+		}
+	}
 
 	options, err := GetOptions(optsCollector, b.repeatedOptions)
 	if err != nil {

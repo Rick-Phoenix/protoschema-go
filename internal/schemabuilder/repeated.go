@@ -13,12 +13,21 @@ type ProtoRepeatedBuilder struct {
 	minItems uint
 	maxItems uint
 	fieldNr  uint
+	*ProtoFieldExternal[ProtoRepeatedBuilder, any]
 }
 
 func RepeatedField(fieldNr uint, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
-	return &ProtoRepeatedBuilder{
+	options := make(map[string]any)
+	rules := make(map[string]any)
+	self := &ProtoRepeatedBuilder{
 		field: b, fieldNr: fieldNr,
 	}
+
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder, any]{protoFieldInternal: &protoFieldInternal{
+		options: options, rules: rules,
+	}, self: self}
+
+	return self
 }
 
 func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
@@ -53,8 +62,12 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.max_items = %d", b.minItems))
 	}
 
+	if fieldData.Repeated {
+		err = errors.Join(err, fmt.Errorf("Cannot nest repeated fields inside one another (must be wrapped inside a message type first)"))
+	}
+
 	if fieldData.Required {
-		fmt.Printf("Ignoring 'required' for field '%s' (you can set min_len to 1 to require at least one element)", fieldName)
+		fmt.Printf("Ignoring ineffective 'required' option for repeated field '%s' (you can set min_len to 1 instead to require at least one element)", fieldName)
 	}
 
 	if err != nil {
