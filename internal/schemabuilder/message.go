@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -15,7 +16,7 @@ type MessageOption struct {
 
 type ProtoMessageSchema struct {
 	Fields     ProtoFieldsMap
-	OneOfs     []ProtoOneOfSchema
+	OneOfs     []ProtoOneOfBuilder
 	Options    []MessageOption
 	CelOptions []CelFieldOpts
 	Reserved   []int
@@ -29,50 +30,36 @@ type ProtoMessage struct {
 	Options    []MessageOption
 }
 
-func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, Errors) {
+func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	var protoFields []ProtoFieldData
-	var errors Errors
+	var fieldsErrors error
 
 	for fieldName, fieldBuilder := range s.Fields {
 		field, err := fieldBuilder.Build(fieldName, imports)
 		if err != nil {
-			err := fmt.Errorf("Errors for field %s:\n%s", fieldName, IndentString(err.Error()))
-			errors = append(errors, err)
+			fieldsErrors = errors.Join(fieldsErrors, IndentErrors(fmt.Sprintf("Errors for field %s", fieldName), err))
 		} else {
 			protoFields = append(protoFields, field)
 		}
 	}
 
+	if fieldsErrors != nil {
+	}
+
 	oneOfs := []ProtoOneOfData{}
+	var oneOfErrors error
 
 	for _, oneof := range s.OneOfs {
-		data := ProtoOneOfData{}
-		data.Name = oneof.Name
-		data.Options = oneof.Options
+		data, oneofErr := oneof.Build(imports)
 
-		for name, field := range oneof.Choices {
-			oneOfField, err := field.Build(name, imports)
-			if err != nil {
-				errors = append(errors, err)
-			}
-			if oneOfField.Optional {
-				errors = append(errors, fmt.Errorf("Oneof field %q cannot be optional.", name))
-			}
-			if oneOfField.Repeated {
-				errors = append(errors, fmt.Errorf("Oneof field %q cannot be repeated.", name))
-			}
-			if oneOfField.ProtoType == "map" {
-				errors = append(errors, fmt.Errorf("Oneof field %q cannot be a map.", name))
-			} else {
-				data.Choices = append(data.Choices, oneOfField)
-			}
+		if oneofErr != nil {
+			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneOf member %s", data.Name), oneofErr))
 		}
-
 		oneOfs = append(oneOfs, data)
 	}
 
-	if len(errors) > 0 {
-		return ProtoMessage{}, errors
+	if fieldsErrors != nil || oneOfErrors != nil {
+		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors)
 	}
 
 	return ProtoMessage{Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions, OneOfs: oneOfs}, nil

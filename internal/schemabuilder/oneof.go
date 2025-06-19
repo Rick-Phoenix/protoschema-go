@@ -1,6 +1,9 @@
 package schemabuilder
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type ProtoOneOfData struct {
 	Name    string
@@ -17,7 +20,7 @@ type ProtoOneOfGroup struct {
 }
 
 type ProtoOneOfBuilder interface {
-	Build(fieldNr uint, imports Set) (ProtoOneOfData, Errors)
+	Build(imports Set) (ProtoOneOfData, error)
 }
 
 type ProtoOneOfsMap map[string]ProtoFieldBuilder
@@ -28,31 +31,31 @@ func ProtoOneOf(name string, choices ProtoOneOfsMap, options ...ProtoOption) *Pr
 	}
 }
 
-func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, Errors) {
+func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 	choicesData := []ProtoFieldData{}
-	var errors Errors
+	var fieldErr error
 
 	for name, field := range of.choices {
 		data, err := field.Build(name, imports)
 
 		if err != nil {
-			errors = append(errors, err...)
+			fieldErr = errors.Join(fieldErr, err)
 		}
 
 		if data.Optional {
-			errors = append(errors, fmt.Errorf("A field in a oneof group cannot be optional."))
+			fieldErr = errors.Join(fieldErr, fmt.Errorf("A field in a oneof group cannot be optional."))
 		}
 
 		choicesData = append(choicesData, data)
 	}
 
-	if errors != nil {
-		return ProtoOneOfData{}, errors
+	if fieldErr != nil {
+		return ProtoOneOfData{}, fieldErr
 	}
 
 	return ProtoOneOfData{
-		Name: name, Options: of.options, Choices: choicesData,
-	}, []error{}
+		Name: of.name, Options: of.options, Choices: choicesData,
+	}, nil
 }
 
 func (of *ProtoOneOfGroup) Required() *ProtoOneOfGroup {

@@ -63,17 +63,12 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	messages := make(MessagesMap)
 	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, Messages: messages, OptionExtensions: s.OptionExtensions}
 
+	var messageErrors error
 	message, err := NewProtoMessage(s.Resource, imports)
 	messages[resourceName] = message
 
-	if len(err) > 0 {
-		messageErrors := strings.Builder{}
-		messageErrors.WriteString(fmt.Sprintf("The following errors occurred for the %s message schema:\n", resourceName))
-		for _, errGroup := range err {
-			messageErrors.WriteString(IndentString(errGroup.Error()))
-		}
-
-		return ProtoService{}, errors.New(messageErrors.String())
+	if err != nil {
+		messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))
 	}
 
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {

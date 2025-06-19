@@ -34,18 +34,17 @@ type protoFieldInternal struct {
 	protoType       string
 	goType          string
 	deprecated      bool
-	errors          Errors
+	errors          error
 	required        bool
 	isNonScalar     bool
 }
 
 type ProtoFieldBuilder interface {
-	Build(fieldName string, imports Set) (ProtoFieldData, Errors)
+	Build(fieldName string, imports Set) (ProtoFieldData, error)
 }
 
-func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, Errors) {
-	if len(b.errors) > 0 {
-
+func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+	if b.errors != nil {
 		return ProtoFieldData{}, b.errors
 	}
 

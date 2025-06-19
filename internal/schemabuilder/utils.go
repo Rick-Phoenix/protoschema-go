@@ -189,6 +189,19 @@ func IndentLines(reader io.Reader, writer io.Writer) error {
 	return scanner.Err()
 }
 
+func IndentList(text string, writer io.Writer) error {
+	reader := strings.NewReader(text)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		_, err := fmt.Fprintf(writer, "%s- %s\n", indent, line)
+		if err != nil {
+			return fmt.Errorf("failed to write indented line: %w", err)
+		}
+	}
+	return scanner.Err()
+}
+
 func IndentString(s string) string {
 	var sb strings.Builder
 	err := IndentLines(strings.NewReader(s), &sb)
@@ -199,15 +212,22 @@ func IndentString(s string) string {
 	return sb.String()
 }
 
-func IndentErrors(errs Errors) error {
-	if len(errs) == 0 {
+func IndentErrors(description string, errs error) error {
+	if errs == nil {
 		return nil
 	}
 
 	var sb strings.Builder
-	for _, err := range errs {
-		sb.WriteString(fmt.Sprintf("%s%s\n", indent, IndentString(err.Error())))
+	sb.WriteString(description)
+	sb.WriteString(":\n")
+
+	err := IndentList(errs.Error(), &sb)
+
+	if err != nil {
+		fmt.Printf("Internal error indenting string: %v\n", err)
+		return errs
 	}
+
 	return errors.New(sb.String())
 }
 
