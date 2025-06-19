@@ -101,3 +101,9 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 }
 
 var DisableValidator = MessageOption{Name: "(buf.validate.message).disabled", Value: "true"}
+
+func ProtoCustomOneOf(fields ...string) MessageOption {
+	return MessageOption{
+		Name: "(buf.validate.message).oneof", Value: `fields: ["field1", "field2"]`,
+	}
+}

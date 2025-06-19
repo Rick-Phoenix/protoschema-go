@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 
-import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
@@ -30,16 +29,10 @@ extend google.protobuf.OneofOptions {
 
 message User {
   
-  option myopt = true;
-  
-  option (buf.validate.oneof).required = true;
-  
   oneof myoneof {
     string choice1 = 5;
-  int32 choice2 = 6;
   }
 
-  Post post = 4;
   repeated string name = 1 [
     (buf.validate.field).repeated.unique = true,
     (buf.validate.field).repeated.items = {
@@ -54,12 +47,13 @@ message User {
   ];
   google.protobuf.Timestamp createdAt = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).cel = {
+    {
 		id: "test"
 		message: "this is a test"
 		expression: "this = test"
 		} 
   ];
+  Post post = 4;
 }
 
 

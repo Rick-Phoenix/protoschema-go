@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -14,7 +15,7 @@ type FieldWithConst[BuilderT, ValueT any, SingleValT comparable] struct {
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 		return b.self
 	}
 
@@ -31,7 +32,7 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Const(val ValueT) *Builde
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
 	formattedVal, err := formatProtoValue(val)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 		return b.self
 	}
 
@@ -50,12 +51,12 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *B
 		overlaps := SliceIntersects(vals, b.notIn)
 
 		if overlaps {
-			b.internal.errors = append(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
+			b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
 		}
 	}
 	list, err := formatProtoList(vals)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 	}
 	b.internal.rules["in"] = list
 	return b.self
@@ -66,12 +67,12 @@ func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT)
 		overlaps := SliceIntersects(vals, b.notIn)
 
 		if overlaps {
-			b.internal.errors = append(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
+			b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A field cannot be inside of 'in' and 'not_in' at the same time."))
 		}
 	}
 	list, err := formatProtoList(vals)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 	}
 	b.internal.rules["not_in"] = list
 	return b.self

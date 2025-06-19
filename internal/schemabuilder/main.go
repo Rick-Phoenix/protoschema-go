@@ -25,12 +25,11 @@ var UserSchema = ProtoMessageSchema{
 		}),
 		"post": MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
 	},
-	OneOfs: []ProtoOneOfSchema{{
-		Name: "myoneof", Options: []ProtoOption{{Name: "myopt", Value: "true"}, OneOfRequired}, Choices: ProtoOneOfsMap{
+	OneOfs: []ProtoOneOfBuilder{
+		ProtoOneOf("myoneof", ProtoOneOfsMap{
 			"choice1": ProtoString(5),
 			// "choice2": ProtoInt(6),
-		},
-	}},
+		})},
 }
 
 var PostSchema = ProtoMessageSchema{
@@ -40,7 +39,7 @@ var PostSchema = ProtoMessageSchema{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
-		}).Optional(),
+		}),
 	},
 }
 

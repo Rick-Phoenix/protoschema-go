@@ -19,7 +19,7 @@ func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	}
 }
 
-func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, Errors) {
+func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldName, imports)
 
 	if fieldData.Optional {

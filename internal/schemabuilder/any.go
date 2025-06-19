@@ -24,7 +24,7 @@ func ProtoAny(fieldNr uint) *AnyField {
 func (af *AnyField) In(values ...string) *AnyField {
 	list, err := formatProtoList(values)
 	if err != nil {
-		af.errors = append(af.errors, err)
+		af.errors = errors.Join(af.errors, err)
 	}
 	af.in = list
 	return af.self
@@ -33,24 +33,17 @@ func (af *AnyField) In(values ...string) *AnyField {
 func (af *AnyField) NotIn(values ...string) *AnyField {
 	list, err := formatProtoList(values)
 	if err != nil {
-		af.errors = append(af.errors, err)
+		af.errors = errors.Join(af.errors, err)
 	}
 	af.notIn = list
 	return af.self
 }
 
 func (af *AnyField) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	if len(af.errors) > 0 {
-		fieldErrors := strings.Builder{}
-		for _, err := range af.errors {
-			fieldErrors.WriteString(fmt.Sprintf("- %s\n", err.Error()))
-		}
-
-		return ProtoFieldData{}, errors.New(fieldErrors.String())
+	if af.errors != nil {
+		return ProtoFieldData{}, af.errors
 	}
 
-	// Unnecessary to repeat this every time
-	imports["buf/validate/validate.proto"] = present
 	imports["google/protobuf/any.proto"] = present
 
 	options := GetOptions(af.options, af.repeatedOptions)
