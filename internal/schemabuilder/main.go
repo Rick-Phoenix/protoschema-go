@@ -81,24 +81,25 @@ var MyOptions = []CustomOption{{
 // Better to have message names in their own schemas. Remove the map here and use generator functions instead
 // like NewService(name, schema)
 // Then aggregate them in a slice (or define them directly in it) to generate them
+
+// Just the prefix (GetUser), then add the rest. Value must be a tuple req/res.
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
-			"GetUserRequest": UserSchema,
+			"GetUser": Handler{UserSchema, UserSchema},
 		},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},
 		Handlers: HandlersMap{
-			"GetPostRequest": PostSchema,
+			"GetPost": Handler{PostSchema, PostSchema},
 		},
 	},
 }
 
 func GenerateProtoFiles() {
 	var Services = BuildFinalServicesMap(TablesData)
-	// Define paths and options.
 	templatePath := "templates/service.proto.tmpl"
 	outputRoot := "gen/proto"
 

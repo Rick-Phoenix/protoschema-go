@@ -25,7 +25,13 @@ type ProtoService struct {
 	OptionExtensions OptionExtensions
 	Name             string
 	FileOutput       string
-	Handlers         []Handler
+	Handlers         []HandlerData
+}
+
+type HandlerData struct {
+	Name     string
+	Request  string
+	Response string
 }
 
 type ProtoOption struct {
@@ -39,6 +45,13 @@ type CustomOption struct {
 	FieldNr  int
 	Optional bool
 	Repeated bool
+}
+
+type HandlersMap map[string]Handler
+
+type Handler struct {
+	Request  ProtoMessageSchema
+	Response ProtoMessageSchema
 }
 
 type ProtoServiceSchema struct {
@@ -72,8 +85,8 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		}
 	}
 
-	for req, res := range s.Handlers {
-		out.Handlers = append(out.Handlers, Handler{Request: req, Response: res.Name})
+	for name, h := range s.Handlers {
+		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
 	}
 
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {

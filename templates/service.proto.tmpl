@@ -73,7 +73,7 @@ service {{.Name}}Service {
   option {{ .Name }} = {{ .Value }};
 {{ end }}
   {{- range .Handlers}}
-  rpc {{ .Request }}Service({{ .Request }}) returns({{ .Response }});
+  rpc {{ .Name }}({{ .Request }}) returns({{ .Response }});
   {{- end}}
 }
 

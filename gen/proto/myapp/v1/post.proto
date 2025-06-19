@@ -25,7 +25,7 @@ expression: "this = test"
 
 
 service PostServiceService {
-  rpc GetPostRequestService(GetPostRequest) returns();
+  rpc GetPost() returns();
 }
 
 
