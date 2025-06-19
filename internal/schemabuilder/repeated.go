@@ -10,8 +10,8 @@ import (
 type ProtoRepeatedBuilder struct {
 	field    ProtoFieldBuilder
 	unique   bool
-	minItems uint
-	maxItems uint
+	minItems *uint
+	maxItems *uint
 	fieldNr  uint
 	*ProtoFieldExternal[ProtoRepeatedBuilder, any]
 }
@@ -43,23 +43,10 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		if fieldData.IsNonScalar {
 			err = errors.Join(err, fmt.Errorf("Cannot apply contraint 'unique' to a non-scalar repeated field."))
 		}
-		options = append(options, "(buf.validate.field).repeated.unique = true")
 	}
 
 	if strings.HasPrefix(fieldData.ProtoType, "map<") {
 		err = errors.Join(err, fmt.Errorf("Map fields cannot be repeated (must be wrapped in a message type)"))
-	}
-
-	if b.minItems > 0 {
-		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.min_items = %d", b.minItems))
-	}
-
-	if b.maxItems > 0 {
-		if b.maxItems < b.minItems {
-			err = errors.Join(err, fmt.Errorf("max_items cannot be smaller than min_items."))
-		}
-
-		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.max_items = %d", b.minItems))
 	}
 
 	if fieldData.Repeated {
@@ -88,20 +75,39 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.items = %s", stringRules))
 	}
 
+	options, optErr := GetOptions(b.options, b.repeatedOptions)
+
+	if optErr != nil {
+		err = errors.Join(err, optErr)
+	}
+
 	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: b.fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
+	b.options["(buf.validate.field).repeated.unique"] = true
 	b.unique = true
 	return b
 }
 
 func (b *ProtoRepeatedBuilder) MinItems(n uint) *ProtoRepeatedBuilder {
-	b.minItems = n
+	if b.maxItems != nil && *b.maxItems < n {
+		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
+	}
+
+	b.options["(buf.validate.field).repeated.min_items"] = n
+
+	b.minItems = &n
 	return b
 }
 
 func (b *ProtoRepeatedBuilder) MaxItems(n uint) *ProtoRepeatedBuilder {
-	b.maxItems = n
+	if b.minItems != nil && *b.minItems > n {
+		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
+	}
+
+	b.options["(buf.validate.field).repeated.max_items"] = n
+
+	b.maxItems = &n
 	return b
 }

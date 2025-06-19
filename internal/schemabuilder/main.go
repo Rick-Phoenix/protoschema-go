@@ -16,7 +16,7 @@ type FieldData map[string]*ServiceData
 // Change service response/request definition to allow Empty
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique().Required().Deprecated(),
+		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique().Required().Deprecated().MinItems(10),
 		"name2": ProtoString(2).Required().MinLen(2),
 		"createdAt": ProtoTimestamp(3).Required().CelOptions(CelFieldOpts{
 			Id:         "test",
