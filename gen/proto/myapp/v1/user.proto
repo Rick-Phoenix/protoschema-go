@@ -33,20 +33,10 @@ message User {
     string choice1 = 5;
   }
 
-  repeated string name = 1 [
-    (buf.validate.field).repeated.unique = true,
-    (buf.validate.field).repeated.items = {
-  string: {
-    min_len: 2
-}
-} 
-  ];
   string name2 = 2 [
-    (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 2 
   ];
   google.protobuf.Timestamp createdAt = 3 [
-    (buf.validate.field).required = true,
     {
 		id: "test"
 		message: "this is a test"
@@ -54,6 +44,14 @@ message User {
 		} 
   ];
   Post post = 4;
+  map<string, string> maptype = 5 [
+    (buf.validate.field).map.keys = {min_len: 2},
+    (buf.validate.field).map.values = {const: "aaa", example: "aa"} 
+  ];
+  repeated string name = 1 [
+    (buf.validate.field).repeated.unique = true,
+    (buf.validate.field).repeated.items = {string: {min_len: 2}} 
+  ];
 }
 
 

@@ -14,7 +14,7 @@ type Number interface {
 }
 
 type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
-	*protoFieldInternal
+	*ProtoFieldExternal[BuilderT, ValueT]
 	*FieldWithConst[BuilderT, ValueT, ValueT]
 	*OptionalField[BuilderT]
 	self *BuilderT
@@ -32,9 +32,11 @@ type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 
 func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
-		protoFieldInternal: pfi,
-		self:               self,
-		isFloatType:        isFloat,
+		ProtoFieldExternal: &ProtoFieldExternal[BuilderT, ValueT]{
+			protoFieldInternal: pfi,
+			self:               self,
+		},
+		isFloatType: isFloat,
 		FieldWithConst: &FieldWithConst[BuilderT, ValueT, ValueT]{
 			internal: pfi,
 			self:     self,

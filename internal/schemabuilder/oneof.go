@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ProtoOneOfData struct {
@@ -43,7 +44,15 @@ func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 		}
 
 		if data.Optional {
-			fieldErr = errors.Join(fieldErr, fmt.Errorf("A field in a oneof group cannot be optional."))
+			fmt.Printf("Ignoring 'optional' for member '%s' of a oneof group...\n", name)
+		}
+
+		if data.Repeated {
+			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use a repeated field inside a oneof group."))
+		}
+
+		if strings.HasPrefix(data.ProtoType, "map<") {
+			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use a map field inside a oneof group."))
 		}
 
 		choicesData = append(choicesData, data)

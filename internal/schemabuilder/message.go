@@ -43,9 +43,6 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		}
 	}
 
-	if fieldsErrors != nil {
-	}
-
 	oneOfs := []ProtoOneOfData{}
 	var oneOfErrors error
 

@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -11,11 +12,12 @@ type ProtoRepeatedBuilder struct {
 	unique   bool
 	minItems uint
 	maxItems uint
+	fieldNr  uint
 }
 
-func RepeatedField(b ProtoFieldBuilder) *ProtoRepeatedBuilder {
+func RepeatedField(fieldNr uint, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	return &ProtoRepeatedBuilder{
-		field: b,
+		field: b, fieldNr: fieldNr,
 	}
 }
 
@@ -35,6 +37,10 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, "(buf.validate.field).repeated.unique = true")
 	}
 
+	if strings.HasPrefix(fieldData.ProtoType, "map<") {
+		err = errors.Join(err, fmt.Errorf("Map fields cannot be repeated (must be wrapped in a message type)"))
+	}
+
 	if b.minItems > 0 {
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.min_items = %d", b.minItems))
 	}
@@ -47,38 +53,29 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.max_items = %d", b.minItems))
 	}
 
+	if fieldData.Required {
+		fmt.Printf("Ignoring 'required' for field '%s' (you can set min_len to 1 to require at least one element)", fieldName)
+	}
+
 	if err != nil {
 		return ProtoFieldData{}, err
 	}
 
 	if len(fieldData.Rules) > 0 {
-		processedRules := 0
-		stringRule := strings.Builder{}
-		// Better formatting for this
-		stringRule.WriteString("(buf.validate.field).repeated.items = {\n")
-		stringRule.WriteString(fmt.Sprintf("  %s: {\n", fieldData.ProtoType))
-		for name, value := range fieldData.Rules {
-			if name == "required" {
-				fmt.Printf("Ignoring 'required' for repeated type %s...", fieldName)
-				continue
-			}
+		rulesMap := make(map[string]any)
+		rulesCopy := make(map[string]any)
+		maps.Copy(rulesCopy, fieldData.Rules)
+		rulesMap[fieldData.ProtoType] = rulesCopy
 
-			stringValue, fmtErr := formatProtoValue(value)
-			if fmtErr != nil {
-				err = errors.Join(err, fmtErr)
-			} else {
-				stringRule.WriteString(fmt.Sprintf("    %s: %s\n", name, stringValue))
-				processedRules++
-			}
+		stringRules, fmtErr := formatProtoValue(rulesMap)
+		if fmtErr != nil {
+			err = errors.Join(err, fmtErr)
 		}
-		stringRule.WriteString("}\n}")
 
-		if processedRules > 0 {
-			options = append(options, stringRule.String())
-		}
+		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.items = %s", stringRules))
 	}
 
-	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldData.FieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: b.fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {

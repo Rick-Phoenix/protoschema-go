@@ -18,7 +18,6 @@ type ProtoFieldData struct {
 	FieldNr     uint
 	Name        string
 	Imports     []string
-	Deprecated  bool
 	Repeated    bool
 	Required    bool
 	IsNonScalar bool
@@ -33,7 +32,6 @@ type protoFieldInternal struct {
 	imports         []string
 	protoType       string
 	goType          string
-	deprecated      bool
 	errors          error
 	required        bool
 	isNonScalar     bool
@@ -53,6 +51,10 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 	}
 
 	options := GetOptions(b.options, b.repeatedOptions)
+
+	if b.required {
+		b.options["(buf.validate.field).required"] = "true"
+	}
 
 	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional}, nil
 }

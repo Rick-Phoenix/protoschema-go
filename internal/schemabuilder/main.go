@@ -16,14 +16,15 @@ type FieldData map[string]*ServiceData
 // Change service response/request definition to allow Empty
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"name":  RepeatedField(ProtoString(1).MinLen(2)).Unique(),
+		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique(),
 		"name2": ProtoString(2).Required().MinLen(2),
 		"createdAt": ProtoTimestamp(3).Required().CelOption(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post": MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
+		"post":    MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
+		"maptype": ProtoMap(5, ProtoInt32(0).Lt(10), ProtoString(0).Example("aa").Const("aaa")),
 	},
 	OneOfs: []ProtoOneOfBuilder{
 		ProtoOneOf("myoneof", ProtoOneOfsMap{

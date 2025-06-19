@@ -12,6 +12,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -83,7 +84,7 @@ func RandomString(byteLength int) (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-func MapKeys[T comparable](m map[T]any) []T {
+func GetMapKeys[T comparable](m map[T]any) []T {
 	iter := maps.Keys(m)
 	keys := slices.Collect(iter)
 
@@ -231,12 +232,8 @@ func IndentErrors(description string, errs error) error {
 	return errors.New(sb.String())
 }
 
-func formatProtoValue(value any) (string, error) {
-	if value == nil {
-		return "", nil
-	}
-
-	switch v := value.(type) {
+func formatProtoValue[T any](value T) (string, error) {
+	switch v := any(value).(type) {
 	case string:
 		return fmt.Sprintf("%q", v), nil
 	case []byte:
@@ -256,8 +253,83 @@ func formatProtoValue(value any) (string, error) {
 	case *timestamppb.Timestamp:
 		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
 	default:
-		return "", fmt.Errorf("unsupported type for Protobuf literal formatting: %v", reflect.TypeOf(value))
+		// If it's not one of the direct cases, use reflect to determine its kind.
+		val := reflect.ValueOf(value)
+		kind := val.Kind()
+
+		if kind == reflect.Slice || kind == reflect.Array { // Handle both slices and arrays identically
+			var formattedElements []string
+			for i := range val.Len() {
+				elem := val.Index(i).Interface()       // Get the element's underlying value as an interface{}
+				elemStr, err := formatProtoValue(elem) // Recursively format each element
+				if err != nil {
+					return "", err
+				}
+				formattedElements = append(formattedElements, elemStr)
+			}
+			return fmt.Sprintf("[%s]", strings.Join(formattedElements, ", ")), nil
+		} else if kind == reflect.Map {
+			var formattedEntries []string
+			keys := val.MapKeys()
+
+			sort.Slice(keys, func(i, j int) bool {
+				return fmt.Sprint(keys[i].Interface()) < fmt.Sprint(keys[j].Interface())
+			})
+
+			for _, keyReflectValue := range keys {
+				valueReflectValue := val.MapIndex(keyReflectValue)
+
+				keyStr, err := formatProtoValue(keyReflectValue.Interface())
+				if err != nil {
+					return "", err
+				}
+				cleanedKey := strings.ReplaceAll(keyStr, "\"", "")
+				valStr, err := formatProtoValue(valueReflectValue.Interface())
+				if err != nil {
+					return "", err
+				}
+				formattedEntries = append(formattedEntries, fmt.Sprintf("%s: %s", cleanedKey, valStr))
+			}
+			return fmt.Sprintf("{%s}", strings.Join(formattedEntries, ", ")), nil
+		}
+
+		return "", fmt.Errorf("unsupported type for proto value formatting: %T (kind: %s)", value, kind)
 	}
+}
+
+func formatProtoList[T any](l []T) (string, error) {
+	var sb strings.Builder
+	sb.WriteString("[")
+	for _, v := range l {
+		protoVal, err := formatProtoValue(v)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(fmt.Sprintf("%s, ", protoVal))
+	}
+	sb.WriteString("]")
+
+	return sb.String(), nil
+}
+
+func formatProtoDict[T any](d map[string]T) (string, error) {
+	if len(d) == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString("{\n")
+	for k, v := range d {
+		protoV, err := formatProtoValue(v)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(fmt.Sprintf("%s: %s\n", k, protoV))
+	}
+	sb.WriteString("}")
+
+	return sb.String(), nil
+
 }
 
 func formatBytesAsProtoLiteral(b []byte) (string, error) {
@@ -278,41 +350,6 @@ func formatBytesAsProtoLiteral(b []byte) (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-func formatProtoList[T any](l []T) (string, error) {
-	var sb strings.Builder
-	sb.WriteString("[")
-	for _, v := range l {
-		protoVal, err := formatProtoValue(v)
-		if err != nil {
-			return "", err
-		}
-		sb.WriteString(fmt.Sprintf("%s, ", protoVal))
-	}
-	sb.WriteString("]")
-
-	return sb.String(), nil
-}
-
-func formatProtoDict(d map[string]any) (string, error) {
-	if len(d) == 0 {
-		return "", nil
-	}
-
-	var sb strings.Builder
-	sb.WriteString("{\n")
-	for k, v := range d {
-		protoV, err := formatProtoValue(v)
-		if err != nil {
-			return "", err
-		}
-		sb.WriteString(fmt.Sprintf("%s: %s\n", k, protoV))
-	}
-	sb.WriteString("}")
-
-	return sb.String(), nil
-
 }
 
 func ValidateDurationString(durationStr string) error {

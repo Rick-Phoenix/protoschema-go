@@ -44,7 +44,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
 	if b.optional {
 		b.errors = errors.Join(b.errors, fmt.Errorf("A field cannot be required and optional."))
 	}
-	b.options["(buf.validate.field).required"] = "true"
 	b.required = true
 	return b.self
 }
