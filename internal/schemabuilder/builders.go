@@ -1,5 +1,10 @@
 package schemabuilder
 
+import (
+	"errors"
+	"maps"
+)
+
 var present = struct{}{}
 
 const indent = "  "
@@ -24,8 +29,8 @@ type ProtoFieldData struct {
 }
 
 type protoFieldInternal struct {
-	options         map[string]string
 	rules           map[string]any
+	options         map[string]any
 	repeatedOptions []string
 	optional        bool
 	fieldNr         uint
@@ -35,6 +40,7 @@ type protoFieldInternal struct {
 	errors          error
 	required        bool
 	isNonScalar     bool
+	ignore          string
 }
 
 type ProtoFieldBuilder interface {
@@ -42,21 +48,35 @@ type ProtoFieldBuilder interface {
 }
 
 func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+	data := ProtoFieldData{Name: fieldName, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional}
+
+	var errAgg error
 	if b.errors != nil {
-		return ProtoFieldData{}, b.errors
+		errAgg = errors.Join(errAgg, b.errors)
 	}
 
 	for _, v := range b.imports {
 		imports[v] = present
 	}
 
-	options := GetOptions(b.options, b.repeatedOptions)
+	var options []string
 
-	if b.required {
-		b.options["(buf.validate.field).required"] = "true"
+	optsCollector := make(map[string]any)
+	maps.Copy(optsCollector, b.options)
+	maps.Copy(optsCollector, b.rules)
+
+	options, err := GetOptions(optsCollector, b.repeatedOptions)
+	if err != nil {
+		errAgg = errors.Join(errAgg, err)
 	}
 
-	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional}, nil
+	data.Options = options
+
+	if errAgg != nil {
+		return data, errAgg
+	}
+
+	return data, nil
 }
 
 type ProtoFieldExternal[BuilderT any, ValueT any] struct {

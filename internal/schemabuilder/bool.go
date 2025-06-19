@@ -12,8 +12,8 @@ func ProtoBool(fieldNr uint) *ProtoBoolField {
 		fieldNr: fieldNr, protoType: "bool", goType: "bool",
 	}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[ProtoBoolField, bool]{internal, bf}
-	bf.FieldWithConst = &FieldWithConst[ProtoBoolField, bool, bool]{internal: internal, self: bf}
-	bf.OptionalField = &OptionalField[ProtoBoolField]{internal: internal, self: bf}
+	bf.FieldWithConst = &FieldWithConst[ProtoBoolField, bool, bool]{constInternal: internal, self: bf}
+	bf.OptionalField = &OptionalField[ProtoBoolField]{optionalInternal: internal, self: bf}
 
 	return bf
 }

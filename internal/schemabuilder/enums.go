@@ -12,7 +12,7 @@ func ProtoEnumField(fieldNr uint, enumName string) *EnumField {
 	internal := &protoFieldInternal{fieldNr: fieldNr, goType: "int32", protoType: "enumName"}
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField, int32]{
 		protoFieldInternal: internal, self: ef}
-	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{internal: internal, self: ef}
+	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
 
 	return ef
 }

@@ -13,11 +13,11 @@ package myapp.v1;
 message Post {
   string id = 1;
   google.protobuf.Timestamp createdAt = 2 [
-    {
-		id: "test"
-		message: "this is a test"
-		expression: "this = test"
-		} 
+    (buf.validate.field).cel = {
+id: "test" 
+message: "this is a test"
+expression: "this = test"
+} 
   ];
 }
 

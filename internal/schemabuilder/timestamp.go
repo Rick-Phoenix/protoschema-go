@@ -21,11 +21,12 @@ type TimestampField struct {
 }
 
 func ProtoTimestamp(fieldNr uint) *TimestampField {
-	options := make(map[string]string)
+	rules := make(map[string]any)
+	options := make(map[string]any)
 
 	gf := &TimestampField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]{
-		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true}, gf,
+		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }

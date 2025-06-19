@@ -31,7 +31,7 @@ type ProtoService struct {
 
 type ProtoOption struct {
 	Name  string
-	Value string
+	Value any
 }
 
 type CustomOption struct {

@@ -38,12 +38,12 @@ func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldIn
 		},
 		isFloatType: isFloat,
 		FieldWithConst: &FieldWithConst[BuilderT, ValueT, ValueT]{
-			internal: pfi,
-			self:     self,
+			constInternal: pfi,
+			self:          self,
 		},
 		OptionalField: &OptionalField[BuilderT]{
-			internal: pfi,
-			self:     self,
+			optionalInternal: pfi,
+			self:             self,
 		},
 	}
 }
@@ -62,7 +62,7 @@ func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	nf.rules["lt"] = val
 	nf.hasLtOrLte = true
 	nf.lt = val
-	return nf.self
+	return nf.ProtoFieldExternal.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
@@ -79,7 +79,7 @@ func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	nf.rules["lte"] = val
 	nf.hasLtOrLte = true
 	nf.lte = val
-	return nf.self
+	return nf.ProtoFieldExternal.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
@@ -96,7 +96,7 @@ func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	nf.rules["gt"] = val
 	nf.hasGtOrGte = true
 	nf.gt = val
-	return nf.self
+	return nf.ProtoFieldExternal.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
@@ -113,7 +113,7 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	nf.rules["gte"] = val
 	nf.hasGtOrGte = true
 	nf.gte = val
-	return nf.self
+	return nf.ProtoFieldExternal.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
@@ -121,16 +121,15 @@ func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("The 'finite' rule is only applicable to float and double types."))
 	}
 	nf.rules["finite"] = true
-	return nf.self
+	return nf.ProtoFieldExternal.self
 }
 
 type IntField struct {
-	*ProtoFieldExternal[IntField, int32]
 	*NumericField[IntField, int32]
 }
 
 func ProtoInt32(fieldNumber uint) *IntField {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -142,10 +141,7 @@ func ProtoInt32(fieldNumber uint) *IntField {
 	}
 
 	integerField := &IntField{}
-	integerField.ProtoFieldExternal = &ProtoFieldExternal[IntField, int32]{
-		protoFieldInternal: internal,
-		self:               integerField,
-	}
+
 	integerField.NumericField = newNumericField[IntField, int32](internal, integerField, false)
 	return integerField
 }
@@ -156,7 +152,7 @@ type FloatField struct {
 }
 
 func ProtoFloat(fieldNumber uint) *FloatField {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -182,7 +178,7 @@ type DoubleField struct {
 }
 
 func ProtoDouble(fieldNumber uint) *DoubleField {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -208,7 +204,7 @@ type Int64Field struct {
 }
 
 func ProtoInt64(fieldNumber uint) *Int64Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -234,7 +230,7 @@ type UInt32Field struct {
 }
 
 func ProtoUInt32(fieldNumber uint) *UInt32Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -260,7 +256,7 @@ type UInt64Field struct {
 }
 
 func ProtoUInt64(fieldNumber uint) *UInt64Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -286,7 +282,7 @@ type SInt32Field struct {
 }
 
 func ProtoSInt32(fieldNumber uint) *SInt32Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -312,7 +308,7 @@ type SInt64Field struct {
 }
 
 func ProtoSInt64(fieldNumber uint) *SInt64Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -338,7 +334,7 @@ type Fixed32Field struct {
 }
 
 func ProtoFixed32(fieldNumber uint) *Fixed32Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -364,7 +360,7 @@ type Fixed64Field struct {
 }
 
 func ProtoFixed64(fieldNumber uint) *Fixed64Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -390,7 +386,7 @@ type SFixed32Field struct {
 }
 
 func ProtoSFixed32(fieldNumber uint) *SFixed32Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
@@ -416,7 +412,7 @@ type SFixed64Field struct {
 }
 
 func ProtoSFixed64(fieldNumber uint) *SFixed64Field {
-	options := make(map[string]string)
+	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{

@@ -95,7 +95,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 
 func ProtoString(fieldNumber uint) *StringField {
 	rules := make(map[string]any)
-	options := make(map[string]string)
+	options := make(map[string]any)
 	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", options: options, rules: rules}
 
 	sf := &StringField{}
@@ -108,12 +108,12 @@ func ProtoString(fieldNumber uint) *StringField {
 		self:     sf,
 	}
 	sf.FieldWithConst = &FieldWithConst[StringField, string, string]{
-		internal: internal,
-		self:     sf,
+		constInternal: internal,
+		self:          sf,
 	}
 	sf.OptionalField = &OptionalField[StringField]{
-		internal: internal,
-		self:     sf}
+		optionalInternal: internal,
+		self:             sf}
 
 	return sf
 }
@@ -224,8 +224,9 @@ type BytesField struct {
 }
 
 func ProtoBytes(fieldNumber uint) *BytesField {
-	options := make(map[string]string)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", options: options}
+	rules := make(map[string]any)
+	options := make(map[string]any)
+	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", options: options, rules: rules}
 
 	bf := &BytesField{}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
@@ -237,11 +238,11 @@ func ProtoBytes(fieldNumber uint) *BytesField {
 		self:     bf,
 	}
 	bf.FieldWithConst = &FieldWithConst[BytesField, []byte, byte]{
-		internal: internal,
-		self:     bf,
+		constInternal: internal,
+		self:          bf,
 	}
 	bf.OptionalField = &OptionalField[BytesField]{
-		internal: internal,
-		self:     bf}
+		optionalInternal: internal,
+		self:             bf}
 	return bf
 }

@@ -18,7 +18,7 @@ var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique(),
 		"name2": ProtoString(2).Required().MinLen(2),
-		"createdAt": ProtoTimestamp(3).Required().CelOption(CelFieldOpts{
+		"createdAt": ProtoTimestamp(3).Required().CelOptions(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
@@ -29,14 +29,13 @@ var UserSchema = ProtoMessageSchema{
 	OneOfs: []ProtoOneOfBuilder{
 		ProtoOneOf("myoneof", ProtoOneOfsMap{
 			"choice1": ProtoString(5),
-			// "choice2": ProtoInt(6),
 		})},
 }
 
 var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"id": ProtoString(1),
-		"createdAt": ProtoTimestamp(2).CelOption(CelFieldOpts{
+		"createdAt": ProtoTimestamp(2).CelOptions(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
@@ -95,7 +94,7 @@ var TablesData = ServicesMap{
 				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
 					"user": MessageType[gofirst.User](1, "User"),
-					"createdAt": ProtoTimestamp(2).Required().CelOption(CelFieldOpts{
+					"createdAt": ProtoTimestamp(2).Required().CelOptions(CelFieldOpts{
 						Id:         "test",
 						Message:    "this is a test",
 						Expression: "this = test",
