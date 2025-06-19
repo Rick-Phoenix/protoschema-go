@@ -17,16 +17,15 @@ type OptionExtensions struct {
 
 type MessagesMap map[string]ProtoMessage
 
-// Allow for protoempty as a response
 type ProtoService struct {
-	Messages         MessagesMap
+	Messages         []ProtoMessage
 	Imports          Set
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
 	OptionExtensions OptionExtensions
 	Name             string
 	FileOutput       string
-	Handlers         []string
+	Handlers         []Handler
 }
 
 type ProtoOption struct {
@@ -43,47 +42,43 @@ type CustomOption struct {
 }
 
 type ProtoServiceSchema struct {
-	Create, Get, Update, Delete *ServiceData
-	Resource                    ProtoMessageSchema
-	ServiceOptions              []ProtoOption
-	FileOptions                 []ProtoOption
-	OptionExtensions            OptionExtensions
-	Enums                       ProtoEnumMap
-}
-
-type ServiceData struct {
-	Request  ProtoMessageSchema
-	Response ProtoMessageSchema
+	Handlers         HandlersMap
+	Messages         []ProtoMessageSchema
+	ServiceOptions   []ProtoOption
+	FileOptions      []ProtoOption
+	OptionExtensions OptionExtensions
+	Enums            ProtoEnumMap
 }
 
 var FileLocations = map[string]string{}
 
+// Define handler messages (and even resource messages) in the handlers.
+// Make a map to follow that, and for tohse that have not been listed as messages, add them.
+// Otherwise, only use their name for the handler.
+// Handlers should be a validated map regardless to avoid repetition.
+// Maybe map of name like GetUser or GetUserRequest, mapped to a message schema (GetUserResponse)
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
-	messages := make(MessagesMap)
-	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, Messages: messages, OptionExtensions: s.OptionExtensions}
+	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions}
 
 	var messageErrors error
-	message, err := NewProtoMessage(s.Resource, imports)
-	messages[resourceName] = message
 
-	if err != nil {
-		messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))
+	for _, m := range s.Messages {
+		message, err := NewProtoMessage(m, imports)
+		out.Messages = append(out.Messages, message)
+
+		if err != nil {
+			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))
+		}
+	}
+
+	for req, res := range s.Handlers {
+		out.Handlers = append(out.Handlers, Handler{Request: req, Response: res.Name})
 	}
 
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {
 		imports["google/protobuf/descriptor.proto"] = present
 	}
-
-	// if s.Get != nil {
-	// 	out.Handlers = append(out.Handlers, "Get"+resourceName)
-	// 	requestName := "Get" + resourceName + "Request"
-	// 	// getRequest := NewProtoMessage(s.Get.Request, imports)
-	// 	responseName := "Get" + resourceName + "Response"
-	// 	// getResponse := NewProtoMessage(s.Get.Response, imports)
-	// 	messages[requestName] = getRequest
-	// 	messages[responseName] = getResponse
-	// }
 
 	fileOutput := path.Join(basePath, strings.ToLower(resourceName)+".proto")
 	out.FileOutput = fileOutput

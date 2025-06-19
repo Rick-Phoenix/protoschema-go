@@ -40,10 +40,10 @@ extend google.protobuf.OneofOptions {
 }
 {{- end }}
 
-{{ range $msgName, $msgData := .Messages }}
-message {{ $msgName }} {
-{{- if $msgData.Reserved}}
-  reserved {{ joinInt $msgData.Reserved ", "}};
+{{ range .Messages }}
+message {{ .Name }} {
+{{- if .Reserved}}
+  reserved {{ joinInt .Reserved ", "}};
 {{ end }}
 {{- range .Options}}
   option {{ .Name }} = {{ .Value }};
@@ -60,7 +60,7 @@ message {{ $msgName }} {
   {{ end -}}
   }
 {{ end }}
-{{- range $_, $field := $msgData.Fields}}
+{{- range $_, $field := .Fields}}
   {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
     {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{ end }} 
   ]{{- end -}};
@@ -73,7 +73,7 @@ service {{.Name}}Service {
   option {{ .Name }} = {{ .Value }};
 {{ end }}
   {{- range .Handlers}}
-  rpc {{.}}({{.}}Request) returns({{.}}Response);
+  rpc {{ .Request }}Service({{ .Request }}) returns({{ .Response }});
   {{- end}}
 }
 

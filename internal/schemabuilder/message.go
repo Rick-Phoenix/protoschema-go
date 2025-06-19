@@ -10,6 +10,7 @@ import (
 type ProtoFieldsMap map[string]ProtoFieldBuilder
 
 type ProtoMessageSchema struct {
+	Name       string
 	Fields     ProtoFieldsMap
 	OneOfs     []ProtoOneOfBuilder
 	Options    []ProtoOption
@@ -18,6 +19,7 @@ type ProtoMessageSchema struct {
 }
 
 type ProtoMessage struct {
+	Name       string
 	Fields     []ProtoFieldData
 	OneOfs     []ProtoOneOfData
 	Reserved   []int
@@ -54,7 +56,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors)
 	}
 
-	return ProtoMessage{Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions, OneOfs: oneOfs}, nil
+	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, CelOptions: s.CelOptions, OneOfs: oneOfs}, nil
 }
 
 func ExtendProtoMessage(s ProtoMessageSchema, override *ProtoMessageSchema) *ProtoMessageSchema {

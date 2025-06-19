@@ -8,13 +8,12 @@ import (
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
-type FieldData map[string]*ServiceData
-
 // Read again how oneof goes with optional and required
 // Optional + required is possible
 // Oneof?
 // Change service response/request definition to allow Empty
 var UserSchema = ProtoMessageSchema{
+	Name: "User",
 	Fields: ProtoFieldsMap{
 		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique().Required().Deprecated().MinItems(10),
 		"name2": ProtoString(2).Required().MinLen(2),
@@ -79,35 +78,20 @@ var MyOptions = []CustomOption{{
 }}
 
 // Maybe separate db types from other messages (which can add or subtract from db types)
+// Better to have message names in their own schemas. Remove the map here and use generator functions instead
+// like NewService(name, schema)
+// Then aggregate them in a slice (or define them directly in it) to generate them
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
-		OptionExtensions: OptionExtensions{
-			Field:   MyOptions,
-			Message: MyOptions,
-			File:    MyOptions,
-			OneOf:   MyOptions,
-		},
-		Resource: UserSchema,
-		Get: &ServiceData{
-			Request: UserSchema,
-			Response: ProtoMessageSchema{
-				Fields: ProtoFieldsMap{
-					"user": MessageType[gofirst.User](1, "User"),
-				},
-			},
+		Messages: []ProtoMessageSchema{UserSchema},
+		Handlers: HandlersMap{
+			"GetUserRequest": UserSchema,
 		},
 	},
 	"Post": ProtoServiceSchema{
-		Resource: PostSchema,
-		Get: &ServiceData{
-			Request: PostSchema,
-			Response: ProtoMessageSchema{
-				Reserved: []int{100, 101, 102},
-				Fields: ProtoFieldsMap{
-					"user": MessageType[gofirst.User](1, "User", WithImportPath("myapp/v1/Post.proto")),
-					"post": MessageType[gofirst.Post](2, "Post"),
-				},
-			},
+		Messages: []ProtoMessageSchema{PostSchema},
+		Handlers: HandlersMap{
+			"GetPostRequest": PostSchema,
 		},
 	},
 }
