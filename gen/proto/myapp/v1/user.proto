@@ -1,13 +1,16 @@
 syntax = "proto3";
 
-package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
+package myapp.v1;
+
+
 option myoption = true;
+
 
 extend google.protobuf.FileOptions {
   optional string testopt = 1;
@@ -24,39 +27,48 @@ extend google.protobuf.OneofOptions {
   optional string testopt = 1;
 }
 
+
 message User {
+  option (buf.validate.message).disabled = true;
+
+  option (buf.validate.message).oneof = {fields: ["aa", "bb"]};
+
+  
   oneof myoneof {
     string choice1 = 5;
   }
 
-  Post post = 4;
-  map<int32, string> maptype = 209 [
-    (buf.validate.field).map.keys = {lt: 10},
-    (buf.validate.field).map.values = {
-      const: "aaa"
-      example: "aa"
-    }
-  ];
-  repeated string name = 1 [
-    (buf.validate.field).required = "true",
-    deprecated = "true",
-    (buf.validate.field).repeated.min_items = 10,
-    (buf.validate.field).repeated.unique = true
-  ];
   string name2 = 2 [
     (buf.validate.field).required = "true",
-    (buf.validate.field).string.min_len = 2
+    (buf.validate.field).string.min_len = 2 
   ];
   google.protobuf.Timestamp createdAt = 3 [
     (buf.validate.field).required = "true",
     (buf.validate.field).cel = {
-      id: "test"
-      message: "this is a test"
-      expression: "this = test"
-    }
+id: "test" 
+message: "this is a test"
+expression: "this = test"
+} 
+  ];
+  Post post = 4;
+  map<int32, string> maptype = 209 [
+    (buf.validate.field).map.keys = {lt: 10},
+    (buf.validate.field).map.values = {const: "aaa", example: "aa"},
+    (buf.validate.field).required = "true" 
+  ];
+  repeated string name = 1 [
+    (buf.validate.field).repeated.items = {string: {min_len: 2}},
+    (buf.validate.field).repeated.unique = true,
+    (buf.validate.field).required = "true",
+    deprecated = "true",
+    (buf.validate.field).repeated.min_items = 10 
   ];
 }
 
+
 service UserServiceService {
   option myoption = true;
+
 }
+
+

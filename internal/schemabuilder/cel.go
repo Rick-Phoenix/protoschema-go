@@ -6,10 +6,6 @@ import (
 	"slices"
 )
 
-var DisableValidation = MessageOption{
-	Name: "(buf.validate.message).disabled", Value: "true",
-}
-
 func GetCelOption(opt CelFieldOpts) string {
 	return fmt.Sprintf("{\nid: %q \nmessage: %q\nexpression: %q\n}",
 		opt.Id, opt.Message, opt.Expression)

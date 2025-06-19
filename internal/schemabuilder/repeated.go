@@ -75,7 +75,9 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.items = %s", stringRules))
 	}
 
-	options, optErr := GetOptions(b.options, b.repeatedOptions)
+	extraOpts, optErr := GetOptions(b.options, b.repeatedOptions)
+
+	options = append(options, extraOpts...)
 
 	if optErr != nil {
 		err = errors.Join(err, optErr)

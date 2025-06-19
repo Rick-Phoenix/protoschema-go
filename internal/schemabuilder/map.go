@@ -4,21 +4,31 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 )
 
 type ProtoMapBuilder struct {
 	keys     ProtoFieldBuilder
 	values   ProtoFieldBuilder
-	minPairs uint
-	maxPairs uint
+	minPairs *uint
+	maxPairs *uint
 	fieldNr  uint
+	*ProtoFieldExternal[ProtoMapBuilder, any]
 }
 
 // Add cel and ignore options to this and others not implementing external
 func ProtoMap(fieldNr uint, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
-	return &ProtoMapBuilder{
+	options := make(map[string]any)
+	rules := make(map[string]any)
+	self := &ProtoMapBuilder{
 		keys: keys, values: values, fieldNr: fieldNr,
 	}
+
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder, any]{protoFieldInternal: &protoFieldInternal{
+		options: options, rules: rules,
+	}, self: self}
+
+	return self
 }
 
 func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
@@ -41,26 +51,14 @@ func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, 
 	}
 
 	if valuesField.Repeated {
-		err = errors.Join(err, fmt.Errorf("Cannot use a repeated field as a value type in a protobuf map (must be wrapped in a message type)."))
+		err = errors.Join(err, fmt.Errorf("Cannot use a repeated field as a value type in a protobuf map (must be wrapped in a message type first)."))
 	}
 
-	if keysField.Optional || valuesField.Optional {
-		fmt.Printf("Ignoring 'optional' for map field '%s' (use min_pairs to require at least one element)", fieldName)
+	if strings.HasPrefix(valuesField.ProtoType, "map<") {
+		err = errors.Join(err, fmt.Errorf("Cannot use a map as a value type of another map (must be wrapped in a message type first.)"))
 	}
 
 	options := []string{}
-
-	if b.minPairs > 0 {
-		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.min_pairs = %d", b.minPairs))
-	}
-
-	if b.maxPairs > 0 {
-		if b.maxPairs < b.minPairs {
-			err = errors.Join(err, fmt.Errorf("max_pairs cannot be smaller than min_pairs."))
-		}
-
-		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.max_pairs = %d", b.minPairs))
-	}
 
 	for _, item := range []struct {
 		MapType string
@@ -79,6 +77,14 @@ func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, 
 		}
 	}
 
+	extraOpts, optErr := GetOptions(b.options, b.repeatedOptions)
+
+	options = append(options, extraOpts...)
+
+	if optErr != nil {
+		err = errors.Join(err, optErr)
+	}
+
 	if err != nil {
 		return ProtoFieldData{}, err
 	}
@@ -87,11 +93,19 @@ func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, 
 }
 
 func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {
-	b.minPairs = n
+	if b.maxPairs != nil && *b.maxPairs < n {
+		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
+	}
+	b.options["(buf.validate.field).repeated.min_pairs"] = n
+	b.minPairs = &n
 	return b
 }
 
 func (b *ProtoMapBuilder) MaxPairs(n uint) *ProtoMapBuilder {
-	b.maxPairs = n
+	if b.minPairs != nil && *b.minPairs > n {
+		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
+	}
+	b.options["(buf.validate.field).repeated.max_pairs"] = n
+	b.maxPairs = &n
 	return b
 }

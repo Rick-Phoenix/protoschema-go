@@ -9,15 +9,10 @@ import (
 
 type ProtoFieldsMap map[string]ProtoFieldBuilder
 
-type MessageOption struct {
-	Name  string
-	Value string
-}
-
 type ProtoMessageSchema struct {
 	Fields     ProtoFieldsMap
 	OneOfs     []ProtoOneOfBuilder
-	Options    []MessageOption
+	Options    []ProtoOption
 	CelOptions []CelFieldOpts
 	Reserved   []int
 }
@@ -27,7 +22,7 @@ type ProtoMessage struct {
 	OneOfs     []ProtoOneOfData
 	Reserved   []int
 	CelOptions []CelFieldOpts
-	Options    []MessageOption
+	Options    []ProtoOption
 }
 
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
@@ -97,10 +92,24 @@ func OmitProtoMessage(s ProtoMessageSchema, keys []string) *ProtoMessageSchema {
 	return &s
 }
 
-var DisableValidator = MessageOption{Name: "(buf.validate.message).disabled", Value: "true"}
+var DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: "true"}
+var ProtoDeprecated = ProtoOption{Name: "deprecated", Value: "true"}
 
-func ProtoCustomOneOf(fields ...string) MessageOption {
-	return MessageOption{
-		Name: "(buf.validate.message).oneof", Value: `fields: ["field1", "field2"]`,
+func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
+	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
+	values := make(map[string]any)
+	values["fields"] = fields
+
+	if required {
+		values["required"] = true
 	}
+
+	val, err := formatProtoValue(values)
+
+	if err != nil {
+		fmt.Printf("Error while formatting the fields for oneof: %v", err)
+	}
+
+	mo.Value = val
+	return mo
 }

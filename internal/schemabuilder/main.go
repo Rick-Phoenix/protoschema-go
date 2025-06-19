@@ -11,8 +11,8 @@ import (
 type FieldData map[string]*ServiceData
 
 // Read again how oneof goes with optional and required
-// Applying deprecated to services and messages
-// (buf.validate.message).oneof
+// Optional + required is possible
+// Oneof?
 // Change service response/request definition to allow Empty
 var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
@@ -24,12 +24,13 @@ var UserSchema = ProtoMessageSchema{
 			Expression: "this = test",
 		}),
 		"post":    MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
-		"maptype": ProtoMap(209, ProtoInt32(0).Lt(10), ProtoString(0).Example("aa").Const("aaa")),
+		"maptype": ProtoMap(209, ProtoInt32(0).Lt(10), ProtoString(0).Example("aa").Const("aaa")).Required(),
 	},
 	OneOfs: []ProtoOneOfBuilder{
 		ProtoOneOf("myoneof", ProtoOneOfsMap{
 			"choice1": ProtoString(5),
 		})},
+	Options: []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
 }
 
 var PostSchema = ProtoMessageSchema{
