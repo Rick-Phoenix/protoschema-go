@@ -1,7 +1,10 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
+
+	"golang.org/x/exp/constraints"
 )
 
 type Number interface {
@@ -10,7 +13,7 @@ type Number interface {
 		float32 | float64
 }
 
-type NumericField[BuilderT any, ValueT comparable] struct {
+type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 	*protoFieldInternal
 	*FieldWithConst[BuilderT, ValueT, ValueT]
 	*OptionalField[BuilderT]
@@ -19,10 +22,15 @@ type NumericField[BuilderT any, ValueT comparable] struct {
 	hasLtOrLte bool
 	hasGtOrGte bool
 
+	lt  ValueT
+	lte ValueT
+	gt  ValueT
+	gte ValueT
+
 	isFloatType bool
 }
 
-func newNumericField[BuilderT any, ValueT comparable](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
+func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
 		protoFieldInternal: pfi,
 		self:               self,
@@ -40,44 +48,75 @@ func newNumericField[BuilderT any, ValueT comparable](pfi *protoFieldInternal, s
 
 func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
-		// Check if larger than gt
-		nf.errors = append(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
+	}
+
+	if nf.gt >= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lt'."))
+	}
+	if nf.gte >= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gte' cannot be larger than or equal to 'lt'."))
 	}
 	nf.rules["lt"] = val
 	nf.hasLtOrLte = true
+	nf.lt = val
 	return nf.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
-		nf.errors = append(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
+	}
+
+	if nf.gt >= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lte'."))
+	}
+	if nf.gte > val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than 'lte'."))
 	}
 	nf.rules["lte"] = val
 	nf.hasLtOrLte = true
+	nf.lte = val
 	return nf.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
-		nf.errors = append(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
+	}
+
+	if nf.lt <= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gt'."))
+	}
+	if nf.lte <= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lte' cannot be smaller than or equal to 'gt'."))
 	}
 	nf.rules["gt"] = val
 	nf.hasGtOrGte = true
+	nf.gt = val
 	return nf.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
-		nf.errors = append(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
+	}
+
+	if nf.lt <= val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gte'."))
+	}
+	if nf.lte < val {
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lte' cannot be smaller than 'gte'."))
 	}
 	nf.rules["gte"] = val
 	nf.hasGtOrGte = true
+	nf.gte = val
 	return nf.self
 }
 
 func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	if !nf.isFloatType {
-		nf.errors = append(nf.errors, fmt.Errorf("'finite' rule is only applicable to float and double types."))
+		nf.errors = errors.Join(nf.errors, fmt.Errorf("The 'finite' rule is only applicable to float and double types."))
 	}
 	nf.rules["finite"] = true
 	return nf.self

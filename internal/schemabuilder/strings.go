@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -20,7 +21,7 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
 	if b.hasWellKnownRule {
-		b.internal.errors = append(b.internal.errors, fmt.Errorf("A string field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A string field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
 		return
 	}
 	b.internal.rules[ruleName] = ruleValue
@@ -30,7 +31,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, 
 func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s ValueT) *BuilderT {
 	protoVal, err := formatProtoValue(s)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 	}
 	b.internal.rules["prefix"] = protoVal
 	return b.self
@@ -39,7 +40,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Prefix(s ValueT) *BuilderT {
 func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s ValueT) *BuilderT {
 	protoVal, err := formatProtoValue(s)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 	}
 	b.internal.rules["suffix"] = protoVal
 	return b.self
@@ -48,7 +49,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Suffix(s ValueT) *BuilderT {
 func (b *ByteOrStringField[BuilderT, ValueT]) Contains(s ValueT) *BuilderT {
 	protoVal, err := formatProtoValue(s)
 	if err != nil {
-		b.internal.errors = append(b.internal.errors, err)
+		b.internal.errors = errors.Join(b.internal.errors, err)
 	}
 	b.internal.rules["contains"] = protoVal
 	return b.self

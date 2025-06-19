@@ -1,7 +1,9 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -11,6 +13,11 @@ type TimestampField struct {
 
 	hasLtOrLte bool
 	hasGtOrGte bool
+
+	lt  *timestamppb.Timestamp
+	lte *timestamppb.Timestamp
+	gt  *timestamppb.Timestamp
+	gte *timestamppb.Timestamp
 }
 
 func ProtoTimestamp(fieldNr uint) *TimestampField {
@@ -25,7 +32,7 @@ func ProtoTimestamp(fieldNr uint) *TimestampField {
 
 func (tf *TimestampField) Within(t *timestamppb.Timestamp) *TimestampField {
 	if t == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
 		return tf.self
 	}
 	tf.rules["within"] = t
@@ -34,78 +41,141 @@ func (tf *TimestampField) Within(t *timestamppb.Timestamp) *TimestampField {
 
 func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasLtOrLte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
 	}
+
 	if t == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Lt()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Lt()' received a nil pointer."))
 		return tf.self
 	}
+
+	if tf.gt != nil && tf.gt.GetSeconds() >= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lt'."))
+	}
+
+	if tf.gte != nil && tf.gte.GetSeconds() >= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gte' cannot be larger than or equal to 'lt'."))
+	}
+
 	tf.rules["lt"] = t
 	tf.hasLtOrLte = true
+	tf.lt = t
 	return tf.self
 }
 
 func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasLtOrLte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
 	}
 	if t == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Lte()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Lte()' received a nil pointer."))
 		return tf.self
 	}
+
+	if tf.gt != nil && tf.gt.GetSeconds() >= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lte'."))
+	}
+
+	if tf.gte != nil && tf.gte.GetSeconds() > t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gte' cannot be larger than 'lte'."))
+	}
+
 	tf.rules["lte"] = t
 	tf.hasLtOrLte = true
+	tf.lte = t
 	return tf.self
 }
 
 func (tf *TimestampField) LtNow() *TimestampField {
 	if tf.hasLtOrLte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
+	}
+
+	now := &timestamppb.Timestamp{Seconds: time.Now().Unix()}
+
+	if tf.gt != nil && tf.gt.GetSeconds() >= now.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lt_now'."))
+	}
+
+	if tf.gte != nil && tf.gte.GetSeconds() >= now.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'gte' cannot be larger than or equal to 'lt_now'."))
 	}
 
 	tf.rules["lt_now"] = true
 	tf.hasLtOrLte = true
+	tf.lt = now
 	return tf.self
 }
 
 func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasGtOrGte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
 	}
 	if t == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Gt()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Gt()' received a nil pointer."))
 		return tf.self
 	}
+
+	if tf.lt != nil && tf.lt.GetSeconds() <= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gt'."))
+	}
+
+	if tf.lte != nil && tf.lte.GetSeconds() <= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lte' cannot be smaller than or equal to 'gt'."))
+	}
+
 	tf.rules["gt"] = t
 	tf.hasGtOrGte = true
+	tf.gt = t
 	return tf.self
 }
 
 func (tf *TimestampField) Gte(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasGtOrGte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
 	}
 	if t == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Gte()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Gte()' received a nil pointer."))
 	}
+
+	if tf.lt != nil && tf.lt.GetSeconds() <= t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gte'."))
+	}
+
+	if tf.lte != nil && tf.lte.GetSeconds() < t.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lte' cannot be smaller than 'gte'."))
+	}
+
 	tf.rules["gte"] = t
 	tf.hasGtOrGte = true
+	tf.gte = t
 	return tf.self
 }
 
 func (tf *TimestampField) GtNow() *TimestampField {
 	if tf.hasGtOrGte {
-		tf.errors = append(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
+	}
+
+	now := &timestamppb.Timestamp{Seconds: time.Now().Unix()}
+
+	if tf.lt != nil && tf.lt.GetSeconds() <= now.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gt_now'."))
+	}
+
+	if tf.lte != nil && tf.lte.GetSeconds() <= now.GetSeconds() {
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'lte' cannot be smaller than or equal to 'gt_now'."))
 	}
 
 	tf.rules["gt_now"] = true
 	tf.hasGtOrGte = true
+	tf.gt = now
 	return tf.self
 }
 
 func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
 		return tf.self
 	}
 	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.example = { seconds: %d }", val.GetSeconds()))
@@ -114,7 +184,7 @@ func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 
 func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
-		tf.errors = append(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
+		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
 		return tf.self
 	}
 	tf.repeatedOptions = append(tf.repeatedOptions, fmt.Sprintf("(buf.validate.field).timestamp.const = { seconds: %d }", val.GetSeconds()))
