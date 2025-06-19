@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -65,28 +66,41 @@ type ProtoServiceSchema struct {
 
 var FileLocations = map[string]string{}
 
-// Define handler messages (and even resource messages) in the handlers.
-// Make a map to follow that, and for tohse that have not been listed as messages, add them.
-// Otherwise, only use their name for the handler.
-// Handlers should be a validated map regardless to avoid repetition.
-// Maybe map of name like GetUser or GetUserRequest, mapped to a message schema (GetUserResponse)
+// Message schema constructor for easy overriding
+// Add message from handlers to messages if not already processed or present there
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
+	var processedMessages []string
+
+	messages := make([]ProtoMessageSchema, len(s.Messages))
+	copy(messages, s.Messages)
+
 	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions}
 
 	var messageErrors error
 
-	for _, m := range s.Messages {
+	for name, h := range s.Handlers {
+		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
+		if !slices.Contains(processedMessages, h.Request.Name) {
+			messages = append(s.Messages, h.Request)
+			processedMessages = append(processedMessages, h.Request.Name)
+		}
+
+		if !slices.Contains(processedMessages, h.Response.Name) {
+			messages = append(s.Messages, h.Response)
+			processedMessages = append(processedMessages, h.Response.Name)
+		}
+
+	}
+
+	for _, m := range messages {
 		message, err := NewProtoMessage(m, imports)
 		out.Messages = append(out.Messages, message)
+		processedMessages = append(processedMessages, m.Name)
 
 		if err != nil {
 			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))
 		}
-	}
-
-	for name, h := range s.Handlers {
-		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
 	}
 
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {

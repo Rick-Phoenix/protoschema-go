@@ -82,18 +82,17 @@ var MyOptions = []CustomOption{{
 // like NewService(name, schema)
 // Then aggregate them in a slice (or define them directly in it) to generate them
 
-// Just the prefix (GetUser), then add the rest. Value must be a tuple req/res.
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
-			"GetUser": Handler{UserSchema, UserSchema},
+			"GetUser": {UserSchema, UserSchema},
 		},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},
 		Handlers: HandlersMap{
-			"GetPost": Handler{PostSchema, PostSchema},
+			"GetPost": {PostSchema, PostSchema},
 		},
 	},
 }
