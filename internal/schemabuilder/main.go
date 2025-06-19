@@ -78,6 +78,7 @@ var MyOptions = []CustomOption{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
+// Maybe separate db types from other messages (which can add or subtract from db types)
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		OptionExtensions: OptionExtensions{
@@ -86,20 +87,12 @@ var TablesData = ServicesMap{
 			File:    MyOptions,
 			OneOf:   MyOptions,
 		},
-		FileOptions:    []ProtoOption{{Name: "myoption", Value: "true"}},
-		ServiceOptions: []ProtoOption{{Name: "myoption", Value: "true"}},
-		Resource:       UserSchema,
+		Resource: UserSchema,
 		Get: &ServiceData{
 			Request: UserSchema,
 			Response: ProtoMessageSchema{
-				Reserved: []int{100, 101, 102},
 				Fields: ProtoFieldsMap{
 					"user": MessageType[gofirst.User](1, "User"),
-					"createdAt": ProtoTimestamp(2).Required().CelOptions(CelFieldOpts{
-						Id:         "test",
-						Message:    "this is a test",
-						Expression: "this = test",
-					}),
 				},
 			},
 		},
