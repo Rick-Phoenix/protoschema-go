@@ -178,6 +178,32 @@ func JoinIntSlice(s []int, separator string) string {
 	return out
 }
 
+func JoinInt32Slice(s []int32, separator string) string {
+	out := ""
+
+	for i, n := range s {
+		out += fmt.Sprintf("%d", n)
+		if i != len(s)-1 {
+			out += separator
+		}
+	}
+
+	return out
+}
+
+func JoinUintSlice(s []uint, separator string) string {
+	out := ""
+
+	for i, n := range s {
+		out += fmt.Sprintf("%d", n)
+		if i != len(s)-1 {
+			out += separator
+		}
+	}
+
+	return out
+}
+
 func IndentLines(reader io.Reader, writer io.Writer) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
@@ -292,7 +318,7 @@ func formatProtoValue[T any](value T) (string, error) {
 			}
 			return fmt.Sprintf("{%s}", strings.Join(formattedEntries, ", ")), nil
 		} else if kind == reflect.Struct {
-			return fmt.Sprintf("%v", value), nil
+			return fmt.Sprintf("%v", v), nil
 		}
 
 		return "", fmt.Errorf("unsupported type for proto value formatting: %T (kind: %s)", value, kind)

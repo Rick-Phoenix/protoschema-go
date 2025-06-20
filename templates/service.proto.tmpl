@@ -48,19 +48,28 @@ extend google.protobuf.OneofOptions {
   {{ range $name, $val := .Members }}
     {{ $name }} = {{ $val }};
   {{ end -}}
-  {{ range .ReservedNumbers }}
-    reserved {{ . }};
-  {{ end -}}
-  {{ range .ReservedNames }}
-    reserved "{{ . }}";
+  {{- if .ReservedNumbers}}
+    reserved {{ joinInt32 .ReservedNumbers ", "}};
+  {{ end }}
+  {{- if .ReservedNames}}
+    reserved {{ join .ReservedNames ", "}};
+  {{ end }}
+  {{- if .ReservedRanges}}
+    reserved {{ joinRange .ReservedRanges }};
   {{ end }}
   }
 {{ end }}
 
 {{ range .Messages }}
 message {{ .Name }} {
-{{- if .Reserved}}
-  reserved {{ joinInt .Reserved ", "}};
+{{- if .ReservedRanges}}
+  reserved {{ joinRange .ReservedRanges }};
+{{ end }}
+{{- if .ReservedNumbers}}
+  reserved {{ joinUint .ReservedNumbers ", " }};
+{{ end }}
+{{- if .ReservedNames}}
+  reserved {{ join .ReservedNames ", "}};
 {{ end }}
 {{- range .Options}}
   option {{ .Name }} = {{ .Value }};

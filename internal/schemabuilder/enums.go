@@ -12,6 +12,7 @@ type ProtoEnumGroup struct {
 	Members         ProtoEnumMap
 	ReservedNames   []string
 	ReservedNumbers []int32
+	ReservedRanges  []Range
 	Options         []ProtoOption
 }
 
@@ -19,16 +20,20 @@ func ProtoEnum(name string, members ProtoEnumMap) ProtoEnumGroup {
 	return ProtoEnumGroup{Name: name, Members: members}
 }
 
-func (e ProtoEnumGroup) SetOptions(o ...ProtoOption) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: o, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers}
+func (e ProtoEnumGroup) Opts(o ...ProtoOption) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: o, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers, ReservedRanges: e.ReservedRanges}
 }
 
-func (e ProtoEnumGroup) SetReservedNames(n ...string) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: n, ReservedNumbers: e.ReservedNumbers}
+func (e ProtoEnumGroup) RsvNames(n ...string) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: n, ReservedNumbers: e.ReservedNumbers, ReservedRanges: e.ReservedRanges}
 }
 
-func (e ProtoEnumGroup) SetReservedNumbers(n ...int32) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: n}
+func (e ProtoEnumGroup) RsvNumbers(n ...int32) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: n, ReservedRanges: e.ReservedRanges}
+}
+
+func (e ProtoEnumGroup) RsvRanges(r ...Range) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers, ReservedRanges: r}
 }
 
 type EnumField struct {

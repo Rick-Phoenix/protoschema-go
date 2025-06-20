@@ -53,7 +53,34 @@ func Generate(s ProtoService, o Options) error {
 	}
 
 	funcMap := template.FuncMap{
-		"joinInt": JoinIntSlice,
+		"join": func(e []string, sep string) string {
+			str := ""
+
+			for i, s := range e {
+				str += fmt.Sprintf("%q", s)
+
+				if i != len(e)-1 {
+					str += ", "
+				}
+			}
+
+			return str
+		},
+		"joinInt":   JoinIntSlice,
+		"joinInt32": JoinInt32Slice,
+		"joinUint":  JoinUintSlice,
+		"joinRange": func(r []Range) string {
+			str := ""
+
+			for i, v := range r {
+				str += fmt.Sprintf("%d to %d", v[0], v[1])
+				if i != len(r)-1 {
+					str += ", "
+				}
+			}
+
+			return str
+		},
 		"dec": func(i int) int {
 			return i - 1
 		},

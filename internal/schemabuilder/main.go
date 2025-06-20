@@ -31,6 +31,9 @@ var UserSchema = ProtoMessageSchema{
 		"enumval":    ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3).Optional(),
 		"repenum":    RepeatedField(125, ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3)),
 	},
+	ReservedNames:   ReservedNames("name2", "name3"),
+	ReservedNumbers: ReservedNumbers(101, 102),
+	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
 }
 
 var PostSchema = ProtoMessageSchema{
@@ -83,7 +86,7 @@ var TablesData = ServicesMap{
 			"GetUser":    {ProtoEmpty(), UserSchema},
 			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
 		},
-		Enums: []ProtoEnumGroup{ProtoEnum("Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}).SetReservedNumbers(20, 200).SetReservedNames("RESERVED_NAME")},
+		Enums: []ProtoEnumGroup{ProtoEnum("Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}).RsvNames("RESERVED_NAME").RsvRanges(Range{210, 220})},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},

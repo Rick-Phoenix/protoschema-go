@@ -10,26 +10,32 @@ import (
 
 type ProtoFieldsMap map[string]ProtoFieldBuilder
 
+type Range [2]uint
+
 type ProtoMessageSchema struct {
-	Name          string
-	Fields        ProtoFieldsMap
-	Oneofs        map[string]ProtoOneOfBuilder
-	Enums         []ProtoEnumGroup
-	Options       []ProtoOption
-	Reserved      []uint
-	ReferenceOnly bool
-	ImportPath    string
-	DbModel       any
-	DbIgnore      []string
+	Name            string
+	Fields          ProtoFieldsMap
+	Oneofs          map[string]ProtoOneOfBuilder
+	Enums           []ProtoEnumGroup
+	Options         []ProtoOption
+	ReservedNumbers []uint
+	ReservedRanges  []Range
+	ReservedNames   []string
+	ReferenceOnly   bool
+	ImportPath      string
+	DbModel         any
+	DbIgnore        []string
 }
 
 type ProtoMessage struct {
-	Name     string
-	Fields   []ProtoFieldData
-	Oneofs   []ProtoOneOfData
-	Reserved []uint
-	Options  []ProtoOption
-	Enums    []ProtoEnumGroup
+	Name            string
+	Fields          []ProtoFieldData
+	Oneofs          []ProtoOneOfData
+	ReservedNumbers []uint
+	ReservedRanges  []Range
+	ReservedNames   []string
+	Options         []ProtoOption
+	Enums           []ProtoEnumGroup
 }
 
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
@@ -69,7 +75,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors)
 	}
 
-	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
+	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
 func ImportedMessage(name string, importPath string) ProtoMessageSchema {
@@ -146,13 +152,13 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 	reserved := []uint{}
 
 	if e.ReplaceReserved {
-		copy(reserved, e.Schema.Reserved)
+		copy(reserved, e.Schema.ReservedNumbers)
 	} else {
 
-		reserved = append(reserved, s.Reserved...)
+		reserved = append(reserved, s.ReservedNumbers...)
 
 		if hasSchema {
-			reserved = append(reserved, e.Schema.Reserved...)
+			reserved = append(reserved, e.Schema.ReservedNumbers...)
 		}
 
 		reserved = FilterAndDedupe(reserved, func(n uint) bool {
@@ -191,7 +197,7 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 	}
 
 	newSchema.Fields = newFields
-	newSchema.Reserved = reserved
+	newSchema.ReservedNumbers = reserved
 	newSchema.Options = options
 	newSchema.Oneofs = oneofs
 	newSchema.Enums = enums
@@ -233,4 +239,16 @@ func MessageCelOption(o CelFieldOpts) ProtoOption {
 	out.Value = GetCelOption(o)
 
 	return out
+}
+
+func ReservedNumbers(numbers ...uint) []uint {
+	return numbers
+}
+
+func ReservedRanges(ranges ...Range) []Range {
+	return ranges
+}
+
+func ReservedNames(names ...string) []string {
+	return names
 }

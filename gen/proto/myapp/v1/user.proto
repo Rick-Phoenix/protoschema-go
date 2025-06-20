@@ -17,17 +17,24 @@ package myapp.v1;
   
     VAL_2 = 1;
   
-    reserved 20;
-  
-    reserved 200;
-  
     reserved "RESERVED_NAME";
+  
+    reserved 210 to 220;
   
   }
 
 
 
 message User {
+  reserved 2010 to 2029, 3050 to 3055;
+
+  reserved 101, 102;
+
+  reserved "name2", "name3";
+
+  repeated Myenum repenum = 125 [
+    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
+  ];
   string name = 1 [
     (buf.validate.field).string.min_len = 2 
   ];
@@ -45,9 +52,6 @@ message User {
   ];
   optional Myenum enumval = 100 [
     (buf.validate.field).enum = {in: [1, 2, 3]} 
-  ];
-  repeated Myenum repenum = 125 [
-    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
   ];
 }
 
