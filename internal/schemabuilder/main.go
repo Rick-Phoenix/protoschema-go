@@ -81,9 +81,8 @@ var MyOptions = []CustomOption{{
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
-			"GetUser": {ProtoEmpty(), UserSchema},
-			"UpdateUser": {ExtendProtoMessage(UserSchema, &ProtoMessageSchema{
-				Name: "UpdateUserReponse"}), ProtoEmpty()},
+			"GetUser":    {ProtoEmpty(), UserSchema},
+			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
 		},
 	},
 	"Post": ProtoServiceSchema{

@@ -17,7 +17,7 @@ type ProtoMessageSchema struct {
 	Options       []ProtoOption
 	Reserved      []uint
 	ReferenceOnly bool
-	Imports       []string
+	ImportPath    string
 }
 
 type ProtoMessage struct {
@@ -28,10 +28,6 @@ type ProtoMessage struct {
 	Options  []ProtoOption
 }
 
-// Using pointers to make these more composable
-// Not very extensible/reusable in general, it's better to make them composable
-// Except for reference only messages
-// Should also be easier to override field number for reusable fields
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	var protoFields []ProtoFieldData
 	var fieldsErrors error
@@ -45,7 +41,6 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		}
 	}
 
-	// adapt this for map
 	oneOfs := []ProtoOneOfData{}
 	var oneOfErrors error
 
@@ -65,12 +60,16 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, Oneofs: oneOfs}, nil
 }
 
-func ProtoMessageReference(name string, imports ...string) ProtoMessageSchema {
-	return ProtoMessageSchema{Name: name, ReferenceOnly: true, Imports: imports}
+func ImportedMessage(name string, importPath string) ProtoMessageSchema {
+	return ProtoMessageSchema{Name: name, ReferenceOnly: true, ImportPath: importPath}
+}
+
+func MessageRef(name string) ProtoMessageSchema {
+	return ProtoMessageSchema{Name: name, ReferenceOnly: true}
 }
 
 func ProtoEmpty() ProtoMessageSchema {
-	return ProtoMessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, Imports: []string{"google/protobuf/empty.proto"}}
+	return ProtoMessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto"}
 }
 
 type ProtoMessageExtension struct {
@@ -87,10 +86,12 @@ type ProtoMessageExtension struct {
 	MakeReferenceOnly bool
 }
 
-func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
-	newFields := make(ProtoFieldsMap)
-	var hasSchema bool
+func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
+	if s == nil {
+		log.Fatalf("Received a nil pointer when trying to extend a message schema.")
+	}
 
+	var hasSchema bool
 	if e.Schema != nil {
 		hasSchema = true
 	}
@@ -98,6 +99,10 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceImports || e.ReplaceFields) && !hasSchema {
 		log.Fatalf("Tried to replace parts of the message schema for %q with a nil pointer for the replacement.", s.Name)
 	}
+
+	newSchema := ProtoMessageSchema{}
+
+	newFields := make(ProtoFieldsMap)
 
 	if hasSchema {
 		maps.Copy(newFields, e.Schema.Fields)
@@ -140,10 +145,6 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 		}
 	}
 
-	if hasSchema && e.Schema.Name != "" {
-		s.Name = e.Schema.Name
-	}
-
 	oneofs := make(map[string]ProtoOneOfBuilder)
 
 	if e.ReplaceOneofs {
@@ -160,69 +161,22 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 			delete(oneofs, o)
 		}
 
-		s.Oneofs = oneofs
 	}
 
-	imports := []string{}
+	newSchema.Fields = newFields
+	newSchema.Reserved = reserved
+	newSchema.Options = options
+	newSchema.Oneofs = oneofs
 
-	if e.ReplaceImports {
-		copy(imports, e.Schema.Imports)
-	} else {
-		copy(imports, s.Imports)
-
-		if hasSchema {
-			imports = append(imports, e.Schema.Imports...)
-		}
-
-		imports = FilterAndDedupe(imports, func(i string) bool {
-			return !slices.Contains(e.RemoveImports, i)
-		})
+	if hasSchema && e.Schema.Name != "" {
+		newSchema.Name = e.Schema.Name
 	}
-
-	s.Fields = newFields
-	s.Reserved = reserved
-	s.Options = options
-	s.Oneofs = oneofs
-	s.Imports = imports
 
 	if e.MakeReferenceOnly {
-		s.ReferenceOnly = true
+		newSchema.ReferenceOnly = true
 	}
 
-	return s
-}
-
-func ExtendProtoMessage(s ProtoMessageSchema, ext *ProtoMessageSchema) ProtoMessageSchema {
-	if ext == nil {
-		return s
-	}
-
-	newFields := make(ProtoFieldsMap)
-	maps.Copy(newFields, s.Fields)
-	maps.Copy(newFields, ext.Fields)
-
-	reserved := slices.Concat(s.Reserved, ext.Reserved)
-	reserved = Dedupe(reserved)
-
-	s.Fields = newFields
-	s.Reserved = reserved
-	s.Options = ext.Options
-	s.Name = ext.Name
-
-	return s
-}
-
-func OmitProtoMessage(s ProtoMessageSchema, keys ...string) *ProtoMessageSchema {
-	newFields := make(ProtoFieldsMap)
-	maps.Copy(newFields, s.Fields)
-
-	for _, key := range keys {
-		delete(newFields, key)
-	}
-
-	s.Fields = newFields
-
-	return &s
+	return newSchema
 }
 
 var DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: "true"}

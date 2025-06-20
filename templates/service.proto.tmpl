@@ -48,7 +48,7 @@ message {{ .Name }} {
 {{- range .Options}}
   option {{ .Name }} = {{ .Value }};
 {{ end }}
-{{- range .OneOfs }}
+{{- range .Oneofs }}
   {{ range .Options}}
   option {{ .Name }} = {{ .Value }};
   {{ end }}

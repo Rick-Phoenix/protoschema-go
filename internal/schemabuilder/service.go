@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"slices"
 	"strings"
 )
 
@@ -66,12 +65,9 @@ type ProtoServiceSchema struct {
 
 var FileLocations = map[string]string{}
 
-// Message schema constructor for easy overriding
-// Reevaluate name in the schema itself, may be bad for reusability and omit/extend methods
-// But name in the schema makes much easier to assign it to a handler without specifying the name
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
-	var processedMessages []string
+	processedMessages := make(Set)
 
 	messages := make([]ProtoMessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
@@ -82,22 +78,28 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 
 	for name, h := range s.Handlers {
 		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
-		if h.Request.ReferenceOnly {
-			for _, im := range h.Request.Imports {
-				imports[im] = present
+		if _, seen := processedMessages[h.Request.Name]; !seen {
+			processedMessages[h.Request.Name] = present
+
+			if h.Request.ReferenceOnly {
+				if h.Request.ImportPath != "" {
+					imports[h.Request.ImportPath] = present
+				}
+			} else {
+				messages = append(messages, h.Request)
 			}
-		} else if !slices.Contains(processedMessages, h.Request.Name) {
-			messages = append(messages, h.Request)
-			processedMessages = append(processedMessages, h.Request.Name)
 		}
 
-		if h.Response.ReferenceOnly {
-			for _, im := range h.Response.Imports {
-				imports[im] = present
+		if _, seen := processedMessages[h.Response.Name]; !seen {
+			processedMessages[h.Response.Name] = present
+
+			if h.Response.ReferenceOnly {
+				if h.Response.ImportPath != "" {
+					imports[h.Request.ImportPath] = present
+				}
+			} else {
+				messages = append(messages, h.Response)
 			}
-		} else if !slices.Contains(processedMessages, h.Response.Name) {
-			messages = append(messages, h.Response)
-			processedMessages = append(processedMessages, h.Response.Name)
 		}
 
 	}
@@ -105,7 +107,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	for _, m := range messages {
 		message, err := NewProtoMessage(m, imports)
 		out.Messages = append(out.Messages, message)
-		processedMessages = append(processedMessages, m.Name)
+		processedMessages[m.Name] = present
 
 		if err != nil {
 			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))

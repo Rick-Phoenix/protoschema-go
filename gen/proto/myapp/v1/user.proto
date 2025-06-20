@@ -21,15 +21,6 @@ message User {
     string choice1 = 5;
   }
 
-  google.protobuf.Timestamp createdAt = 3 [
-    (buf.validate.field).required = "true",
-    (buf.validate.field).cel = {
-      id: "test"
-      message: "this is a test"
-      expression: "this = test"
-    }
-  ];
-  Post post = 4;
   map<int32, string> maptype = 209 [
     (buf.validate.field).map.keys = {lt: 10},
     (buf.validate.field).map.values = {
@@ -48,36 +39,8 @@ message User {
     (buf.validate.field).repeated.min_items = 10
   ];
   string name2 = 2 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).required = "true"
-  ];
-}
-
-message UpdateUserReponse {
-  oneof myoneof {
-    string choice1 = 5;
-  }
-
-  map<int32, string> maptype = 209 [
-    (buf.validate.field).map.keys = {lt: 10},
-    (buf.validate.field).map.values = {
-      const: "aaa"
-      example: "aa"
-    },
-    (buf.validate.field).required = "true"
-  ];
-  repeated string name = 1 [
-    (buf.validate.field).repeated.items = {
-      string: {min_len: 2}
-    },
-    (buf.validate.field).repeated.unique = true,
     (buf.validate.field).required = "true",
-    deprecated = "true",
-    (buf.validate.field).repeated.min_items = 10
-  ];
-  string name2 = 2 [
-    (buf.validate.field).string.min_len = 2,
-    (buf.validate.field).required = "true"
+    (buf.validate.field).string.min_len = 2
   ];
   google.protobuf.Timestamp createdAt = 3 [
     (buf.validate.field).required = "true",
@@ -92,5 +55,5 @@ message UpdateUserReponse {
 
 service UserServiceService {
   rpc GetUser(google.protobuf.Empty) returns (User);
-  rpc UpdateUser(UpdateUserReponse) returns (google.protobuf.Empty);
+  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
 }
