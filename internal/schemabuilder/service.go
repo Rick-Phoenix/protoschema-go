@@ -67,6 +67,8 @@ type ProtoServiceSchema struct {
 var FileLocations = map[string]string{}
 
 // Message schema constructor for easy overriding
+// Reevaluate name in the schema itself, may be bad for reusability and omit/extend methods
+// But name in the schema makes much easier to assign it to a handler without specifying the name
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
 	var processedMessages []string
@@ -85,7 +87,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 				imports[im] = present
 			}
 		} else if !slices.Contains(processedMessages, h.Request.Name) {
-			messages = append(s.Messages, h.Request)
+			messages = append(messages, h.Request)
 			processedMessages = append(processedMessages, h.Request.Name)
 		}
 
@@ -94,7 +96,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 				imports[im] = present
 			}
 		} else if !slices.Contains(processedMessages, h.Response.Name) {
-			messages = append(s.Messages, h.Response)
+			messages = append(messages, h.Response)
 			processedMessages = append(processedMessages, h.Response.Name)
 		}
 

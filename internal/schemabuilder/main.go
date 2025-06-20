@@ -8,10 +8,6 @@ import (
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
-// Read again how oneof goes with optional and required
-// Optional + required is possible
-// Oneof?
-// Change service response/request definition to allow Empty
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
@@ -86,6 +82,8 @@ var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
 			"GetUser": {ProtoEmpty(), UserSchema},
+			"UpdateUser": {ExtendProtoMessage(UserSchema, &ProtoMessageSchema{
+				Name: "UpdateUserReponse"}), ProtoEmpty()},
 		},
 	},
 	"Post": ProtoServiceSchema{

@@ -369,3 +369,31 @@ func SliceIntersects[T comparable](s1 []T, s2 []T) bool {
 
 	return false
 }
+
+func FilterAndDedupe[T comparable](target []T, filter func(T) bool) []T {
+	seen := make(map[T]struct{})
+	out := []T{}
+
+	for _, i := range target {
+		if _, alreadySeen := seen[i]; alreadySeen {
+			continue
+		}
+
+		seen[i] = present
+
+		if filter(i) {
+			out = append(out, i)
+		}
+	}
+
+	return out
+}
+
+func MapsMultiCopy[M ~map[K]V, K comparable, V any](dst M, sources ...M) M {
+	out := make(M)
+	for _, m := range sources {
+		maps.Copy(out, m)
+	}
+
+	return out
+}
