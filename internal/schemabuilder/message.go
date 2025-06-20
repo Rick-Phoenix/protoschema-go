@@ -48,8 +48,8 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	oneOfs := []ProtoOneOfData{}
 	var oneOfErrors error
 
-	for _, oneof := range s.Oneofs {
-		data, oneofErr := oneof.Build(imports)
+	for name, oneof := range s.Oneofs {
+		data, oneofErr := oneof.Build(name, imports)
 
 		if oneofErr != nil {
 			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneOf member %s", data.Name), oneofErr))
@@ -74,7 +74,6 @@ func ProtoEmpty() ProtoMessageSchema {
 
 type ProtoMessageExtension struct {
 	Schema          *ProtoMessageSchema
-	ReferenceOnly   bool
 	ReplaceReserved bool
 	ReplaceOptions  bool
 	ReplaceOneofs   bool
@@ -98,7 +97,7 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 
 	// Check for nil
 	if e.ReplaceReserved {
-		reserved = e.Schema.Reserved
+		copy(reserved, e.Schema.Reserved)
 	} else {
 
 		reserved = slices.Concat(s.Reserved, e.Schema.Reserved)
@@ -111,7 +110,7 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	options := []ProtoOption{}
 
 	if e.ReplaceOptions {
-		options = e.Schema.Options
+		copy(options, e.Schema.Options)
 	} else {
 		options = slices.Concat(s.Options, e.Schema.Options)
 	}
@@ -121,17 +120,17 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	}
 
 	if e.ReplaceOneofs {
-		s.Oneofs = e.Schema.Oneofs
+		s.Oneofs = CopyMap(e.Schema.Oneofs)
 	} else {
-		new := make(map[string]ProtoOneOfBuilder)
+		newMap := make(map[string]ProtoOneOfBuilder)
 
-		MapsMultiCopy(new, s.Oneofs, e.Schema.Oneofs)
+		MapsMultiCopy(newMap, s.Oneofs, e.Schema.Oneofs)
 
 		for _, o := range e.RemoveOneofs {
-			delete(new, o)
+			delete(newMap, o)
 		}
 
-		s.Oneofs = new
+		s.Oneofs = newMap
 	}
 
 	if e.ReplaceImports {
@@ -146,7 +145,6 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	s.Fields = newFields
 	s.Reserved = reserved
 	s.Options = options
-	s.ReferenceOnly = e.ReferenceOnly
 
 	return s
 }

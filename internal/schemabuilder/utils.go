@@ -397,3 +397,11 @@ func MapsMultiCopy[M ~map[K]V, K comparable, V any](dst M, sources ...M) M {
 
 	return out
 }
+
+func CopyMap[M ~map[K]V, K comparable, V any](src M) M {
+	out := make(M)
+
+	maps.Copy(out, src)
+
+	return out
+}

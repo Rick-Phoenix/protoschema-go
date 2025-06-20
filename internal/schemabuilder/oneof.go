@@ -15,24 +15,25 @@ type ProtoOneOfData struct {
 
 type ProtoOneOfGroup struct {
 	required bool
-	name     string
-	choices  ProtoOneOfsMap
+	choices  OneofChoicesMap
 	options  []ProtoOption
 }
 
 type ProtoOneOfBuilder interface {
-	Build(imports Set) (ProtoOneOfData, error)
+	Build(name string, imports Set) (ProtoOneOfData, error)
 }
 
-type ProtoOneOfsMap map[string]ProtoFieldBuilder
+type ProtoOneofsMap map[string]ProtoOneOfBuilder
 
-func ProtoOneOf(name string, choices ProtoOneOfsMap, options ...ProtoOption) *ProtoOneOfGroup {
+type OneofChoicesMap map[string]ProtoFieldBuilder
+
+func ProtoOneOf(choices OneofChoicesMap, options ...ProtoOption) *ProtoOneOfGroup {
 	return &ProtoOneOfGroup{
-		name: name, choices: choices, options: options,
+		choices: choices, options: options,
 	}
 }
 
-func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
+func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, error) {
 	choicesData := []ProtoFieldData{}
 	var fieldErr error
 
@@ -63,7 +64,7 @@ func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 	}
 
 	return ProtoOneOfData{
-		Name: of.name, Options: of.options, Choices: choicesData,
+		Name: name, Options: of.options, Choices: choicesData,
 	}, nil
 }
 

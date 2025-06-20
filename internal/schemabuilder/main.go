@@ -21,8 +21,8 @@ var UserSchema = ProtoMessageSchema{
 		"post":    MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
 		"maptype": ProtoMap(209, ProtoInt32(0).Lt(10), ProtoString(0).Example("aa").Const("aaa")).Required(),
 	},
-	OneOfs: []ProtoOneOfBuilder{
-		ProtoOneOf("myoneof", ProtoOneOfsMap{
+	Oneofs: ProtoOneofsMap{
+		"myoneof": ProtoOneOf(OneofChoicesMap{
 			"choice1": ProtoString(5),
 		})},
 	Options: []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
