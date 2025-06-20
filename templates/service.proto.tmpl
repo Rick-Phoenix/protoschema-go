@@ -40,58 +40,60 @@ extend google.protobuf.OneofOptions {
 }
 {{- end }}
 
-{{- range .Enums }}
-  enum {{ .Name }} {
-  {{- range .Options}}
+{{ range .Enums -}}
+enum {{ .Name }} {
+  {{- range .Options -}}
     option {{ .Name }} = {{ .Value }};
-  {{ end }}
-  {{ range $name, $val := .Members }}
+  {{- end }}
+  {{ range $name, $val := .Members -}}
     {{ $name }} = {{ $val }};
   {{ end -}}
-  {{- if .ReservedNumbers}}
+  {{ if .ReservedNumbers -}}
     reserved {{ joinInt32 .ReservedNumbers ", "}};
-  {{ end }}
-  {{- if .ReservedNames}}
+  {{ end -}}
+  {{ if .ReservedNames -}}
     reserved {{ join .ReservedNames ", "}};
-  {{ end }}
-  {{- if .ReservedRanges}}
+  {{ end -}}
+  {{ if .ReservedRanges -}}
     reserved {{ joinRange .ReservedRanges }};
-  {{ end }}
-  }
+  {{- end }}
+}
 {{ end }}
 
 {{ range .Messages }}
 message {{ .Name }} {
-{{- if .ReservedRanges}}
+{{- if .ReservedRanges }}
   reserved {{ joinRange .ReservedRanges }};
-{{ end }}
-{{- if .ReservedNumbers}}
+{{- end }}
+{{- if .ReservedNumbers }}
   reserved {{ joinUint .ReservedNumbers ", " }};
-{{ end }}
-{{- if .ReservedNames}}
+{{- end }}
+{{- if .ReservedNames }}
   reserved {{ join .ReservedNames ", "}};
-{{ end }}
-{{- range .Options}}
+{{- end }}
+{{ range .Options }}
   option {{ .Name }} = {{ .Value }};
-{{ end }}
+{{- end }}
 {{- range .Enums }}
-  {{- range .Options}}
+  {{- range .Options -}}
     option {{ .Name }} = {{ .Value }};
-  {{ end }}
-  enum {{ .Name }} {
-  {{ range $name, $val := .Members }}
+  {{- end }}
+  {{ range $name, $val := .Members -}}
     {{ $name }} = {{ $val }};
   {{ end -}}
-  {{ range .ReservedNumbers }}
-    reserved {{ . }};
+  {{ if .ReservedNumbers -}}
+    reserved {{ joinInt32 .ReservedNumbers ", "}};
   {{ end -}}
-  {{ range .ReservedNames }}
-    reserved "{{ . }}";
-  {{ end }}
-  }
-{{ end }}
-{{- range .Oneofs }}
-  {{ range .Options}}
+  {{ if .ReservedNames -}}
+    reserved {{ join .ReservedNames ", "}};
+  {{ end -}}
+  {{ if .ReservedRanges -}}
+    reserved {{ joinRange .ReservedRanges }};
+  {{- end }}
+}
+{{- end }}
+{{ range .Oneofs }}
+  {{ range .Options -}}
   option {{ .Name }} = {{ .Value }};
   {{ end }}
   oneof {{ .Name }} {

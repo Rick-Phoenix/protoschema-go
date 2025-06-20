@@ -11,7 +11,11 @@ package myapp.v1;
 
 
 
+
+
 message  {
+
+
   string id = 1;
   google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).timestamp.lt_now = true,
@@ -24,6 +28,8 @@ expression: "this = test"
 }
 
 message  {
+
+
   string id = 1;
   google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).timestamp.lt_now = true,

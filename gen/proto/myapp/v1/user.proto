@@ -1,64 +1,70 @@
 syntax = "proto3";
 
+package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
-package myapp.v1;
-
-
-
-
-  enum Myenum {
-  
-    VAL_1 = 0;
-  
-    VAL_2 = 1;
-  
-    reserved "RESERVED_NAME";
-  
-    reserved 210 to 220;
-  
-  }
-
-
+enum Myenum {
+  VAL_1 = 0;
+  VAL_2 = 1;
+  reserved "RESERVED_NAME";
+  reserved 210 to 220;
+}
 
 message User {
   reserved 2010 to 2029, 3050 to 3055;
-
   reserved 101, 102;
-
   reserved "name2", "name3";
 
-  repeated Myenum repenum = 125 [
-    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
-  ];
-  string name = 1 [
-    (buf.validate.field).string.min_len = 2 
-  ];
+  repeated Myenum repenum = 125 [(buf.validate.field).repeated.items = {
+    enum: {
+      defined_only: true
+      in: [
+        1,
+        2,
+        3
+      ]
+    }
+  }];
+  string name = 1 [(buf.validate.field).string.min_len = 2];
   repeated Post posts = 12;
   map<int32, Myenum> maptype = 209 [
-    (buf.validate.field).map.keys = {int32: {lt: 10}},
-    (buf.validate.field).map.values = {enum: {defined_only: true, in: [1, 2, 3]}} 
+    (buf.validate.field).map.keys = {
+      int32: {lt: 10}
+    },
+    (buf.validate.field).map.values = {
+      enum: {
+        defined_only: true
+        in: [
+          1,
+          2,
+          3
+        ]
+      }
+    }
   ];
   map<int32, google.protobuf.Timestamp> maptype2 = 201 [
-    (buf.validate.field).map.keys = {int32: {lt: 10}},
-    (buf.validate.field).map.values = {timestamp: {lt_now: true}} 
+    (buf.validate.field).map.keys = {
+      int32: {lt: 10}
+    },
+    (buf.validate.field).map.values = {
+      timestamp: {lt_now: true}
+    }
   ];
-  google.protobuf.Timestamp created_at = 25 [
-    (buf.validate.field).timestamp.lt_now = true 
-  ];
-  optional Myenum enumval = 100 [
-    (buf.validate.field).enum = {in: [1, 2, 3]} 
-  ];
+  google.protobuf.Timestamp created_at = 25 [(buf.validate.field).timestamp.lt_now = true];
+  optional Myenum enumval = 100 [(buf.validate.field).enum = {
+    in: [
+      1,
+      2,
+      3
+    ]
+  }];
 }
-
 
 service UserServiceService {
-  rpc GetUser(google.protobuf.Empty) returns(User);
-  rpc UpdateUser(UpdateUserResponse) returns(google.protobuf.Empty);
+  rpc GetUser(google.protobuf.Empty) returns (User);
+  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
 }
-
-
