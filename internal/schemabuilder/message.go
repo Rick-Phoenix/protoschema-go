@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"log"
 	"maps"
 	"slices"
 )
@@ -73,21 +74,38 @@ func ProtoEmpty() ProtoMessageSchema {
 }
 
 type ProtoMessageExtension struct {
-	Schema          *ProtoMessageSchema
-	ReplaceReserved bool
-	ReplaceOptions  bool
-	ReplaceOneofs   bool
-	ReplaceImports  bool
-	RemoveReserved  []uint
-	RemoveFields    []string
-	RemoveImports   []string
-	RemoveOneofs    []string
+	Schema            *ProtoMessageSchema
+	ReplaceReserved   bool
+	ReplaceOptions    bool
+	ReplaceOneofs     bool
+	ReplaceImports    bool
+	ReplaceFields     bool
+	RemoveReserved    []uint
+	RemoveFields      []string
+	RemoveImports     []string
+	RemoveOneofs      []string
+	MakeReferenceOnly bool
 }
 
 func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
-
 	newFields := make(ProtoFieldsMap)
-	MapsMultiCopy(newFields, s.Fields, e.Schema.Fields)
+	var hasSchema bool
+
+	if e.Schema != nil {
+		hasSchema = true
+	}
+
+	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceImports || e.ReplaceFields) && !hasSchema {
+		log.Fatalf("Tried to replace parts of the message schema for %q with a nil pointer for the replacement.", s.Name)
+	}
+
+	if hasSchema {
+		maps.Copy(newFields, e.Schema.Fields)
+	}
+
+	if !e.ReplaceFields {
+		maps.Copy(newFields, s.Fields)
+	}
 
 	for _, f := range e.RemoveFields {
 		delete(newFields, f)
@@ -95,12 +113,15 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 
 	reserved := []uint{}
 
-	// Check for nil
 	if e.ReplaceReserved {
 		copy(reserved, e.Schema.Reserved)
 	} else {
 
-		reserved = slices.Concat(s.Reserved, e.Schema.Reserved)
+		reserved = append(reserved, s.Reserved...)
+
+		if hasSchema {
+			reserved = append(reserved, e.Schema.Reserved...)
+		}
 
 		reserved = FilterAndDedupe(reserved, func(n uint) bool {
 			return !slices.Contains(e.RemoveReserved, n)
@@ -112,10 +133,14 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	if e.ReplaceOptions {
 		copy(options, e.Schema.Options)
 	} else {
-		options = slices.Concat(s.Options, e.Schema.Options)
+		options = append(options, s.Options...)
+
+		if hasSchema {
+			options = append(options, e.Schema.Options...)
+		}
 	}
 
-	if e.Schema.Name != "" {
+	if hasSchema && e.Schema.Name != "" {
 		s.Name = e.Schema.Name
 	}
 
@@ -124,7 +149,11 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	} else {
 		newMap := make(map[string]ProtoOneOfBuilder)
 
-		MapsMultiCopy(newMap, s.Oneofs, e.Schema.Oneofs)
+		maps.Copy(newMap, s.Oneofs)
+
+		if hasSchema {
+			maps.Copy(newMap, e.Schema.Oneofs)
+		}
 
 		for _, o := range e.RemoveOneofs {
 			delete(newMap, o)
@@ -136,7 +165,12 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	if e.ReplaceImports {
 		s.Imports = e.Schema.Imports
 	} else {
-		s.Imports = slices.Concat(s.Imports, e.Schema.Imports)
+		s.Imports = slices.Clone(s.Imports)
+
+		if hasSchema {
+			s.Imports = append(s.Imports, e.Schema.Imports...)
+		}
+
 		s.Imports = FilterAndDedupe(s.Imports, func(i string) bool {
 			return !slices.Contains(e.RemoveImports, i)
 		})
@@ -145,6 +179,10 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	s.Fields = newFields
 	s.Reserved = reserved
 	s.Options = options
+
+	if e.MakeReferenceOnly {
+		s.ReferenceOnly = true
+	}
 
 	return s
 }
