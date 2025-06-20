@@ -28,7 +28,7 @@ var UserSchema = ProtoMessageSchema{
 		"maptype":    ProtoMap(209, ProtoInt32(0).Lt(10), ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3)),
 		"maptype2":   ProtoMap(201, ProtoInt32(0).Lt(10), ProtoTimestamp(25).LtNow()),
 		"created_at": ProtoTimestamp(25).LtNow(),
-		"enumval":    ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3),
+		"enumval":    ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3).Optional(),
 		"repenum":    RepeatedField(125, ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3)),
 	},
 }
@@ -83,8 +83,7 @@ var TablesData = ServicesMap{
 			"GetUser":    {ProtoEmpty(), UserSchema},
 			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
 		},
-		// Make this a builder instead
-		Enums: []ProtoEnumGroup{{"Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}, []string{"RESERVED_NAME"}, []int32{10, 11, 22}, []ProtoOption{{"allow_alias", true}}}},
+		Enums: []ProtoEnumGroup{ProtoEnum("Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}).SetReservedNumbers(20, 200).SetReservedNames("RESERVED_NAME")},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},

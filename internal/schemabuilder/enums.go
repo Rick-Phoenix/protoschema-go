@@ -5,12 +5,6 @@ import (
 	"maps"
 )
 
-type EnumField struct {
-	*ProtoFieldExternal[EnumField, int32]
-	*FieldWithConst[EnumField, int32, int32]
-	// Can be optional
-}
-
 type ProtoEnumMap map[string]int32
 
 type ProtoEnumGroup struct {
@@ -21,6 +15,28 @@ type ProtoEnumGroup struct {
 	Options         []ProtoOption
 }
 
+func ProtoEnum(name string, members ProtoEnumMap) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: name, Members: members}
+}
+
+func (e ProtoEnumGroup) SetOptions(o ...ProtoOption) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: o, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers}
+}
+
+func (e ProtoEnumGroup) SetReservedNames(n ...string) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: n, ReservedNumbers: e.ReservedNumbers}
+}
+
+func (e ProtoEnumGroup) SetReservedNumbers(n ...int32) ProtoEnumGroup {
+	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: n}
+}
+
+type EnumField struct {
+	*ProtoFieldExternal[EnumField, int32]
+	*FieldWithConst[EnumField, int32, int32]
+	*OptionalField[EnumField]
+}
+
 func ProtoEnumField(fieldNr uint, enumName string) *EnumField {
 	rules := make(map[string]any)
 	ef := &EnumField{}
@@ -28,6 +44,7 @@ func ProtoEnumField(fieldNr uint, enumName string) *EnumField {
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField, int32]{
 		protoFieldInternal: internal, self: ef}
 	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
+	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}
 
 	return ef
 }

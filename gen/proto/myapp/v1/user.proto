@@ -12,18 +12,14 @@ package myapp.v1;
 
 
   enum Myenum {
-    option allow_alias = true;
-  
   
     VAL_1 = 0;
   
     VAL_2 = 1;
   
-    reserved 10;
+    reserved 20;
   
-    reserved 11;
-  
-    reserved 22;
+    reserved 200;
   
     reserved "RESERVED_NAME";
   
@@ -32,9 +28,6 @@ package myapp.v1;
 
 
 message User {
-  repeated Myenum repenum = 125 [
-    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
-  ];
   string name = 1 [
     (buf.validate.field).string.min_len = 2 
   ];
@@ -50,8 +43,11 @@ message User {
   google.protobuf.Timestamp created_at = 25 [
     (buf.validate.field).timestamp.lt_now = true 
   ];
-  Myenum enumval = 100 [
+  optional Myenum enumval = 100 [
     (buf.validate.field).enum = {in: [1, 2, 3]} 
+  ];
+  repeated Myenum repenum = 125 [
+    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
   ];
 }
 
