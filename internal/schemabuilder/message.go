@@ -144,34 +144,37 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 		s.Name = e.Schema.Name
 	}
 
-	if e.ReplaceOneofs {
-		s.Oneofs = CopyMap(e.Schema.Oneofs)
-	} else {
-		newMap := make(map[string]ProtoOneOfBuilder)
+	oneofs := make(map[string]ProtoOneOfBuilder)
 
-		maps.Copy(newMap, s.Oneofs)
+	if e.ReplaceOneofs {
+		maps.Copy(oneofs, e.Schema.Oneofs)
+	} else {
+
+		maps.Copy(oneofs, s.Oneofs)
 
 		if hasSchema {
-			maps.Copy(newMap, e.Schema.Oneofs)
+			maps.Copy(oneofs, e.Schema.Oneofs)
 		}
 
 		for _, o := range e.RemoveOneofs {
-			delete(newMap, o)
+			delete(oneofs, o)
 		}
 
-		s.Oneofs = newMap
+		s.Oneofs = oneofs
 	}
 
+	imports := []string{}
+
 	if e.ReplaceImports {
-		s.Imports = e.Schema.Imports
+		copy(imports, e.Schema.Imports)
 	} else {
-		s.Imports = slices.Clone(s.Imports)
+		copy(imports, s.Imports)
 
 		if hasSchema {
-			s.Imports = append(s.Imports, e.Schema.Imports...)
+			imports = append(imports, e.Schema.Imports...)
 		}
 
-		s.Imports = FilterAndDedupe(s.Imports, func(i string) bool {
+		imports = FilterAndDedupe(imports, func(i string) bool {
 			return !slices.Contains(e.RemoveImports, i)
 		})
 	}
@@ -179,6 +182,8 @@ func CompleteExtendProtoMessage(s ProtoMessageSchema, e ProtoMessageExtension) P
 	s.Fields = newFields
 	s.Reserved = reserved
 	s.Options = options
+	s.Oneofs = oneofs
+	s.Imports = imports
 
 	if e.MakeReferenceOnly {
 		s.ReferenceOnly = true
