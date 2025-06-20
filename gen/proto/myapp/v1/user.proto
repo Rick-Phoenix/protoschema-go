@@ -29,6 +29,7 @@ message User {
     (buf.validate.field).map.values = {const: "aaa", example: "aa"},
     (buf.validate.field).required = "true" 
   ];
+  int64 id = 50;
   string name = 1 [
     (buf.validate.field).string.min_len = 2 
   ];

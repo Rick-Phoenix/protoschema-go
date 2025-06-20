@@ -41,7 +41,7 @@ type Subreddit struct {
 type User struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
+	CreatedAt string `dbignore:"true" json:"created_at"`
 }
 
 type UserSubscription struct {

@@ -4,20 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"reflect"
 	"slices"
+	"strconv"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
-// Assign specific types to specific db schemas so they can be checked
-// How to create correspondence? Differences in casing
-// Casing conversion + specifying the fields to ignore
-// tags in the db structs to ignore those too
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
+		"id":   ProtoInt64(50),
 		"name": ProtoString(1).MinLen(2),
 		"created_at": ProtoTimestamp(3).Required().CelOptions(CelFieldOpts{
 			Id:         "test",
@@ -33,7 +32,7 @@ var UserSchema = ProtoMessageSchema{
 		})},
 	Options:  []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
 	DbModel:  &gofirst.User{},
-	DbIgnore: []string{"created_at"},
+	DbIgnore: []string{"maptype", "post"},
 }
 
 var PostSchema = ProtoMessageSchema{
@@ -113,17 +112,31 @@ func GenerateProtoFiles() {
 func CheckDbSchema(model any, schema ProtoFieldsMap, ignores []string) error {
 	dbModel := reflect.TypeOf(model).Elem()
 	dbModelName := dbModel.Name()
+	schemaCopy := maps.Clone(schema)
 	var err error
 
 	for i := range dbModel.NumField() {
 		dbcol := dbModel.Field(i)
 		colname := dbcol.Tag.Get("json")
+		ignoreTag := dbcol.Tag.Get("dbignore")
+		ignore, _ := strconv.ParseBool(ignoreTag)
 		coltype := dbcol.Type.String()
 
-		if pfield, exists := schema[colname]; exists {
+		if pfield, exists := schemaCopy[colname]; exists {
+			delete(schemaCopy, colname)
 			data, _ := pfield.Build(colname, Set{})
-			if data.GoType != coltype && !slices.Contains(ignores, data.Name) {
-				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q", coltype, colname, data.GoType))
+			if data.GoType != coltype && !ignore && !slices.Contains(ignores, data.Name) {
+				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", coltype, colname, data.GoType))
+			}
+		} else if !slices.Contains(ignores, colname) && !ignore {
+			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", colname, dbModel))
+		}
+	}
+
+	if len(schemaCopy) > 0 {
+		for name := range schemaCopy {
+			if !slices.Contains(ignores, name) {
+				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the schema for db model %q.", name, dbModelName))
 			}
 		}
 	}
