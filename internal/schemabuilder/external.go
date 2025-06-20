@@ -2,6 +2,7 @@ package schemabuilder
 
 import "reflect"
 
+// Potentially separate this from external messages
 func MessageType[ValueT any](fieldNr uint, name string, opts ...FieldPathGetter) *GenericField[ValueT] {
 	rules := make(map[string]any)
 

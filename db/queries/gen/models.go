@@ -21,7 +21,7 @@ type Post struct {
 	ID          int64          `json:"id"`
 	Title       string         `json:"title"`
 	Content     sql.NullString `json:"content"`
-	CreatedAt   sql.NullString `json:"created_at"`
+	CreatedAt   string         `json:"created_at"`
 	AuthorID    int64          `json:"author_id"`
 	SubredditID int64          `json:"subreddit_id"`
 }
@@ -34,25 +34,25 @@ type Subreddit struct {
 	ID          int64          `json:"id"`
 	Name        string         `json:"name"`
 	Description sql.NullString `json:"description"`
-	CreatedAt   sql.NullString `json:"created_at"`
+	CreatedAt   string         `json:"created_at"`
 	CreatorID   sql.NullInt64  `json:"creator_id"`
 }
 
 type User struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt sql.NullString `json:"created_at"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
 }
 
 type UserSubscription struct {
-	UserID      int64          `json:"user_id"`
-	SubredditID int64          `json:"subreddit_id"`
-	CreatedAt   sql.NullString `json:"created_at"`
+	UserID      int64  `json:"user_id"`
+	SubredditID int64  `json:"subreddit_id"`
+	CreatedAt   string `json:"created_at"`
 }
 
 type UserWithPost struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt sql.NullString `json:"created_at"`
-	Posts     string         `json:"posts"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	Posts     string `dbignore:"true" json:"posts"`
 }

@@ -195,7 +195,7 @@ func IndentList(text string, writer io.Writer) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
-		_, err := fmt.Fprintf(writer, "%s- %s\n", indent, line)
+		_, err := fmt.Fprintf(writer, "%s%s\n", indent, line)
 		if err != nil {
 			return fmt.Errorf("failed to write indented line: %w", err)
 		}
@@ -310,26 +310,6 @@ func formatProtoList[T any](l []T) (string, error) {
 	sb.WriteString("]")
 
 	return sb.String(), nil
-}
-
-func formatProtoDict[T any](d map[string]T) (string, error) {
-	if len(d) == 0 {
-		return "", nil
-	}
-
-	var sb strings.Builder
-	sb.WriteString("{\n")
-	for k, v := range d {
-		protoV, err := formatProtoValue(v)
-		if err != nil {
-			return "", err
-		}
-		sb.WriteString(fmt.Sprintf("%s: %s\n", k, protoV))
-	}
-	sb.WriteString("}")
-
-	return sb.String(), nil
-
 }
 
 func formatBytesAsProtoLiteral(b []byte) (string, error) {

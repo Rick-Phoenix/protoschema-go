@@ -18,6 +18,8 @@ type ProtoMessageSchema struct {
 	Reserved      []uint
 	ReferenceOnly bool
 	ImportPath    string
+	DbModel       any
+	DbIgnore      []string
 }
 
 type ProtoMessage struct {
@@ -31,6 +33,14 @@ type ProtoMessage struct {
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	var protoFields []ProtoFieldData
 	var fieldsErrors error
+
+	if s.DbModel != nil {
+		err := CheckDbSchema(s.DbModel, s.Fields, s.DbIgnore)
+
+		if err != nil {
+			fieldsErrors = errors.Join(fieldsErrors, err)
+		}
+	}
 
 	for fieldName, fieldBuilder := range s.Fields {
 		field, err := fieldBuilder.Build(fieldName, imports)
@@ -73,17 +83,14 @@ func ProtoEmpty() ProtoMessageSchema {
 }
 
 type ProtoMessageExtension struct {
-	Schema            *ProtoMessageSchema
-	ReplaceReserved   bool
-	ReplaceOptions    bool
-	ReplaceOneofs     bool
-	ReplaceImports    bool
-	ReplaceFields     bool
-	RemoveReserved    []uint
-	RemoveFields      []string
-	RemoveImports     []string
-	RemoveOneofs      []string
-	MakeReferenceOnly bool
+	Schema          *ProtoMessageSchema
+	ReplaceReserved bool
+	ReplaceOptions  bool
+	ReplaceOneofs   bool
+	ReplaceFields   bool
+	RemoveReserved  []uint
+	RemoveFields    []string
+	RemoveOneofs    []string
 }
 
 func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
@@ -96,7 +103,7 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 		hasSchema = true
 	}
 
-	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceImports || e.ReplaceFields) && !hasSchema {
+	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceFields) && !hasSchema {
 		log.Fatalf("Tried to replace parts of the message schema for %q with a nil pointer for the replacement.", s.Name)
 	}
 
@@ -172,15 +179,11 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 		newSchema.Name = e.Schema.Name
 	}
 
-	if e.MakeReferenceOnly {
-		newSchema.ReferenceOnly = true
-	}
-
 	return newSchema
 }
 
-var DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: "true"}
-var ProtoDeprecated = ProtoOption{Name: "deprecated", Value: "true"}
+var DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
+var ProtoDeprecated = ProtoOption{Name: "deprecated", Value: true}
 
 func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}

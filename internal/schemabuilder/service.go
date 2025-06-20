@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"log"
 	"path"
 	"strings"
 )
@@ -110,8 +111,12 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		processedMessages[m.Name] = present
 
 		if err != nil {
-			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema\n", resourceName), err))
+			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", resourceName), err))
 		}
+	}
+
+	if messageErrors != nil {
+		log.Fatal(messageErrors)
 	}
 
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {

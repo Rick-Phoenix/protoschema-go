@@ -1,19 +1,25 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"reflect"
+	"slices"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
+// Assign specific types to specific db schemas so they can be checked
+// How to create correspondence? Differences in casing
+// Casing conversion + specifying the fields to ignore
+// tags in the db structs to ignore those too
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
-		"name":  RepeatedField(1, ProtoString(1).MinLen(2)).Unique().Required().Deprecated().MinItems(10),
-		"name2": ProtoString(2).Required().MinLen(2),
-		"createdAt": ProtoTimestamp(3).Required().CelOptions(CelFieldOpts{
+		"name": ProtoString(1).MinLen(2),
+		"created_at": ProtoTimestamp(3).Required().CelOptions(CelFieldOpts{
 			Id:         "test",
 			Message:    "this is a test",
 			Expression: "this = test",
@@ -25,7 +31,9 @@ var UserSchema = ProtoMessageSchema{
 		"myoneof": ProtoOneOf(OneofChoicesMap{
 			"choice1": ProtoString(5),
 		})},
-	Options: []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
+	Options:  []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
+	DbModel:  &gofirst.User{},
+	DbIgnore: []string{"created_at"},
 }
 
 var PostSchema = ProtoMessageSchema{
@@ -73,11 +81,6 @@ var MyOptions = []CustomOption{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
-// Maybe separate db types from other messages (which can add or subtract from db types)
-// Better to have message names in their own schemas. Remove the map here and use generator functions instead
-// like NewService(name, schema)
-// Then aggregate them in a slice (or define them directly in it) to generate them
-
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
@@ -105,4 +108,29 @@ func GenerateProtoFiles() {
 			log.Fatalf("🔥 Generation failed: %v", err)
 		}
 	}
+}
+
+func CheckDbSchema(model any, schema ProtoFieldsMap, ignores []string) error {
+	dbModel := reflect.TypeOf(model).Elem()
+	dbModelName := dbModel.Name()
+	var err error
+
+	for i := range dbModel.NumField() {
+		dbcol := dbModel.Field(i)
+		colname := dbcol.Tag.Get("json")
+		coltype := dbcol.Type.String()
+
+		if pfield, exists := schema[colname]; exists {
+			data, _ := pfield.Build(colname, Set{})
+			if data.GoType != coltype && !slices.Contains(ignores, data.Name) {
+				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q", coltype, colname, data.GoType))
+			}
+		}
+	}
+
+	if err != nil {
+		err = IndentErrors(fmt.Sprintf("Validation errors for db model %s", dbModelName), err)
+	}
+
+	return err
 }
