@@ -61,7 +61,7 @@ type ProtoServiceSchema struct {
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
 	OptionExtensions OptionExtensions
-	Enums            ProtoEnumMap
+	Enums            []ProtoEnumGroup
 }
 
 var FileLocations = map[string]string{}

@@ -14,6 +14,7 @@ type ProtoMessageSchema struct {
 	Name          string
 	Fields        ProtoFieldsMap
 	Oneofs        map[string]ProtoOneOfBuilder
+	Enums         []ProtoEnumGroup
 	Options       []ProtoOption
 	Reserved      []uint
 	ReferenceOnly bool
@@ -28,6 +29,7 @@ type ProtoMessage struct {
 	Oneofs   []ProtoOneOfData
 	Reserved []uint
 	Options  []ProtoOption
+	Enums    []ProtoEnumGroup
 }
 
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
@@ -67,7 +69,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors)
 	}
 
-	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, Oneofs: oneOfs}, nil
+	return ProtoMessage{Name: s.Name, Fields: protoFields, Reserved: s.Reserved, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
 func ImportedMessage(name string, importPath string) ProtoMessageSchema {
@@ -88,9 +90,11 @@ type ProtoMessageExtension struct {
 	ReplaceOptions  bool
 	ReplaceOneofs   bool
 	ReplaceFields   bool
+	ReplaceEnums    bool
 	RemoveReserved  []uint
 	RemoveFields    []string
 	RemoveOneofs    []string
+	RemoveEnums     []string
 }
 
 func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
@@ -121,6 +125,22 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 
 	for _, f := range e.RemoveFields {
 		delete(newFields, f)
+	}
+
+	enums := []ProtoEnumGroup{}
+
+	if e.ReplaceEnums {
+		copy(enums, e.Schema.Enums)
+	} else {
+		for _, en := range s.Enums {
+			if !slices.Contains(e.RemoveEnums, en.Name) {
+				enums = append(enums, en)
+			}
+		}
+
+		if hasSchema {
+			enums = append(enums, e.Schema.Enums...)
+		}
 	}
 
 	reserved := []uint{}
@@ -174,6 +194,7 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 	newSchema.Reserved = reserved
 	newSchema.Options = options
 	newSchema.Oneofs = oneofs
+	newSchema.Enums = enums
 
 	if hasSchema && e.Schema.Name != "" {
 		newSchema.Name = e.Schema.Name

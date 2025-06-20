@@ -13,6 +13,13 @@ import (
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
 
+type UserWithPosts struct {
+	ID        int64          `json:"id"`
+	Name      string         `json:"name"`
+	CreatedAt string         `dbignore:"true" json:"created_at"`
+	Posts     []gofirst.Post `json:"posts"`
+}
+
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
@@ -23,15 +30,11 @@ var UserSchema = ProtoMessageSchema{
 			Message:    "this is a test",
 			Expression: "this = test",
 		}),
-		"post":    MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto")),
+		"posts":   RepeatedField(12, MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto"))),
 		"maptype": ProtoMap(209, ProtoInt32(0).Lt(10), ProtoString(0).Example("aa").Const("aaa")).Required(),
 	},
-	Oneofs: ProtoOneofsMap{
-		"myoneof": ProtoOneOf(OneofChoicesMap{
-			"choice1": ProtoString(5),
-		})},
-	Options:  []ProtoOption{DisableValidator, ProtoCustomOneOf(false, "aa", "bb")},
-	DbModel:  &gofirst.User{},
+	Enums:    []ProtoEnumGroup{{"Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}, []string{"RESERVED_NAME"}, []int32{10, 11, 22}}},
+	DbModel:  &UserWithPosts{},
 	DbIgnore: []string{"maptype", "post"},
 }
 
@@ -50,7 +53,6 @@ type ServicesMap map[string]ProtoServiceSchema
 
 type ServicesData map[string]ProtoService
 
-// Make something that reflects the db field names and types and checks if the messages are correct
 func BuildFinalServicesMap(m ServicesMap) ServicesData {
 	out := make(ServicesData)
 	serviceErrors := []error{}

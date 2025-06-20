@@ -42,6 +42,7 @@ type protoFieldInternal struct {
 	required        bool
 	isNonScalar     bool
 	ignore          string
+	isEnum          bool
 }
 
 type ProtoFieldBuilder interface {
@@ -74,6 +75,10 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 			protoName = "duration"
 		case "google.protobuf.Timestamp":
 			protoName = "timestamp"
+		}
+
+		if b.isEnum {
+			protoName = "enum"
 		}
 
 		for rule, value := range b.rules {

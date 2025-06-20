@@ -1,52 +1,49 @@
 syntax = "proto3";
 
+package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
-package myapp.v1;
-
-
-
-
-
-
 message User {
-  option (buf.validate.message).disabled = true;
+  enum Myenum {
+    VAL_1 = 0;
 
-  option (buf.validate.message).oneof = {fields: ["aa", "bb"]};
+    VAL_2 = 1;
 
-  
-  oneof myoneof {
-    string choice1 = 5;
+    reserved 10;
+
+    reserved 11;
+
+    reserved 22;
+
+    reserved "RESERVED_NAME";
   }
 
-  Post post = 4;
   map<int32, string> maptype = 209 [
     (buf.validate.field).map.keys = {lt: 10},
-    (buf.validate.field).map.values = {const: "aaa", example: "aa"},
-    (buf.validate.field).required = "true" 
+    (buf.validate.field).map.values = {
+      const: "aaa"
+      example: "aa"
+    },
+    (buf.validate.field).required = "true"
   ];
   int64 id = 50;
-  string name = 1 [
-    (buf.validate.field).string.min_len = 2 
-  ];
+  string name = 1 [(buf.validate.field).string.min_len = 2];
   google.protobuf.Timestamp created_at = 3 [
     (buf.validate.field).required = "true",
     (buf.validate.field).cel = {
-id: "test" 
-message: "this is a test"
-expression: "this = test"
-} 
+      id: "test"
+      message: "this is a test"
+      expression: "this = test"
+    }
   ];
+  repeated Post posts = 12;
 }
-
 
 service UserServiceService {
-  rpc GetUser(google.protobuf.Empty) returns(User);
-  rpc UpdateUser(UpdateUserResponse) returns(google.protobuf.Empty);
+  rpc GetUser(google.protobuf.Empty) returns (User);
+  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
 }
-
-
