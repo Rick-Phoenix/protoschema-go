@@ -40,6 +40,20 @@ extend google.protobuf.OneofOptions {
 }
 {{- end }}
 
+{{- range .Enums }}
+  enum {{ .Name }} {
+  {{ range $name, $val := .Members }}
+    {{ $name }} = {{ $val }};
+  {{ end -}}
+  {{ range .ReservedNumbers }}
+    reserved {{ . }};
+  {{ end -}}
+  {{ range .ReservedNames }}
+    reserved "{{ . }}";
+  {{ end }}
+  }
+{{ end }}
+
 {{ range .Messages }}
 message {{ .Name }} {
 {{- if .Reserved}}

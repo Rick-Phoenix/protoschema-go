@@ -88,6 +88,7 @@ var TablesData = ServicesMap{
 			"GetUser":    {ProtoEmpty(), UserSchema},
 			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
 		},
+		Enums: []ProtoEnumGroup{{"Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}, []string{"RESERVED_NAME"}, []int32{10, 11, 22}}},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},

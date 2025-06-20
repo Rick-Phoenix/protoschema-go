@@ -19,14 +19,15 @@ type OptionExtensions struct {
 type MessagesMap map[string]ProtoMessage
 
 type ProtoService struct {
-	Messages         []ProtoMessage
+	Name             string
 	Imports          Set
+	OptionExtensions OptionExtensions
+	Messages         []ProtoMessage
+	Enums            []ProtoEnumGroup
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
-	OptionExtensions OptionExtensions
-	Name             string
-	FileOutput       string
 	Handlers         []HandlerData
+	FileOutput       string
 }
 
 type HandlerData struct {
@@ -73,7 +74,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	messages := make([]ProtoMessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
 
-	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions}
+	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
 
