@@ -1,63 +1,64 @@
 syntax = "proto3";
 
-package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/Post.proto";
 
-enum Myenum {
-  VAL_1 = 0;
+package myapp.v1;
 
-  VAL_2 = 1;
 
-  reserved 10;
 
-  reserved 11;
 
-  reserved 22;
-
-  reserved "RESERVED_NAME";
-}
-
-message User {
   enum Myenum {
+    option allow_alias = true;
+  
+  
     VAL_1 = 0;
-
+  
     VAL_2 = 1;
-
+  
     reserved 10;
-
+  
     reserved 11;
-
+  
     reserved 22;
-
+  
     reserved "RESERVED_NAME";
+  
   }
 
-  google.protobuf.Timestamp created_at = 3 [
-    (buf.validate.field).required = "true",
-    (buf.validate.field).cel = {
-      id: "test"
-      message: "this is a test"
-      expression: "this = test"
-    }
+
+
+message User {
+  repeated Myenum repenum = 125 [
+    (buf.validate.field).repeated.items = {enum: {defined_only: true, in: [1, 2, 3]}} 
+  ];
+  string name = 1 [
+    (buf.validate.field).string.min_len = 2 
   ];
   repeated Post posts = 12;
-  map<int32, string> maptype = 209 [
-    (buf.validate.field).map.keys = {lt: 10},
-    (buf.validate.field).map.values = {
-      const: "aaa"
-      example: "aa"
-    },
-    (buf.validate.field).required = "true"
+  map<int32, Myenum> maptype = 209 [
+    (buf.validate.field).map.keys = {int32: {lt: 10}},
+    (buf.validate.field).map.values = {enum: {defined_only: true, in: [1, 2, 3]}} 
   ];
-  int64 id = 50;
-  string name = 1 [(buf.validate.field).string.min_len = 2];
+  map<int32, google.protobuf.Timestamp> maptype2 = 201 [
+    (buf.validate.field).map.keys = {int32: {lt: 10}},
+    (buf.validate.field).map.values = {timestamp: {lt_now: true}} 
+  ];
+  google.protobuf.Timestamp created_at = 25 [
+    (buf.validate.field).timestamp.lt_now = true 
+  ];
+  Myenum enumval = 100 [
+    (buf.validate.field).enum = {in: [1, 2, 3]} 
+  ];
 }
 
+
 service UserServiceService {
-  rpc GetUser(google.protobuf.Empty) returns (User);
-  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
+  rpc GetUser(google.protobuf.Empty) returns(User);
+  rpc UpdateUser(UpdateUserResponse) returns(google.protobuf.Empty);
 }
+
+

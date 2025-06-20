@@ -16,17 +16,18 @@ type Set map[string]struct{}
 type Errors []error
 
 type ProtoFieldData struct {
-	Rules       map[string]any
-	Options     []string
-	ProtoType   string
-	GoType      string
-	Optional    bool
-	FieldNr     uint
-	Name        string
-	Imports     []string
-	Repeated    bool
-	Required    bool
-	IsNonScalar bool
+	Rules         map[string]any
+	Options       []string
+	ProtoType     string
+	ProtoBaseType string
+	GoType        string
+	Optional      bool
+	FieldNr       uint
+	Name          string
+	Imports       []string
+	Repeated      bool
+	Required      bool
+	IsNonScalar   bool
 }
 
 type protoFieldInternal struct {
@@ -37,12 +38,11 @@ type protoFieldInternal struct {
 	fieldNr         uint
 	imports         []string
 	protoType       string
+	protoBaseType   string
 	goType          string
 	errors          error
 	required        bool
 	isNonScalar     bool
-	ignore          string
-	isEnum          bool
 }
 
 type ProtoFieldBuilder interface {
@@ -50,7 +50,11 @@ type ProtoFieldBuilder interface {
 }
 
 func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{Name: fieldName, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional}
+	data := ProtoFieldData{Name: fieldName, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType}
+
+	if data.ProtoBaseType == "" {
+		data.ProtoBaseType = data.ProtoType
+	}
 
 	var errAgg error
 	if b.errors != nil {
@@ -69,20 +73,8 @@ func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldDat
 	if len(b.rules) > 0 {
 		imports["buf/validate/validate.proto"] = present
 
-		protoName := b.protoType
-		switch protoName {
-		case "google.protobuf.Duration":
-			protoName = "duration"
-		case "google.protobuf.Timestamp":
-			protoName = "timestamp"
-		}
-
-		if b.isEnum {
-			protoName = "enum"
-		}
-
 		for rule, value := range b.rules {
-			optsCollector[fmt.Sprintf("(buf.validate.field).%s.%s", protoName, rule)] = value
+			optsCollector[fmt.Sprintf("(buf.validate.field).%s.%s", data.ProtoBaseType, rule)] = value
 		}
 	}
 

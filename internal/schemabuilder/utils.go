@@ -291,6 +291,8 @@ func formatProtoValue[T any](value T) (string, error) {
 				formattedEntries = append(formattedEntries, fmt.Sprintf("%s: %s", cleanedKey, valStr))
 			}
 			return fmt.Sprintf("{%s}", strings.Join(formattedEntries, ", ")), nil
+		} else if kind == reflect.Struct {
+			return fmt.Sprintf("%v", value), nil
 		}
 
 		return "", fmt.Errorf("unsupported type for proto value formatting: %T (kind: %s)", value, kind)

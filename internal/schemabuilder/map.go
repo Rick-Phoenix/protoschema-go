@@ -68,7 +68,9 @@ func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, 
 		{"values", valuesField},
 	} {
 		if len(item.Field.Rules) > 0 {
-			stringRule, fmtErr := formatProtoValue(item.Field.Rules)
+			rulesMap := make(map[string]any)
+			rulesMap[item.Field.ProtoBaseType] = item.Field.Rules
+			stringRule, fmtErr := formatProtoValue(rulesMap)
 			if fmtErr != nil {
 				err = errors.Join(err, fmtErr)
 			}

@@ -42,6 +42,9 @@ extend google.protobuf.OneofOptions {
 
 {{- range .Enums }}
   enum {{ .Name }} {
+  {{- range .Options}}
+    option {{ .Name }} = {{ .Value }};
+  {{ end }}
   {{ range $name, $val := .Members }}
     {{ $name }} = {{ $val }};
   {{ end -}}
@@ -63,6 +66,9 @@ message {{ .Name }} {
   option {{ .Name }} = {{ .Value }};
 {{ end }}
 {{- range .Enums }}
+  {{- range .Options}}
+    option {{ .Name }} = {{ .Value }};
+  {{ end }}
   enum {{ .Name }} {
   {{ range $name, $val := .Members }}
     {{ $name }} = {{ $val }};

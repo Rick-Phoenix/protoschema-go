@@ -65,7 +65,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		rulesMap := make(map[string]any)
 		rulesCopy := make(map[string]any)
 		maps.Copy(rulesCopy, fieldData.Rules)
-		rulesMap[fieldData.ProtoType] = rulesCopy
+		rulesMap[fieldData.ProtoBaseType] = rulesCopy
 
 		stringRules, fmtErr := formatProtoValue(rulesMap)
 		if fmtErr != nil {

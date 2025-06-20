@@ -29,7 +29,7 @@ func ProtoDuration(fieldNr uint) *DurationField {
 
 	gf := &DurationField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[DurationField, *durationpb.Duration]{
-		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Duration", goType: "durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }
