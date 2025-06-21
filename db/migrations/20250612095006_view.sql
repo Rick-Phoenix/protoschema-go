@@ -25,5 +25,8 @@ LEFT JOIN
 GROUP BY
     u.id, u.name, u.created_at;
 
+INSERT INTO users (name) VALUES ("gianfranco");
+
 -- migrate:down
 DROP VIEW user_with_posts;
+DELETE FROM users WHERE name = "gianfranco";

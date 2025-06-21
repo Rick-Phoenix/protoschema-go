@@ -6,6 +6,7 @@ package gofirst
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Comment struct {
@@ -39,9 +40,9 @@ type Subreddit struct {
 }
 
 type User struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `dbignore:"true" json:"created_at"`
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type UserSubscription struct {
@@ -51,8 +52,8 @@ type UserSubscription struct {
 }
 
 type UserWithPost struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
-	Posts     string `dbignore:"true" json:"posts"`
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	Posts     string    `dbignore:"true" json:"posts"`
 }

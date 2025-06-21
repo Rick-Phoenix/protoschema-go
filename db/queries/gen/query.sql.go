@@ -43,6 +43,17 @@ func (q *Queries) GetPostsFromUserId(ctx context.Context, authorID int64) ([]Pos
 	return items, nil
 }
 
+const getUser = `-- name: GetUser :one
+SELECT id, name, created_at FROM users WHERE id = ?
+`
+
+func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, id)
+	var i User
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const getUserWithPostsFromView = `-- name: GetUserWithPostsFromView :one
 SELECT id, name, created_at, posts FROM user_with_posts
 `
@@ -56,16 +67,5 @@ func (q *Queries) GetUserWithPostsFromView(ctx context.Context) (UserWithPost, e
 		&i.CreatedAt,
 		&i.Posts,
 	)
-	return i, err
-}
-
-const getUsers = `-- name: GetUsers :one
-SELECT id, name, created_at FROM users WHERE id = ?
-`
-
-func (q *Queries) GetUsers(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUsers, id)
-	var i User
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
 	return i, err
 }

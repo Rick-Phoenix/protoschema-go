@@ -78,6 +78,20 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
+func PickFields(s *ProtoMessageSchema, f ...string) ProtoMessageSchema {
+	newFields := make(ProtoFieldsMap)
+
+	for _, n := range f {
+		if field, exists := s.Fields[n]; exists {
+			newFields[n] = field
+			continue
+		}
+
+		log.Fatalf("Could not find field %q to pick in schema %q", n, s.Name)
+	}
+	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields}})
+}
+
 func ImportedMessage(name string, importPath string) ProtoMessageSchema {
 	return ProtoMessageSchema{Name: name, ReferenceOnly: true, ImportPath: importPath}
 }

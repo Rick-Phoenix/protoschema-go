@@ -83,7 +83,7 @@ var MyOptions = []CustomOption{{
 var TablesData = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
-			"GetUser":    {ProtoEmpty(), UserSchema},
+			"GetUser":    {PickFields(&UserSchema, "name"), UserSchema},
 			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
 		},
 		Enums: []ProtoEnumGroup{ProtoEnum("Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}).RsvNames("RESERVED_NAME").RsvRanges(Range{210, 220})},

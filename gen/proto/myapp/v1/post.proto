@@ -30,7 +30,6 @@ expression: "this = test"
 message  {
 
 
-  string id = 1;
   google.protobuf.Timestamp createdAt = 2 [
     (buf.validate.field).timestamp.lt_now = true,
     (buf.validate.field).cel = {
@@ -39,6 +38,7 @@ message: "this is a test"
 expression: "this = test"
 } 
   ];
+  string id = 1;
 }
 
 
