@@ -47,8 +47,8 @@ SELECT
     u.name,
     u.created_at,
     COALESCE(
-        JSON_GROUP_ARRAY(
-            JSON_OBJECT(
+        JSONB_GROUP_ARRAY(
+            JSONB_OBJECT(
                 'id', p.id,
                 'title', p.title,
                 'content', p.content,
@@ -65,8 +65,7 @@ LEFT JOIN
     posts AS p
     ON u.id = p.author_id
 GROUP BY
-    u.id, u.name, u.created_at
-/* user_with_posts(id,name,created_at,posts) */;
+    u.id, u.name, u.created_at;
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250609140445'),

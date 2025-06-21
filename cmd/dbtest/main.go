@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -17,7 +18,6 @@ type UserWithPosts struct {
 }
 
 func main() {
-	// 1. Open the database
 	database, err := sql.Open("sqlite", "file:///home/rick/go-first/db/database.sqlite3?_time_format=sqlite")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
@@ -27,12 +27,13 @@ func main() {
 	queries := gofirst.New(database)
 	ctx := context.Background()
 
-	user, err := queries.GetUser(ctx, 1)
+	userWithPosts, err := queries.GetUserWithPostsFromView(ctx, 1)
 
-	// posts, err := queries.GetPostsFromUserId(ctx, 1)
+	var posts []gofirst.Post
+	err = json.Unmarshal(userWithPosts.Posts, &posts)
 
-	// userWithPosts := UserWithPosts{User: user, Posts: posts}
+	userData := UserWithPosts{User: gofirst.User{ID: userWithPosts.ID, Name: userWithPosts.Name, CreatedAt: userWithPosts.CreatedAt}, Posts: posts}
 
-	fmt.Printf("%+v", user.CreatedAt.Local())
+	fmt.Printf("%+v", userData)
 
 }

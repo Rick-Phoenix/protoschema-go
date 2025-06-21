@@ -1,5 +1,5 @@
 -- name: GetUserWithPostsFromView :one
-SELECT * FROM user_with_posts;
+SELECT * FROM user_with_posts WHERE id = ?;
 
 -- name: GetUser :one
 SELECT * FROM users WHERE id = ?;

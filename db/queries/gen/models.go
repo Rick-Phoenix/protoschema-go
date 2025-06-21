@@ -10,50 +10,50 @@ import (
 )
 
 type Comment struct {
-	ID              int64          `json:"id"`
-	TextContent     string         `json:"text_content"`
-	CreatedAt       sql.NullString `json:"created_at"`
-	AuthorID        int64          `json:"author_id"`
-	PostID          int64          `json:"post_id"`
-	ParentCommentID sql.NullInt64  `json:"parent_comment_id"`
+	ID              int64         `db:"id" json:"id"`
+	TextContent     string        `db:"text_content" json:"text_content"`
+	CreatedAt       time.Time     `db:"created_at" json:"created_at"`
+	AuthorID        int64         `db:"author_id" json:"author_id"`
+	PostID          int64         `db:"post_id" json:"post_id"`
+	ParentCommentID sql.NullInt64 `db:"parent_comment_id" json:"parent_comment_id"`
 }
 
 type Post struct {
-	ID          int64          `json:"id"`
-	Title       string         `json:"title"`
-	Content     sql.NullString `json:"content"`
-	CreatedAt   string         `json:"created_at"`
-	AuthorID    int64          `json:"author_id"`
-	SubredditID int64          `json:"subreddit_id"`
+	ID          int64          `db:"id" json:"id"`
+	Title       string         `db:"title" json:"title"`
+	Content     sql.NullString `db:"content" json:"content"`
+	CreatedAt   time.Time      `db:"created_at" json:"created_at"`
+	AuthorID    int64          `db:"author_id" json:"author_id"`
+	SubredditID int64          `db:"subreddit_id" json:"subreddit_id"`
 }
 
 type SchemaMigration struct {
-	Version string `json:"version"`
+	Version string `db:"version" json:"version"`
 }
 
 type Subreddit struct {
-	ID          int64          `json:"id"`
-	Name        string         `json:"name"`
-	Description sql.NullString `json:"description"`
-	CreatedAt   string         `json:"created_at"`
-	CreatorID   sql.NullInt64  `json:"creator_id"`
+	ID          int64          `db:"id" json:"id"`
+	Name        string         `db:"name" json:"name"`
+	Description sql.NullString `db:"description" json:"description"`
+	CreatedAt   time.Time      `db:"created_at" json:"created_at"`
+	CreatorID   sql.NullInt64  `db:"creator_id" json:"creator_id"`
 }
 
 type User struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int64     `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
 
 type UserSubscription struct {
-	UserID      int64  `json:"user_id"`
-	SubredditID int64  `json:"subreddit_id"`
-	CreatedAt   string `json:"created_at"`
+	UserID      int64     `db:"user_id" json:"user_id"`
+	SubredditID int64     `db:"subreddit_id" json:"subreddit_id"`
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
 }
 
 type UserWithPost struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	Posts     string    `dbignore:"true" json:"posts"`
+	ID        int64     `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	Posts     []byte    `db:"posts" dbignore:"true" json:"posts"`
 }

@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (name) VALUES (?) Returning id, name, created_at
+`
+
+func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, name)
+	var i User
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const getPostsFromUserId = `-- name: GetPostsFromUserId :many
 SELECT id, title, content, created_at, author_id, subreddit_id FROM posts WHERE author_id = ?
 `
@@ -55,11 +66,11 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserWithPostsFromView = `-- name: GetUserWithPostsFromView :one
-SELECT id, name, created_at, posts FROM user_with_posts
+SELECT id, name, created_at, posts FROM user_with_posts WHERE id = ?
 `
 
-func (q *Queries) GetUserWithPostsFromView(ctx context.Context) (UserWithPost, error) {
-	row := q.db.QueryRowContext(ctx, getUserWithPostsFromView)
+func (q *Queries) GetUserWithPostsFromView(ctx context.Context, id int64) (UserWithPost, error) {
+	row := q.db.QueryRowContext(ctx, getUserWithPostsFromView, id)
 	var i UserWithPost
 	err := row.Scan(
 		&i.ID,

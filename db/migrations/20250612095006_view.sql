@@ -5,8 +5,8 @@ SELECT
     u.name,
     u.created_at,
     COALESCE(
-        JSON_GROUP_ARRAY(
-            JSON_OBJECT(
+        JSONB_GROUP_ARRAY(
+            JSONB_OBJECT(
                 'id', p.id,
                 'title', p.title,
                 'content', p.content,
@@ -26,7 +26,13 @@ GROUP BY
     u.id, u.name, u.created_at;
 
 INSERT INTO users (name) VALUES ("gianfranco");
+INSERT INTO subreddits (name, creator_id) VALUES ("r/cats", 1);
+INSERT INTO posts (title, author_id, subreddit_id) VALUES (
+    "cats are neat eh?", 1, 1
+);
 
 -- migrate:down
 DROP VIEW user_with_posts;
 DELETE FROM users WHERE name = "gianfranco";
+DELETE FROM subreddits WHERE id = 1;
+DELETE FROM posts WHERE id = 1;
