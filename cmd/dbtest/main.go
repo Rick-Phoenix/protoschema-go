@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -27,12 +26,10 @@ func main() {
 	queries := gofirst.New(database)
 	ctx := context.Background()
 
-	userWithPosts, err := queries.GetUserWithPostsFromView(ctx, 1)
+	user, err := queries.GetUser(ctx, 1)
+	posts, err := queries.GetPostsFromUserId(ctx, 1)
 
-	var posts []gofirst.Post
-	err = json.Unmarshal(userWithPosts.Posts, &posts)
-
-	userData := UserWithPosts{User: gofirst.User{ID: userWithPosts.ID, Name: userWithPosts.Name, CreatedAt: userWithPosts.CreatedAt}, Posts: posts}
+	userData := UserWithPosts{User: user, Posts: posts}
 
 	fmt.Printf("%+v", userData)
 

@@ -50,10 +50,3 @@ type UserSubscription struct {
 	SubredditID int64     `db:"subreddit_id" json:"subreddit_id"`
 	CreatedAt   time.Time `db:"created_at" json:"created_at"`
 }
-
-type UserWithPost struct {
-	ID        int64     `db:"id" json:"id"`
-	Name      string    `db:"name" json:"name"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	Posts     []byte    `db:"posts" dbignore:"true" json:"posts"`
-}

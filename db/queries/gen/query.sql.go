@@ -64,19 +64,3 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
 	return i, err
 }
-
-const getUserWithPostsFromView = `-- name: GetUserWithPostsFromView :one
-SELECT id, name, created_at, posts FROM user_with_posts WHERE id = ?
-`
-
-func (q *Queries) GetUserWithPostsFromView(ctx context.Context, id int64) (UserWithPost, error) {
-	row := q.db.QueryRowContext(ctx, getUserWithPostsFromView, id)
-	var i UserWithPost
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.Posts,
-	)
-	return i, err
-}
