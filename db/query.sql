@@ -1,7 +1,7 @@
 -- name: GetUserWithPostsFromView :one
 SELECT * FROM user_with_posts;
 
--- name: GetUsers :one
+-- name: GetUser :one
 SELECT * FROM users WHERE id = ?;
 
 -- name: GetPostsFromUserId :many

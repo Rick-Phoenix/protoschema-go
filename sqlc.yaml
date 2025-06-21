@@ -13,5 +13,8 @@ sql:
             go_type:
               type: "string"
             go_struct_tag: 'dbignore:"true"'
-          - column: "users.created_at"
-            go_struct_tag: 'dbignore:"true"'
+          # - column: "users.created_at"
+          #   go_struct_tag: 'dbignore:"true"'
+          #   go_type:
+          #     import: "time"
+          #     type: "Time"

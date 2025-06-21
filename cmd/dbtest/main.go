@@ -18,7 +18,7 @@ type UserWithPosts struct {
 
 func main() {
 	// 1. Open the database
-	database, err := sql.Open("sqlite", "db/database.sqlite3")
+	database, err := sql.Open("sqlite", "file:///home/rick/go-first/db/database.sqlite3?_time_format=sqlite")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -27,12 +27,12 @@ func main() {
 	queries := gofirst.New(database)
 	ctx := context.Background()
 
-	user, err := queries.GetUsers(ctx, 1)
+	user, err := queries.GetUser(ctx, 1)
 
-	posts, err := queries.GetPostsFromUserId(ctx, 1)
+	// posts, err := queries.GetPostsFromUserId(ctx, 1)
 
-	userWithPosts := UserWithPosts{User: user, Posts: posts}
+	// userWithPosts := UserWithPosts{User: user, Posts: posts}
 
-	fmt.Printf("%+v", userWithPosts)
+	fmt.Printf("%+v", user.CreatedAt.Local())
 
 }
