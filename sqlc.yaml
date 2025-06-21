@@ -12,3 +12,5 @@ sql:
         overrides:
           - column: "user_with_posts.posts"
             go_struct_tag: 'dbignore:"true"'
+          - db_type: "datetime"
+            go_type: "time.Time"
