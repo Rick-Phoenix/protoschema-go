@@ -17,7 +17,7 @@ type UserWithPosts struct {
 }
 
 func main() {
-	database, err := sql.Open("sqlite", "file:///home/rick/go-first/db/database.sqlite3?_time_format=sqlite")
+	database, err := sql.Open("sqlite", "db/database.sqlite3?_time_format=sqlite")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -32,5 +32,4 @@ func main() {
 	userData := UserWithPosts{User: user, Posts: posts}
 
 	fmt.Printf("%+v", userData)
-
 }
