@@ -7,10 +7,16 @@ package gofirst
 
 import (
 	"context"
+	"time"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name) VALUES (?) Returning id, name, created_at
+INSERT INTO
+    users (name)
+VALUES
+    (?)
+RETURNING
+    id, name, created_at
 `
 
 func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
@@ -21,7 +27,12 @@ func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
 }
 
 const getPostsFromUserId = `-- name: GetPostsFromUserId :many
-SELECT id, title, content, created_at, author_id, subreddit_id FROM posts WHERE author_id = ?
+SELECT
+    id, title, content, created_at, author_id, subreddit_id
+FROM
+    posts
+WHERE
+    author_id = ?
 `
 
 func (q *Queries) GetPostsFromUserId(ctx context.Context, authorID int64) ([]Post, error) {
@@ -55,12 +66,55 @@ func (q *Queries) GetPostsFromUserId(ctx context.Context, authorID int64) ([]Pos
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, created_at FROM users WHERE id = ?
+SELECT
+    id, name, created_at
+FROM
+    users
+WHERE
+    id = ?
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i User
 	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
+const postWithUser = `-- name: PostWithUser :one
+SELECT
+    posts.id, posts.title, posts.content, posts.created_at, posts.author_id, posts.subreddit_id,
+    u.author, u.author, u.author AS author
+FROM
+    posts
+    JOIN users u ON posts.author_id = users.id
+WHERE
+    users.id = ?
+`
+
+type PostWithUserRow struct {
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Content     *string   `json:"content"`
+	CreatedAt   time.Time `json:"created_at"`
+	AuthorID    int64     `json:"author_id"`
+	SubredditID int64     `json:"subreddit_id"`
+	User        User      `json:"user"`
+}
+
+func (q *Queries) PostWithUser(ctx context.Context, id int64) (PostWithUserRow, error) {
+	row := q.db.QueryRowContext(ctx, postWithUser, id)
+	var i PostWithUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Content,
+		&i.CreatedAt,
+		&i.AuthorID,
+		&i.SubredditID,
+		&i.User.ID,
+		&i.User.Name,
+		&i.User.CreatedAt,
+	)
 	return i, err
 }

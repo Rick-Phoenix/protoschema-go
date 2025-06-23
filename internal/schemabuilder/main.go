@@ -21,13 +21,13 @@ var UserSchema = ProtoMessageSchema{
 		1: ProtoString("name"),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
-		5: RepeatedField("posts", ExternalMsgField("post", &PostSchema)),
+		5: RepeatedField("posts", ImportedMsgField("post", &PostSchema)),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
-	DbModel:         &gofirst.User{},
-	DbIgnore:        []string{"posts"},
+	Model:           &gofirst.User{},
+	ModelIgnore:     []string{"posts"},
 	ImportPath:      "myapp/v1/user.proto",
 }
 
@@ -38,6 +38,13 @@ var GetUserSchema = ProtoMessageSchema{
 	},
 }
 
+var GetPostSchema = ProtoMessageSchema{
+	Name: "GetPostRequest",
+	Fields: ProtoFieldsMap{
+		1: PostSchema.GetField("id"),
+	},
+}
+
 var SubRedditSchema = ProtoMessageSchema{
 	Name: "Subreddit",
 	Fields: ProtoFieldsMap{
@@ -45,7 +52,7 @@ var SubRedditSchema = ProtoMessageSchema{
 		2: ProtoString("name").MinLen(1).MaxLen(48),
 		3: ProtoString("description").MaxLen(255),
 		4: ProtoInt32("creator_id"),
-		5: RepeatedField("posts", ExternalMsgField("post", &PostSchema)),
+		5: RepeatedField("posts", ImportedMsgField("post", &PostSchema)),
 		6: ProtoTimestamp("created_at"),
 	},
 }
@@ -53,15 +60,15 @@ var SubRedditSchema = ProtoMessageSchema{
 var PostSchema = ProtoMessageSchema{
 	Name: "Post",
 	Fields: ProtoFieldsMap{
-		1: ProtoString("id"),
+		1: ProtoInt64("id"),
 		2: ProtoTimestamp("created_at"),
-		3: ProtoInt32("creator_id"),
+		3: ProtoInt64("author_id"),
 		4: ProtoString("title"),
-		5: ProtoString("content"),
-		6: ProtoInt32("subreddit_id"),
+		5: ProtoString("content").Optional(),
+		6: ProtoInt64("subreddit_id"),
 	},
-	ImportPath: "myapp/v1/Post.proto",
-	DbModel:    &gofirst.Post{},
+	ImportPath: "myapp/v1/post.proto",
+	Model:      &gofirst.Post{},
 }
 
 type ServicesMap map[string]ProtoServiceSchema
@@ -79,7 +86,7 @@ var ProtoServices = ServicesMap{
 			"GetUser": {GetUserSchema, ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: ProtoFieldsMap{
-					1: InternalMsgField("user", &UserSchema),
+					1: MsgField("user", &UserSchema),
 				},
 			}},
 			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
@@ -87,28 +94,21 @@ var ProtoServices = ServicesMap{
 			}}, ProtoEmpty()},
 		},
 	},
-	// "Post": ProtoServiceSchema{
-	// 	Messages: []ProtoMessageSchema{PostSchema},
-	// 	Handlers: HandlersMap{
-	// 		"GetPost": {PickFields(&PostSchema, "GetPostRequest", "id"), ProtoMessageSchema{
-	// 			Name: "GetPostResponse",
-	// 			Fields: ProtoFieldsMap{
-	// 				"post": MessageType[gofirst.Post](1, "Post"),
-	// 			},
-	// 		}},
-	// 	},
-	// },
-	// "Subreddit": ProtoServiceSchema{
-	// 	Messages: []ProtoMessageSchema{SubRedditSchema},
-	// 	Handlers: HandlersMap{
-	// 		"GetSubreddit": {PickFields(&SubRedditSchema, "GetSubredditRequest", "id"), ProtoMessageSchema{
-	// 			Name: "GetSubredditResponse",
-	// 			Fields: ProtoFieldsMap{
-	// 				"subreddit": MessageType[gofirst.Subreddit](1, "Subreddit"),
-	// 			},
-	// 		}},
-	// 	},
-	// },
+	"Post": ProtoServiceSchema{
+		Messages: []ProtoMessageSchema{PostSchema},
+		Handlers: HandlersMap{
+			"GetPost": {GetPostSchema, ProtoMessageSchema{
+				Name: "GetPostResponse",
+				Fields: ProtoFieldsMap{
+					1: MsgField("post", &PostSchema),
+				},
+			}},
+			"UpdatePost": {ProtoMessageSchema{Name: "UpdatePostResponse", Fields: ProtoFieldsMap{
+				1: MsgField("post", &PostSchema),
+				2: FieldMask("field_mask"),
+			}}, ProtoEmpty()},
+		},
+	},
 }
 
 func GenerateProtoFiles() {

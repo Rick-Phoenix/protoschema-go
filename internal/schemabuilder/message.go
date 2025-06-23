@@ -23,8 +23,8 @@ type ProtoMessageSchema struct {
 	ReservedNames   []string
 	ReferenceOnly   bool
 	ImportPath      string
-	DbModel         any
-	DbIgnore        []string
+	Model           any
+	ModelIgnore     []string
 }
 
 func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
@@ -61,7 +61,7 @@ func (s *ProtoMessageSchema) GetField(n string) ProtoFieldBuilder {
 }
 
 func (s *ProtoMessageSchema) CheckModel() error {
-	dbModel := reflect.TypeOf(s.DbModel).Elem()
+	dbModel := reflect.TypeOf(s.Model).Elem()
 	dbModelName := dbModel.Name()
 	msgFields := s.GetFields()
 	var err error
@@ -69,7 +69,7 @@ func (s *ProtoMessageSchema) CheckModel() error {
 	for i := range dbModel.NumField() {
 		dbcol := dbModel.Field(i)
 		colname := dbcol.Tag.Get("json")
-		ignore := slices.Contains(s.DbIgnore, colname)
+		ignore := slices.Contains(s.ModelIgnore, colname)
 		coltype := dbcol.Type.String()
 
 		if ignore {
@@ -79,7 +79,7 @@ func (s *ProtoMessageSchema) CheckModel() error {
 		if pfield, exists := msgFields[colname]; exists {
 			delete(msgFields, colname)
 			data := pfield.GetData()
-			if data.GoType != coltype && !slices.Contains(s.DbIgnore, data.Name) {
+			if data.GoType != coltype && !slices.Contains(s.ModelIgnore, data.Name) {
 				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", coltype, colname, data.GoType))
 			}
 		} else {
@@ -89,7 +89,7 @@ func (s *ProtoMessageSchema) CheckModel() error {
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
-			if !slices.Contains(s.DbIgnore, name) {
+			if !slices.Contains(s.ModelIgnore, name) {
 				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the schema for db model %q.", name, dbModelName))
 			}
 		}
@@ -106,7 +106,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	var protoFields []ProtoFieldData
 	var fieldsErrors error
 
-	if s.DbModel != nil {
+	if s.Model != nil {
 		err := s.CheckModel()
 
 		if err != nil {
@@ -142,8 +142,8 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
-func MessageRef(name string) ProtoMessageSchema {
-	return ProtoMessageSchema{Name: name, ReferenceOnly: true}
+func MessageRef(name string, importPath string) ProtoMessageSchema {
+	return ProtoMessageSchema{Name: name, ReferenceOnly: true, ImportPath: importPath}
 }
 
 func ProtoEmpty() ProtoMessageSchema {

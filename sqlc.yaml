@@ -8,6 +8,7 @@ sql:
         package: "gofirst"
         out: "db/queries/gen"
         emit_json_tags: true
+        emit_pointers_for_null_types: true
         overrides:
           - column: "user_with_posts.posts"
             go_struct_tag: 'dbignore:"true"'
