@@ -28,7 +28,7 @@ func (af *AnyField) NotIn(values ...string) *AnyField {
 	return af.self
 }
 
-func (af *AnyField) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+func (af *AnyField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	var errAgg error
 
 	if af.errors != nil {
@@ -43,5 +43,5 @@ func (af *AnyField) Build(fieldName string, imports Set) (ProtoFieldData, error)
 		errAgg = errors.Join(errAgg, err)
 	}
 
-	return ProtoFieldData{Name: fieldName, Options: options, ProtoType: af.protoType, GoType: af.goType, Optional: af.optional, FieldNr: af.fieldNr, Rules: af.rules, IsNonScalar: af.isNonScalar}, nil
+	return ProtoFieldData{Name: af.name, Options: options, ProtoType: af.protoType, GoType: af.goType, Optional: af.optional, FieldNr: fieldNr, Rules: af.rules, IsNonScalar: af.isNonScalar}, nil
 }

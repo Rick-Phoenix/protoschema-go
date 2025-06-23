@@ -13,7 +13,6 @@ type ProtoRepeatedBuilder struct {
 	unique   bool
 	minItems *uint
 	maxItems *uint
-	fieldNr  uint
 	*ProtoFieldExternal[ProtoRepeatedBuilder, any]
 }
 

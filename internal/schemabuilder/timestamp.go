@@ -26,7 +26,7 @@ func ProtoTimestamp(name string) *TimestampField {
 
 	gf := &TimestampField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]{
-		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "*timestamppb.Timestamp", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "time.Time", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }

@@ -19,16 +19,19 @@ var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
 		1: ProtoString("name"),
+		2: ProtoInt64("id"),
+		3: ProtoTimestamp("created_at"),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
+	DbModel:         &gofirst.User{},
 }
 
 var GetUserSchema = ProtoMessageSchema{
 	Name: "GetUserRequest",
 	Fields: ProtoFieldsMap{
-		1: UserSchema.Fields[1],
+		1: UserSchema.GetField("name"),
 	},
 }
 
@@ -39,7 +42,7 @@ var SubRedditSchema = ProtoMessageSchema{
 		2: ProtoString("name").MinLen(1).MaxLen(48),
 		3: ProtoString("description").MaxLen(255),
 		4: ProtoInt32("creator_id"),
-		5: RepeatedField("posts", MessageType[gofirst.Post]("Post", WithImportPath("myapp/v1/Post.proto"))),
+		5: RepeatedField("posts", ImportedMsgField[gofirst.Post]("post", "Post", "myapp/v1/Post.proto")),
 		6: ProtoTimestamp("created_at"),
 	},
 }
@@ -89,11 +92,12 @@ var MyOptions = []CustomOption{{
 
 var ProtoServices = ServicesMap{
 	"User": ProtoServiceSchema{
+		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
 			"GetUser": {GetUserSchema, ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: ProtoFieldsMap{
-					1: MessageType[gofirst.User]("User"),
+					1: MsgField[gofirst.User]("user", "User"),
 				},
 			}},
 			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{

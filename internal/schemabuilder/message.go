@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"slices"
 )
@@ -29,7 +30,6 @@ type ProtoMessageSchema struct {
 func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
 	out := make(map[string]ProtoFieldBuilder)
 	for _, f := range s.Fields {
-		// Create getters or difrent methods for fields
 		data := f.GetData()
 		out[data.Name] = f
 	}
@@ -46,6 +46,18 @@ type ProtoMessage struct {
 	ReservedNames   []string
 	Options         []ProtoOption
 	Enums           []ProtoEnumGroup
+}
+
+func (s *ProtoMessageSchema) GetField(n string) ProtoFieldBuilder {
+	for _, f := range s.Fields {
+		data := f.GetData()
+		if data.Name == n {
+			return f
+		}
+	}
+
+	log.Fatalf("Could not find field %q in schema %q", n, s.Name)
+	return nil
 }
 
 func (s *ProtoMessageSchema) CheckModel() error {
@@ -102,10 +114,10 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		}
 	}
 
-	for fieldName, fieldBuilder := range s.Fields {
-		field, err := fieldBuilder.Build(fieldName, imports)
+	for fieldNr, fieldBuilder := range s.Fields {
+		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
-			fieldsErrors = errors.Join(fieldsErrors, IndentErrors(fmt.Sprintf("Errors for field %s", fieldName), err))
+			fieldsErrors = errors.Join(fieldsErrors, IndentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
 		} else {
 			protoFields = append(protoFields, field)
 		}

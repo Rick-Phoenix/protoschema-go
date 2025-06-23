@@ -59,6 +59,7 @@ func (b *protoFieldInternal) GetData() ProtoFieldData {
 		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
 		Imports:  slices.Clone(b.imports),
 		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
+		GoType: b.goType,
 	}
 }
 

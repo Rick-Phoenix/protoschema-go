@@ -54,8 +54,8 @@ func ProtoEnumField(name string, enumName string) *EnumField {
 	return ef
 }
 
-func (ef *EnumField) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{Name: fieldName, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: ef.fieldNr, Rules: ef.rules, IsNonScalar: false, Optional: ef.optional, ProtoBaseType: "enum"}
+func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, IsNonScalar: false, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
 	if ef.errors != nil {
