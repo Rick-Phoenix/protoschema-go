@@ -1,54 +1,35 @@
 syntax = "proto3";
 
-
+package myapp.v1;
 
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/post.proto";
-
-package myapp.v1;
-
-
-
-
-
-
-
 
 message User {
   reserved 2010 to 2029, 3050 to 3055;
   reserved 101, 102;
   reserved "name2", "name3";
 
-
-  repeated Post posts = 5;
   string name = 1;
   int64 id = 2;
   google.protobuf.Timestamp created_at = 3;
+  repeated Post posts = 5;
 }
 
 message GetUserRequest {
-
-
   string name = 1;
 }
 
 message GetUserResponse {
-
-
   User user = 1;
 }
 
 message UpdateUserResponse {
-
-
   google.protobuf.FieldMask field_mask = 1;
 }
 
-
 service UserServiceService {
-  rpc GetUser(GetUserRequest) returns(GetUserResponse);
-  rpc UpdateUser(UpdateUserResponse) returns(google.protobuf.Empty);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
 }
-
-

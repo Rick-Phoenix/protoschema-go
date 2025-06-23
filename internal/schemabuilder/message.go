@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"reflect"
 	"slices"
 )
@@ -114,7 +115,10 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		}
 	}
 
-	for fieldNr, fieldBuilder := range s.Fields {
+	fieldNumbers := slices.Sorted(maps.Keys(s.Fields))
+
+	for _, fieldNr := range fieldNumbers {
+		fieldBuilder := s.Fields[fieldNr]
 		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
 			fieldsErrors = errors.Join(fieldsErrors, IndentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
@@ -148,19 +152,6 @@ func MessageRef(name string, importPath string) ProtoMessageSchema {
 
 func ProtoEmpty() ProtoMessageSchema {
 	return ProtoMessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto"}
-}
-
-type ProtoMessageExtension struct {
-	Schema          *ProtoMessageSchema
-	ReplaceReserved bool
-	ReplaceOptions  bool
-	ReplaceOneofs   bool
-	ReplaceFields   bool
-	ReplaceEnums    bool
-	RemoveReserved  []uint
-	RemoveFields    []string
-	RemoveOneofs    []string
-	RemoveEnums     []string
 }
 
 var (
@@ -207,6 +198,19 @@ func ReservedRanges(ranges ...Range) []Range {
 func ReservedNames(names ...string) []string {
 	return names
 }
+
+// type ProtoMessageExtension struct {
+// 	Schema          *ProtoMessageSchema
+// 	ReplaceReserved bool
+// 	ReplaceOptions  bool
+// 	ReplaceOneofs   bool
+// 	ReplaceFields   bool
+// 	ReplaceEnums    bool
+// 	RemoveReserved  []uint
+// 	RemoveFields    []string
+// 	RemoveOneofs    []string
+// 	RemoveEnums     []string
+// }
 
 // func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
 // 	if s == nil {

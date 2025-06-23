@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -78,41 +80,74 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 
 	var messageErrors error
 
-	for name, h := range s.Handlers {
-		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
-		if _, seen := processedMessages[h.Request.Name]; !seen {
-			processedMessages[h.Request.Name] = present
-
-			if h.Request.ReferenceOnly {
-				if h.Request.ImportPath != "" {
-					imports[h.Request.ImportPath] = present
-				}
-			} else {
-				messages = append(messages, h.Request)
-			}
-		}
-
-		if _, seen := processedMessages[h.Response.Name]; !seen {
-			processedMessages[h.Response.Name] = present
-
-			if h.Response.ReferenceOnly {
-				if h.Response.ImportPath != "" {
-					imports[h.Request.ImportPath] = present
-				}
-			} else {
-				messages = append(messages, h.Response)
-			}
-		}
-
-	}
-
-	for _, m := range messages {
+	processMessage := func(m ProtoMessageSchema) {
 		message, err := NewProtoMessage(m, imports)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present
 
 		if err != nil {
 			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", resourceName), err))
+		}
+	}
+
+	for _, m := range messages {
+		processMessage(m)
+	}
+
+	handlerKeys := slices.SortedFunc(maps.Keys(s.Handlers), func(a, b string) int {
+		methodsOrder := map[string]int{
+			"Create": 0,
+			"Get":    1,
+			"Update": 2,
+			"Delete": 3,
+		}
+
+		scoreA := 4
+		scoreB := 4
+
+		for method, value := range methodsOrder {
+			if strings.HasPrefix(a, method) {
+				scoreA = value
+				break
+			}
+
+			if strings.HasPrefix(b, method) {
+				scoreB = value
+				break
+			}
+		}
+
+		if scoreA == scoreB {
+			return CompareString(a, b)
+		}
+
+		return scoreA - scoreB
+	})
+
+	for _, name := range handlerKeys {
+		h := s.Handlers[name]
+
+		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
+		if _, seen := processedMessages[h.Request.Name]; !seen {
+			if h.Request.ReferenceOnly {
+				processedMessages[h.Request.Name] = present
+				if h.Request.ImportPath != "" {
+					imports[h.Request.ImportPath] = present
+				}
+			} else {
+				processMessage(h.Request)
+			}
+		}
+
+		if _, seen := processedMessages[h.Response.Name]; !seen {
+			if h.Response.ReferenceOnly {
+				processedMessages[h.Response.Name] = present
+				if h.Response.ImportPath != "" {
+					imports[h.Request.ImportPath] = present
+				}
+			} else {
+				processMessage(h.Response)
+			}
 		}
 	}
 
