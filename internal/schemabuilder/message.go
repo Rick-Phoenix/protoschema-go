@@ -44,7 +44,6 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 
 	if s.DbModel != nil {
 		err := CheckDbSchema(s.DbModel, s.Fields, s.DbIgnore)
-
 		if err != nil {
 			fieldsErrors = errors.Join(fieldsErrors, err)
 		}
@@ -78,7 +77,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
-func PickFields(s *ProtoMessageSchema, f ...string) ProtoMessageSchema {
+func PickFields(s *ProtoMessageSchema, name string, f ...string) ProtoMessageSchema {
 	newFields := make(ProtoFieldsMap)
 
 	for _, n := range f {
@@ -89,7 +88,7 @@ func PickFields(s *ProtoMessageSchema, f ...string) ProtoMessageSchema {
 
 		log.Fatalf("Could not find field %q to pick in schema %q", n, s.Name)
 	}
-	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields}})
+	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields, Name: name}})
 }
 
 func ImportedMessage(name string, importPath string) ProtoMessageSchema {
@@ -218,13 +217,17 @@ func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMes
 
 	if hasSchema && e.Schema.Name != "" {
 		newSchema.Name = e.Schema.Name
+	} else {
+		newSchema.Name = s.Name
 	}
 
 	return newSchema
 }
 
-var DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
-var ProtoDeprecated = ProtoOption{Name: "deprecated", Value: true}
+var (
+	DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
+	ProtoDeprecated  = ProtoOption{Name: "deprecated", Value: true}
+)
 
 func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
@@ -236,7 +239,6 @@ func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 	}
 
 	val, err := formatProtoValue(values)
-
 	if err != nil {
 		fmt.Printf("Error while formatting the fields for oneof: %v", err)
 	}

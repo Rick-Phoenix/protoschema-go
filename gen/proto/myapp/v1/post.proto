@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 
-import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
 package myapp.v1;
@@ -16,34 +15,29 @@ package myapp.v1;
 message  {
 
 
+  int32 creator_id = 3;
+  string title = 4;
+  string content = 5;
+  int32 subreddit_id = 6;
   string id = 1;
-  google.protobuf.Timestamp createdAt = 2 [
-    (buf.validate.field).timestamp.lt_now = true,
-    (buf.validate.field).cel = {
-id: "test" 
-message: "this is a test"
-expression: "this = test"
-} 
-  ];
+  google.protobuf.Timestamp created_at = 2;
 }
 
-message  {
+message GetPostRequest {
 
 
-  google.protobuf.Timestamp createdAt = 2 [
-    (buf.validate.field).timestamp.lt_now = true,
-    (buf.validate.field).cel = {
-id: "test" 
-message: "this is a test"
-expression: "this = test"
-} 
-  ];
   string id = 1;
+}
+
+message GetPostResponse {
+
+
+  Post post = 1;
 }
 
 
 service PostServiceService {
-  rpc GetPost() returns();
+  rpc GetPost(GetPostRequest) returns(GetPostResponse);
 }
 
 

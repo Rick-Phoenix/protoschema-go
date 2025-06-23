@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "myapp/v1/Post.proto";
+
+package myapp.v1;
+
+
+
+
+
+
+
+
+message Subreddit {
+
+
+  google.protobuf.Timestamp created_at = 5;
+  int32 id = 500;
+  string name = 1 [
+    (buf.validate.field).string.max_len = 48,
+    (buf.validate.field).string.min_len = 1 
+  ];
+  string description = 2 [
+    (buf.validate.field).string.max_len = 255 
+  ];
+  int32 creator_id = 3;
+  repeated Post posts = 4;
+}
+
+message GetSubredditRequest {
+
+
+  int32 id = 500;
+}
+
+message GetSubredditResponse {
+
+
+  Subreddit subreddit = 1;
+}
+
+
+service SubredditServiceService {
+  rpc GetSubreddit(GetSubredditRequest) returns(GetSubredditResponse);
+}
+
+

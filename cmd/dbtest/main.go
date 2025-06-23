@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
+
 	defer database.Close()
 
 	queries := gofirst.New(database)

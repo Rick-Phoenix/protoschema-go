@@ -25,25 +25,33 @@ var UserSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
 		"name":       ProtoString(1).MinLen(2),
 		"posts":      RepeatedField(12, MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto"))),
-		"maptype":    ProtoMap(209, ProtoInt32(0).Lt(10), ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3)),
-		"maptype2":   ProtoMap(201, ProtoInt32(0).Lt(10), ProtoTimestamp(25).LtNow()),
-		"created_at": ProtoTimestamp(25).LtNow(),
-		"enumval":    ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3).Optional(),
-		"repenum":    RepeatedField(125, ProtoEnumField(100, "Myenum").DefinedOnly().In(1, 2, 3)),
+		"created_at": ProtoTimestamp(25),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
 }
 
+var SubRedditSchema = ProtoMessageSchema{
+	Name: "Subreddit",
+	Fields: ProtoFieldsMap{
+		"id":          ProtoInt32(500),
+		"name":        ProtoString(1).MinLen(1).MaxLen(48),
+		"description": ProtoString(2).MaxLen(255),
+		"creator_id":  ProtoInt32(3),
+		"posts":       RepeatedField(4, MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto"))),
+		"created_at":  ProtoTimestamp(5),
+	},
+}
+
 var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"id": ProtoString(1),
-		"createdAt": ProtoTimestamp(2).CelOptions(CelFieldOpts{
-			Id:         "test",
-			Message:    "this is a test",
-			Expression: "this = test",
-		}).LtNow(),
+		"id":           ProtoString(1),
+		"created_at":   ProtoTimestamp(2),
+		"creator_id":   ProtoInt32(3),
+		"title":        ProtoString(4),
+		"content":      ProtoString(5),
+		"subreddit_id": ProtoInt32(6),
 	},
 }
 
@@ -57,7 +65,6 @@ func BuildFinalServicesMap(m ServicesMap) ServicesData {
 
 	for resource, serviceSchema := range m {
 		serviceData, err := NewProtoService(resource, serviceSchema, "myapp/v1")
-
 		if err != nil {
 			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the schema %s:\n%s", resource, IndentString(err.Error())))
 		}
@@ -80,24 +87,48 @@ var MyOptions = []CustomOption{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
-var TablesData = ServicesMap{
+var ProtoServices = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
-			"GetUser":    {PickFields(&UserSchema, "name"), UserSchema},
-			"UpdateUser": {MessageRef("UpdateUserResponse"), ProtoEmpty()},
+			"GetUser": {PickFields(&UserSchema, "GetUserRequest", "name"), ProtoMessageSchema{
+				Name: "GetUserResponse",
+				Fields: ProtoFieldsMap{
+					"user": MessageType[gofirst.User](1, "User"),
+				},
+			}},
+			"UpdateUser": {ExtendProtoMessage(&UserSchema, ProtoMessageExtension{
+				Schema: &ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
+					"field_mask": FieldMask(210),
+				}},
+			}), ProtoEmpty()},
 		},
-		Enums: []ProtoEnumGroup{ProtoEnum("Myenum", ProtoEnumMap{"VAL_1": 0, "VAL_2": 1}).RsvNames("RESERVED_NAME").RsvRanges(Range{210, 220})},
 	},
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},
 		Handlers: HandlersMap{
-			"GetPost": {PostSchema, PostSchema},
+			"GetPost": {PickFields(&PostSchema, "GetPostRequest", "id"), ProtoMessageSchema{
+				Name: "GetPostResponse",
+				Fields: ProtoFieldsMap{
+					"post": MessageType[gofirst.Post](1, "Post"),
+				},
+			}},
+		},
+	},
+	"Subreddit": ProtoServiceSchema{
+		Messages: []ProtoMessageSchema{SubRedditSchema},
+		Handlers: HandlersMap{
+			"GetSubreddit": {PickFields(&SubRedditSchema, "GetSubredditRequest", "id"), ProtoMessageSchema{
+				Name: "GetSubredditResponse",
+				Fields: ProtoFieldsMap{
+					"subreddit": MessageType[gofirst.Subreddit](1, "Subreddit"),
+				},
+			}},
 		},
 	},
 }
 
 func GenerateProtoFiles() {
-	var Services = BuildFinalServicesMap(TablesData)
+	Services := BuildFinalServicesMap(ProtoServices)
 	templatePath := "templates/service.proto.tmpl"
 	outputRoot := "gen/proto"
 
