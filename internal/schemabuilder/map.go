@@ -30,6 +30,13 @@ func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *Pr
 	return self
 }
 
+func (b *ProtoMapBuilder) GetData() ProtoFieldData {
+	data := b.protoFieldInternal.GetData()
+	data.Name = b.name
+
+	return data
+}
+
 func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	var err error
 
