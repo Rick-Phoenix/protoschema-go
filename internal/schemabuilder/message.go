@@ -30,7 +30,12 @@ type ProtoMessageSchema struct {
 
 func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
 	out := make(map[string]ProtoFieldBuilder)
-	for _, f := range s.Fields {
+
+	keys := slices.Sorted(maps.Keys(s.Fields))
+
+	for _, k := range keys {
+		f := s.Fields[k]
+
 		data := f.GetData()
 		out[data.Name] = f
 	}
@@ -130,7 +135,10 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	oneOfs := []ProtoOneOfData{}
 	var oneOfErrors error
 
-	for name, oneof := range s.Oneofs {
+	oneOfKeys := slices.Sorted(maps.Keys(s.Oneofs))
+
+	for _, name := range oneOfKeys {
+		oneof := s.Oneofs[name]
 		data, oneofErr := oneof.Build(name, imports)
 
 		if oneofErr != nil {

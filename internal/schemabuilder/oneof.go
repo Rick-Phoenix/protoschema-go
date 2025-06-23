@@ -40,9 +40,7 @@ func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, erro
 	for name, field := range of.choices {
 		data, err := field.Build(0, imports)
 
-		if err != nil {
-			fieldErr = errors.Join(fieldErr, err)
-		}
+		fieldErr = errors.Join(fieldErr, err)
 
 		if data.Optional {
 			fmt.Printf("Ignoring 'optional' for member '%s' of a oneof group...\n", name)

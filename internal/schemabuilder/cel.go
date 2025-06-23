@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 )
 
@@ -33,12 +34,14 @@ func GetOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error)
 	flatOpts := []string{}
 	var err error
 
-	for name, value := range optsMap {
+	optsKeys := slices.Sorted(maps.Keys(optsMap))
+
+	for _, name := range optsKeys {
+		value := optsMap[name]
+
 		val, fmtErr := GetProtoOption(name, value)
 
-		if fmtErr != nil {
-			err = errors.Join(err, fmtErr)
-		}
+		err = errors.Join(err, fmtErr)
 
 		flatOpts = append(flatOpts, val)
 	}
