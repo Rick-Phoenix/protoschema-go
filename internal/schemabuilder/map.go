@@ -8,20 +8,19 @@ import (
 )
 
 type ProtoMapBuilder struct {
+	name     string
 	keys     ProtoFieldBuilder
 	values   ProtoFieldBuilder
 	minPairs *uint
 	maxPairs *uint
-	fieldNr  uint
 	*ProtoFieldExternal[ProtoMapBuilder, any]
 }
 
-// Add cel and ignore options to this and others not implementing external
-func ProtoMap(fieldNr uint, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
+func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 	self := &ProtoMapBuilder{
-		keys: keys, values: values, fieldNr: fieldNr,
+		keys: keys, values: values, name: name,
 	}
 
 	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder, any]{protoFieldInternal: &protoFieldInternal{
@@ -31,16 +30,16 @@ func ProtoMap(fieldNr uint, keys ProtoFieldBuilder, values ProtoFieldBuilder) *P
 	return self
 }
 
-func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
+func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	var err error
 
-	keysField, keysErr := b.keys.Build(fieldName, imports)
+	keysField, keysErr := b.keys.Build(fieldNr, imports)
 
 	if keysErr != nil {
 		err = errors.Join(err, keysErr)
 	}
 
-	valuesField, valsErr := b.values.Build(fieldName, imports)
+	valuesField, valsErr := b.values.Build(fieldNr, imports)
 
 	if valsErr != nil {
 		err = errors.Join(err, valsErr)
@@ -91,7 +90,7 @@ func (b *ProtoMapBuilder) Build(fieldName string, imports Set) (ProtoFieldData, 
 		return ProtoFieldData{}, err
 	}
 
-	return ProtoFieldData{Name: fieldName, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: "[]" + keysField.GoType, Optional: keysField.Optional, FieldNr: b.fieldNr, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: "[]" + keysField.GoType, Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {

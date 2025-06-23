@@ -38,7 +38,7 @@ func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, erro
 	var fieldErr error
 
 	for name, field := range of.choices {
-		data, err := field.Build(name, imports)
+		data, err := field.Build(0, imports)
 
 		if err != nil {
 			fieldErr = errors.Join(fieldErr, err)

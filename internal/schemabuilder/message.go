@@ -3,12 +3,11 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
-	"log"
-	"maps"
+	"reflect"
 	"slices"
 )
 
-type ProtoFieldsMap map[string]ProtoFieldBuilder
+type ProtoFieldsMap map[uint32]ProtoFieldBuilder
 
 type Range [2]uint
 
@@ -27,6 +26,17 @@ type ProtoMessageSchema struct {
 	DbIgnore        []string
 }
 
+func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
+	out := make(map[string]ProtoFieldBuilder)
+	for _, f := range s.Fields {
+		// Create getters or difrent methods for fields
+		data := f.GetData()
+		out[data.Name] = f
+	}
+
+	return out
+}
+
 type ProtoMessage struct {
 	Name            string
 	Fields          []ProtoFieldData
@@ -38,14 +48,57 @@ type ProtoMessage struct {
 	Enums           []ProtoEnumGroup
 }
 
+func (s *ProtoMessageSchema) CheckModel() error {
+	dbModel := reflect.TypeOf(s.DbModel).Elem()
+	dbModelName := dbModel.Name()
+	msgFields := s.GetFields()
+	var err error
+
+	for i := range dbModel.NumField() {
+		dbcol := dbModel.Field(i)
+		colname := dbcol.Tag.Get("json")
+		ignore := slices.Contains(s.DbIgnore, colname)
+		coltype := dbcol.Type.String()
+
+		if ignore {
+			continue
+		}
+
+		if pfield, exists := msgFields[colname]; exists {
+			delete(msgFields, colname)
+			data := pfield.GetData()
+			if data.GoType != coltype && !slices.Contains(s.DbIgnore, data.Name) {
+				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", coltype, colname, data.GoType))
+			}
+		} else {
+			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", colname, dbModel))
+		}
+	}
+
+	if len(msgFields) > 0 {
+		for name := range msgFields {
+			if !slices.Contains(s.DbIgnore, name) {
+				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the schema for db model %q.", name, dbModelName))
+			}
+		}
+	}
+
+	if err != nil {
+		err = IndentErrors(fmt.Sprintf("Validation errors for db model %s", dbModelName), err)
+	}
+
+	return err
+}
+
 func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	var protoFields []ProtoFieldData
 	var fieldsErrors error
 
 	if s.DbModel != nil {
-		err := CheckDbSchema(s.DbModel, s.Fields, s.DbIgnore)
+		err := s.CheckModel()
+
 		if err != nil {
-			fieldsErrors = errors.Join(fieldsErrors, err)
+			return ProtoMessage{}, err
 		}
 	}
 
@@ -77,23 +130,19 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
-func PickFields(s *ProtoMessageSchema, name string, f ...string) ProtoMessageSchema {
-	newFields := make(ProtoFieldsMap)
-
-	for _, n := range f {
-		if field, exists := s.Fields[n]; exists {
-			newFields[n] = field
-			continue
-		}
-
-		log.Fatalf("Could not find field %q to pick in schema %q", n, s.Name)
-	}
-	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields, Name: name}})
-}
-
-func ImportedMessage(name string, importPath string) ProtoMessageSchema {
-	return ProtoMessageSchema{Name: name, ReferenceOnly: true, ImportPath: importPath}
-}
+// func PickFields(s *ProtoMessageSchema, name string, f ...string) ProtoMessageSchema {
+// 	newFields := make(ProtoFieldsMap)
+//
+// 	for _, n := range f {
+// 		if field, exists := s.Fields[n]; exists {
+// 			newFields[n] = field
+// 			continue
+// 		}
+//
+// 		log.Fatalf("Could not find field %q to pick in schema %q", n, s.Name)
+// 	}
+// 	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields, Name: name}})
+// }
 
 func MessageRef(name string) ProtoMessageSchema {
 	return ProtoMessageSchema{Name: name, ReferenceOnly: true}
@@ -116,113 +165,113 @@ type ProtoMessageExtension struct {
 	RemoveEnums     []string
 }
 
-func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
-	if s == nil {
-		log.Fatalf("Received a nil pointer when trying to extend a message schema.")
-	}
-
-	var hasSchema bool
-	if e.Schema != nil {
-		hasSchema = true
-	}
-
-	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceFields) && !hasSchema {
-		log.Fatalf("Tried to replace parts of the message schema for %q with a nil pointer for the replacement.", s.Name)
-	}
-
-	newSchema := ProtoMessageSchema{}
-
-	newFields := make(ProtoFieldsMap)
-
-	if hasSchema {
-		maps.Copy(newFields, e.Schema.Fields)
-	}
-
-	if !e.ReplaceFields {
-		maps.Copy(newFields, s.Fields)
-	}
-
-	for _, f := range e.RemoveFields {
-		delete(newFields, f)
-	}
-
-	enums := []ProtoEnumGroup{}
-
-	if e.ReplaceEnums {
-		copy(enums, e.Schema.Enums)
-	} else {
-		for _, en := range s.Enums {
-			if !slices.Contains(e.RemoveEnums, en.Name) {
-				enums = append(enums, en)
-			}
-		}
-
-		if hasSchema {
-			enums = append(enums, e.Schema.Enums...)
-		}
-	}
-
-	reserved := []uint{}
-
-	if e.ReplaceReserved {
-		copy(reserved, e.Schema.ReservedNumbers)
-	} else {
-
-		reserved = append(reserved, s.ReservedNumbers...)
-
-		if hasSchema {
-			reserved = append(reserved, e.Schema.ReservedNumbers...)
-		}
-
-		reserved = FilterAndDedupe(reserved, func(n uint) bool {
-			return !slices.Contains(e.RemoveReserved, n)
-		})
-	}
-
-	options := []ProtoOption{}
-
-	if e.ReplaceOptions {
-		copy(options, e.Schema.Options)
-	} else {
-		options = append(options, s.Options...)
-
-		if hasSchema {
-			options = append(options, e.Schema.Options...)
-		}
-	}
-
-	oneofs := make(map[string]ProtoOneOfBuilder)
-
-	if e.ReplaceOneofs {
-		maps.Copy(oneofs, e.Schema.Oneofs)
-	} else {
-
-		maps.Copy(oneofs, s.Oneofs)
-
-		if hasSchema {
-			maps.Copy(oneofs, e.Schema.Oneofs)
-		}
-
-		for _, o := range e.RemoveOneofs {
-			delete(oneofs, o)
-		}
-
-	}
-
-	newSchema.Fields = newFields
-	newSchema.ReservedNumbers = reserved
-	newSchema.Options = options
-	newSchema.Oneofs = oneofs
-	newSchema.Enums = enums
-
-	if hasSchema && e.Schema.Name != "" {
-		newSchema.Name = e.Schema.Name
-	} else {
-		newSchema.Name = s.Name
-	}
-
-	return newSchema
-}
+// func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
+// 	if s == nil {
+// 		log.Fatalf("Received a nil pointer when trying to extend a message schema.")
+// 	}
+//
+// 	var hasSchema bool
+// 	if e.Schema != nil {
+// 		hasSchema = true
+// 	}
+//
+// 	if (e.ReplaceReserved || e.ReplaceOptions || e.ReplaceOneofs || e.ReplaceFields) && !hasSchema {
+// 		log.Fatalf("Tried to replace parts of the message schema for %q with a nil pointer for the replacement.", s.Name)
+// 	}
+//
+// 	newSchema := ProtoMessageSchema{}
+//
+// 	newFields := make(ProtoFieldsMap)
+//
+// 	if hasSchema {
+// 		maps.Copy(newFields, e.Schema.Fields)
+// 	}
+//
+// 	if !e.ReplaceFields {
+// 		maps.Copy(newFields, s.Fields)
+// 	}
+//
+// 	for _, f := range e.RemoveFields {
+// 		delete(newFields, f)
+// 	}
+//
+// 	enums := []ProtoEnumGroup{}
+//
+// 	if e.ReplaceEnums {
+// 		copy(enums, e.Schema.Enums)
+// 	} else {
+// 		for _, en := range s.Enums {
+// 			if !slices.Contains(e.RemoveEnums, en.Name) {
+// 				enums = append(enums, en)
+// 			}
+// 		}
+//
+// 		if hasSchema {
+// 			enums = append(enums, e.Schema.Enums...)
+// 		}
+// 	}
+//
+// 	reserved := []uint{}
+//
+// 	if e.ReplaceReserved {
+// 		copy(reserved, e.Schema.ReservedNumbers)
+// 	} else {
+//
+// 		reserved = append(reserved, s.ReservedNumbers...)
+//
+// 		if hasSchema {
+// 			reserved = append(reserved, e.Schema.ReservedNumbers...)
+// 		}
+//
+// 		reserved = FilterAndDedupe(reserved, func(n uint) bool {
+// 			return !slices.Contains(e.RemoveReserved, n)
+// 		})
+// 	}
+//
+// 	options := []ProtoOption{}
+//
+// 	if e.ReplaceOptions {
+// 		copy(options, e.Schema.Options)
+// 	} else {
+// 		options = append(options, s.Options...)
+//
+// 		if hasSchema {
+// 			options = append(options, e.Schema.Options...)
+// 		}
+// 	}
+//
+// 	oneofs := make(map[string]ProtoOneOfBuilder)
+//
+// 	if e.ReplaceOneofs {
+// 		maps.Copy(oneofs, e.Schema.Oneofs)
+// 	} else {
+//
+// 		maps.Copy(oneofs, s.Oneofs)
+//
+// 		if hasSchema {
+// 			maps.Copy(oneofs, e.Schema.Oneofs)
+// 		}
+//
+// 		for _, o := range e.RemoveOneofs {
+// 			delete(oneofs, o)
+// 		}
+//
+// 	}
+//
+// 	newSchema.Fields = newFields
+// 	newSchema.ReservedNumbers = reserved
+// 	newSchema.Options = options
+// 	newSchema.Oneofs = oneofs
+// 	newSchema.Enums = enums
+//
+// 	if hasSchema && e.Schema.Name != "" {
+// 		newSchema.Name = e.Schema.Name
+// 	} else {
+// 		newSchema.Name = s.Name
+// 	}
+//
+// 	return newSchema
+// }
 
 var (
 	DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}

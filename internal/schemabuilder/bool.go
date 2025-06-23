@@ -6,10 +6,10 @@ type ProtoBoolField struct {
 	*OptionalField[ProtoBoolField]
 }
 
-func ProtoBool(fieldNr uint) *ProtoBoolField {
+func ProtoBool(name string) *ProtoBoolField {
 	bf := &ProtoBoolField{}
 	internal := &protoFieldInternal{
-		fieldNr: fieldNr, protoType: "bool", goType: "bool",
+		name: name, protoType: "bool", goType: "bool",
 	}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[ProtoBoolField, bool]{internal, bf}
 	bf.FieldWithConst = &FieldWithConst[ProtoBoolField, bool, bool]{constInternal: internal, self: bf}

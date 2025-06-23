@@ -89,10 +89,10 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	return b.self
 }
 
-func ProtoString(fieldNumber uint) *StringField {
+func ProtoString(name string) *StringField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "string", goType: "string", options: options, rules: rules}
+	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
 
 	sf := &StringField{}
 	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField, string]{
@@ -109,7 +109,8 @@ func ProtoString(fieldNumber uint) *StringField {
 	}
 	sf.OptionalField = &OptionalField[StringField]{
 		optionalInternal: internal,
-		self:             sf}
+		self:             sf,
+	}
 
 	return sf
 }
@@ -118,6 +119,7 @@ func (b *StringField) LenBytes(n int) *StringField {
 	b.protoFieldInternal.rules["len_bytes"] = n
 	return b
 }
+
 func (b *StringField) MinBytes(n int) *StringField {
 	b.protoFieldInternal.rules["min_bytes"] = n
 	return b
@@ -137,6 +139,7 @@ func (b *StringField) Email() *StringField {
 	b.setWellKnownRule("email", true)
 	return b
 }
+
 func (b *StringField) Hostname() *StringField {
 	b.setWellKnownRule("hostname", true)
 	return b
@@ -146,46 +149,57 @@ func (b *StringField) URI() *StringField {
 	b.setWellKnownRule("uri", true)
 	return b
 }
+
 func (b *StringField) URIRef() *StringField {
 	b.setWellKnownRule("uri_ref", true)
 	return b
 }
+
 func (b *StringField) Address() *StringField {
 	b.setWellKnownRule("address", true)
 	return b
 }
+
 func (b *StringField) UUID() *StringField {
 	b.setWellKnownRule("uuid", true)
 	return b
 }
+
 func (b *StringField) TUUID() *StringField {
 	b.setWellKnownRule("tuuid", true)
 	return b
 }
+
 func (b *StringField) IpWithMask() *StringField {
 	b.setWellKnownRule("ip_with_prefixlen", true)
 	return b
 }
+
 func (b *StringField) Ipv4WithMask() *StringField {
 	b.setWellKnownRule("ipv4_with_prefixlen", true)
 	return b
 }
+
 func (b *StringField) Ipv6WithMask() *StringField {
 	b.setWellKnownRule("ipv6_with_prefixlen", true)
 	return b
 }
+
 func (b *StringField) IpPrefix() *StringField {
 	b.setWellKnownRule("ip_prefix", true)
 	return b
 }
+
 func (b *StringField) Ipv4Prefix() *StringField {
 	b.setWellKnownRule("ipv4_prefix", true)
 	return b
 }
+
 func (b *StringField) Ipv6Prefix() *StringField {
 	b.setWellKnownRule("ipv6_prefix", true)
 	return b
 }
+
 func (b *StringField) HostAndPort() *StringField {
 	b.setWellKnownRule("host_and_port", true)
 	return b
@@ -219,10 +233,10 @@ type BytesField struct {
 	*FieldWithConst[BytesField, []byte, byte]
 }
 
-func ProtoBytes(fieldNumber uint) *BytesField {
+func ProtoBytes(name string) *BytesField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
-	internal := &protoFieldInternal{fieldNr: fieldNumber, protoType: "bytes", goType: "[]byte", options: options, rules: rules}
+	internal := &protoFieldInternal{name: name, protoType: "bytes", goType: "[]byte", options: options, rules: rules}
 
 	bf := &BytesField{}
 	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
@@ -239,6 +253,7 @@ func ProtoBytes(fieldNumber uint) *BytesField {
 	}
 	bf.OptionalField = &OptionalField[BytesField]{
 		optionalInternal: internal,
-		self:             bf}
+		self:             bf,
+	}
 	return bf
 }

@@ -20,13 +20,13 @@ type TimestampField struct {
 	gte *timestamppb.Timestamp
 }
 
-func ProtoTimestamp(fieldNr uint) *TimestampField {
+func ProtoTimestamp(name string) *TimestampField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
 
 	gf := &TimestampField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]{
-		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Timestamp", goType: "*timestamppb.Timestamp", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "*timestamppb.Timestamp", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }

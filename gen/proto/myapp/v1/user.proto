@@ -2,28 +2,18 @@ syntax = "proto3";
 
 package myapp.v1;
 
-import "buf/validate/validate.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
-import "myapp/v1/Post.proto";
 
 message GetUserRequest {
-  reserved 101, 102;
-
-  string name = 1 [(buf.validate.field).string.min_len = 2];
+  string name = 1;
 }
 
 message GetUserResponse {
-  User user = 1;
+  User User = 1;
 }
 
 message UpdateUserResponse {
-  reserved 101, 102;
-
-  google.protobuf.FieldMask field_mask = 210;
-  repeated Post posts = 12;
-  google.protobuf.Timestamp created_at = 25;
-  string name = 1 [(buf.validate.field).string.min_len = 2];
+  field_mask field_mask = 1;
 }
 
 service UserServiceService {

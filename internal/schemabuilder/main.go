@@ -1,14 +1,9 @@
 package schemabuilder
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"maps"
 	"os"
-	"reflect"
-	"slices"
-	"strconv"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
@@ -23,35 +18,40 @@ type UserWithPosts struct {
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
-		"name":       ProtoString(1).MinLen(2),
-		"posts":      RepeatedField(12, MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto"))),
-		"created_at": ProtoTimestamp(25),
+		1: ProtoString("name"),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
 }
 
+var GetUserSchema = ProtoMessageSchema{
+	Name: "GetUserRequest",
+	Fields: ProtoFieldsMap{
+		1: UserSchema.Fields[1],
+	},
+}
+
 var SubRedditSchema = ProtoMessageSchema{
 	Name: "Subreddit",
 	Fields: ProtoFieldsMap{
-		"id":          ProtoInt32(500),
-		"name":        ProtoString(1).MinLen(1).MaxLen(48),
-		"description": ProtoString(2).MaxLen(255),
-		"creator_id":  ProtoInt32(3),
-		"posts":       RepeatedField(4, MessageType[gofirst.Post](4, "Post", WithImportPath("myapp/v1/Post.proto"))),
-		"created_at":  ProtoTimestamp(5),
+		1: ProtoInt32("id"),
+		2: ProtoString("name").MinLen(1).MaxLen(48),
+		3: ProtoString("description").MaxLen(255),
+		4: ProtoInt32("creator_id"),
+		5: RepeatedField("posts", MessageType[gofirst.Post]("Post", WithImportPath("myapp/v1/Post.proto"))),
+		6: ProtoTimestamp("created_at"),
 	},
 }
 
 var PostSchema = ProtoMessageSchema{
 	Fields: ProtoFieldsMap{
-		"id":           ProtoString(1),
-		"created_at":   ProtoTimestamp(2),
-		"creator_id":   ProtoInt32(3),
-		"title":        ProtoString(4),
-		"content":      ProtoString(5),
-		"subreddit_id": ProtoInt32(6),
+		1: ProtoString("id"),
+		2: ProtoTimestamp("created_at"),
+		3: ProtoInt32("creator_id"),
+		4: ProtoString("title"),
+		5: ProtoString("content"),
+		6: ProtoInt32("subreddit_id"),
 	},
 }
 
@@ -90,41 +90,39 @@ var MyOptions = []CustomOption{{
 var ProtoServices = ServicesMap{
 	"User": ProtoServiceSchema{
 		Handlers: HandlersMap{
-			"GetUser": {PickFields(&UserSchema, "GetUserRequest", "name"), ProtoMessageSchema{
+			"GetUser": {GetUserSchema, ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: ProtoFieldsMap{
-					"user": MessageType[gofirst.User](1, "User"),
+					1: MessageType[gofirst.User]("User"),
 				},
 			}},
-			"UpdateUser": {ExtendProtoMessage(&UserSchema, ProtoMessageExtension{
-				Schema: &ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
-					"field_mask": FieldMask(210),
-				}},
-			}), ProtoEmpty()},
+			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
+				1: FieldMask("field_mask"),
+			}}, ProtoEmpty()},
 		},
 	},
-	"Post": ProtoServiceSchema{
-		Messages: []ProtoMessageSchema{PostSchema},
-		Handlers: HandlersMap{
-			"GetPost": {PickFields(&PostSchema, "GetPostRequest", "id"), ProtoMessageSchema{
-				Name: "GetPostResponse",
-				Fields: ProtoFieldsMap{
-					"post": MessageType[gofirst.Post](1, "Post"),
-				},
-			}},
-		},
-	},
-	"Subreddit": ProtoServiceSchema{
-		Messages: []ProtoMessageSchema{SubRedditSchema},
-		Handlers: HandlersMap{
-			"GetSubreddit": {PickFields(&SubRedditSchema, "GetSubredditRequest", "id"), ProtoMessageSchema{
-				Name: "GetSubredditResponse",
-				Fields: ProtoFieldsMap{
-					"subreddit": MessageType[gofirst.Subreddit](1, "Subreddit"),
-				},
-			}},
-		},
-	},
+	// "Post": ProtoServiceSchema{
+	// 	Messages: []ProtoMessageSchema{PostSchema},
+	// 	Handlers: HandlersMap{
+	// 		"GetPost": {PickFields(&PostSchema, "GetPostRequest", "id"), ProtoMessageSchema{
+	// 			Name: "GetPostResponse",
+	// 			Fields: ProtoFieldsMap{
+	// 				"post": MessageType[gofirst.Post](1, "Post"),
+	// 			},
+	// 		}},
+	// 	},
+	// },
+	// "Subreddit": ProtoServiceSchema{
+	// 	Messages: []ProtoMessageSchema{SubRedditSchema},
+	// 	Handlers: HandlersMap{
+	// 		"GetSubreddit": {PickFields(&SubRedditSchema, "GetSubredditRequest", "id"), ProtoMessageSchema{
+	// 			Name: "GetSubredditResponse",
+	// 			Fields: ProtoFieldsMap{
+	// 				"subreddit": MessageType[gofirst.Subreddit](1, "Subreddit"),
+	// 			},
+	// 		}},
+	// 	},
+	// },
 }
 
 func GenerateProtoFiles() {
@@ -139,43 +137,4 @@ func GenerateProtoFiles() {
 			log.Fatalf("🔥 Generation failed: %v", err)
 		}
 	}
-}
-
-func CheckDbSchema(model any, schema ProtoFieldsMap, ignores []string) error {
-	dbModel := reflect.TypeOf(model).Elem()
-	dbModelName := dbModel.Name()
-	schemaCopy := maps.Clone(schema)
-	var err error
-
-	for i := range dbModel.NumField() {
-		dbcol := dbModel.Field(i)
-		colname := dbcol.Tag.Get("json")
-		ignoreTag := dbcol.Tag.Get("dbignore")
-		ignore, _ := strconv.ParseBool(ignoreTag)
-		coltype := dbcol.Type.String()
-
-		if pfield, exists := schemaCopy[colname]; exists {
-			delete(schemaCopy, colname)
-			data, _ := pfield.Build(colname, Set{})
-			if data.GoType != coltype && !ignore && !slices.Contains(ignores, data.Name) {
-				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", coltype, colname, data.GoType))
-			}
-		} else if !slices.Contains(ignores, colname) && !ignore {
-			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", colname, dbModel))
-		}
-	}
-
-	if len(schemaCopy) > 0 {
-		for name := range schemaCopy {
-			if !slices.Contains(ignores, name) {
-				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the schema for db model %q.", name, dbModelName))
-			}
-		}
-	}
-
-	if err != nil {
-		err = IndentErrors(fmt.Sprintf("Validation errors for db model %s", dbModelName), err)
-	}
-
-	return err
 }

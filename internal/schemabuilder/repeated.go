@@ -8,6 +8,7 @@ import (
 )
 
 type ProtoRepeatedBuilder struct {
+	name     string
 	field    ProtoFieldBuilder
 	unique   bool
 	minItems *uint
@@ -16,11 +17,11 @@ type ProtoRepeatedBuilder struct {
 	*ProtoFieldExternal[ProtoRepeatedBuilder, any]
 }
 
-func RepeatedField(fieldNr uint, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
+func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 	self := &ProtoRepeatedBuilder{
-		field: b, fieldNr: fieldNr,
+		field: b, name: name,
 	}
 
 	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder, any]{protoFieldInternal: &protoFieldInternal{
@@ -30,8 +31,8 @@ func RepeatedField(fieldNr uint, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	return self
 }
 
-func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	fieldData, err := b.field.Build(fieldName, imports)
+func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+	fieldData, err := b.field.Build(fieldNr, imports)
 
 	if fieldData.Optional {
 		err = errors.Join(err, fmt.Errorf("A field cannot be optional and repeated."))
@@ -54,7 +55,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 	}
 
 	if fieldData.Required {
-		fmt.Printf("Ignoring ineffective 'required' option for repeated field '%s' (you can set min_len to 1 instead to require at least one element)", fieldName)
+		fmt.Printf("Ignoring ineffective 'required' option for repeated field '%s' (you can set min_len to 1 instead to require at least one element)", b.name)
 	}
 
 	if err != nil {
@@ -83,7 +84,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldName string, imports Set) (ProtoFieldD
 		err = errors.Join(err, optErr)
 	}
 
-	return ProtoFieldData{Name: fieldName, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: b.fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {

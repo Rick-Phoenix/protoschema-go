@@ -128,12 +128,12 @@ type IntField struct {
 	*NumericField[IntField, int32]
 }
 
-func ProtoInt32(fieldNumber uint) *IntField {
+func ProtoInt32(name string) *IntField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "int32",
 		goType:    "int32",
 		options:   options,
@@ -151,12 +151,12 @@ type FloatField struct {
 	*NumericField[FloatField, float32]
 }
 
-func ProtoFloat(fieldNumber uint) *FloatField {
+func ProtoFloat(name string) *FloatField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "float",
 		goType:    "float32",
 		options:   options,
@@ -177,12 +177,12 @@ type DoubleField struct {
 	*NumericField[DoubleField, float64]
 }
 
-func ProtoDouble(fieldNumber uint) *DoubleField {
+func ProtoDouble(name string) *DoubleField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "double",
 		goType:    "float64",
 		options:   options,
@@ -203,12 +203,12 @@ type Int64Field struct {
 	*NumericField[Int64Field, int64]
 }
 
-func ProtoInt64(fieldNumber uint) *Int64Field {
+func ProtoInt64(name string) *Int64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "int64",
 		goType:    "int64",
 		options:   options,
@@ -229,12 +229,12 @@ type UInt32Field struct {
 	*NumericField[UInt32Field, uint32]
 }
 
-func ProtoUInt32(fieldNumber uint) *UInt32Field {
+func ProtoUInt32(name string) *UInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "uint32",
 		goType:    "uint32",
 		options:   options,
@@ -255,12 +255,12 @@ type UInt64Field struct {
 	*NumericField[UInt64Field, uint64]
 }
 
-func ProtoUInt64(fieldNumber uint) *UInt64Field {
+func ProtoUInt64(name string) *UInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "uint64",
 		goType:    "uint64",
 		options:   options,
@@ -281,12 +281,12 @@ type SInt32Field struct {
 	*NumericField[SInt32Field, int32]
 }
 
-func ProtoSInt32(fieldNumber uint) *SInt32Field {
+func ProtoSInt32(name string) *SInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "sint32",
 		goType:    "int32",
 		options:   options,
@@ -307,12 +307,12 @@ type SInt64Field struct {
 	*NumericField[SInt64Field, int64]
 }
 
-func ProtoSInt64(fieldNumber uint) *SInt64Field {
+func ProtoSInt64(name string) *SInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "sint64",
 		goType:    "int64",
 		options:   options,
@@ -333,12 +333,12 @@ type Fixed32Field struct {
 	*NumericField[Fixed32Field, uint32]
 }
 
-func ProtoFixed32(fieldNumber uint) *Fixed32Field {
+func ProtoFixed32(name string) *Fixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "fixed32",
 		goType:    "uint32",
 		options:   options,
@@ -359,12 +359,12 @@ type Fixed64Field struct {
 	*NumericField[Fixed64Field, uint64]
 }
 
-func ProtoFixed64(fieldNumber uint) *Fixed64Field {
+func ProtoFixed64(name string) *Fixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "fixed64",
 		goType:    "uint64",
 		options:   options,
@@ -385,12 +385,12 @@ type SFixed32Field struct {
 	*NumericField[SFixed32Field, int32]
 }
 
-func ProtoSFixed32(fieldNumber uint) *SFixed32Field {
+func ProtoSFixed32(name string) *SFixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "sfixed32",
 		goType:    "int32",
 		options:   options,
@@ -411,12 +411,12 @@ type SFixed64Field struct {
 	*NumericField[SFixed64Field, int64]
 }
 
-func ProtoSFixed64(fieldNumber uint) *SFixed64Field {
+func ProtoSFixed64(name string) *SFixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:   fieldNumber,
+		name:      name,
 		protoType: "sfixed64",
 		goType:    "int64",
 		options:   options,

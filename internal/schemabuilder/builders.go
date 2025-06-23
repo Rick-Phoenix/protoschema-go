@@ -4,12 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 )
 
 var present = struct{}{}
 
-const indent = "  "
-const indent2 = "    "
+const (
+	indent  = "  "
+	indent2 = "    "
+)
 
 type Set map[string]struct{}
 
@@ -22,7 +25,7 @@ type ProtoFieldData struct {
 	ProtoBaseType string
 	GoType        string
 	Optional      bool
-	FieldNr       uint
+	FieldNr       uint32
 	Name          string
 	Imports       []string
 	Repeated      bool
@@ -31,11 +34,11 @@ type ProtoFieldData struct {
 }
 
 type protoFieldInternal struct {
+	name            string
 	rules           map[string]any
 	options         map[string]any
 	repeatedOptions []string
 	optional        bool
-	fieldNr         uint
 	imports         []string
 	protoType       string
 	protoBaseType   string
@@ -43,14 +46,27 @@ type protoFieldInternal struct {
 	errors          error
 	required        bool
 	isNonScalar     bool
+	repeated        bool
 }
 
 type ProtoFieldBuilder interface {
-	Build(fieldName string, imports Set) (ProtoFieldData, error)
+	Build(fieldNr uint32, imports Set) (ProtoFieldData, error)
+	GetData() ProtoFieldData
 }
 
-func (b *protoFieldInternal) Build(fieldName string, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{Name: fieldName, ProtoType: b.protoType, GoType: b.goType, FieldNr: b.fieldNr, Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType}
+func (b *protoFieldInternal) GetData() ProtoFieldData {
+	return ProtoFieldData{
+		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
+		Imports:  slices.Clone(b.imports),
+		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
+	}
+}
+
+func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+	data := ProtoFieldData{
+		Name: b.name, ProtoType: b.protoType, GoType: b.goType, FieldNr: fieldNr,
+		Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType,
+	}
 
 	if data.ProtoBaseType == "" {
 		data.ProtoBaseType = data.ProtoType

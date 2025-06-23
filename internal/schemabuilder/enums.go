@@ -42,10 +42,10 @@ type EnumField struct {
 	*OptionalField[EnumField]
 }
 
-func ProtoEnumField(fieldNr uint, enumName string) *EnumField {
+func ProtoEnumField(name string, enumName string) *EnumField {
 	rules := make(map[string]any)
 	ef := &EnumField{}
-	internal := &protoFieldInternal{fieldNr: fieldNr, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum"}
+	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum"}
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField, int32]{
 		protoFieldInternal: internal, self: ef}
 	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}

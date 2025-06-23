@@ -23,13 +23,13 @@ type DurationField struct {
 	lte *time.Duration
 }
 
-func ProtoDuration(fieldNr uint) *DurationField {
+func ProtoDuration(name string) *DurationField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
 	gf := &DurationField{}
 	gf.ProtoFieldExternal = &ProtoFieldExternal[DurationField, *durationpb.Duration]{
-		&protoFieldInternal{fieldNr: fieldNr, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		&protoFieldInternal{name: name, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }

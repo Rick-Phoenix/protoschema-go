@@ -2,20 +2,19 @@ package schemabuilder
 
 import "reflect"
 
-// Potentially separate this from external messages
-func MessageType[ValueT any](fieldNr uint, name string, opts ...FieldPathGetter) *GenericField[ValueT] {
+func MessageType[ValueT any](name string, protoType string, importPath string) *GenericField[ValueT] {
 	rules := make(map[string]any)
 
 	internal := &protoFieldInternal{
-		fieldNr:     fieldNr,
-		protoType:   name,
+		name:        name,
+		protoType:   protoType,
 		goType:      reflect.TypeOf((*ValueT)(nil)).Elem().String(),
 		isNonScalar: true,
 		rules:       rules,
 	}
 
-	for _, opt := range opts {
-		opt(internal)
+	if importPath != "" {
+		internal.imports = append(internal.imports, importPath)
 	}
 
 	gf := &GenericField[ValueT]{}
@@ -26,10 +25,10 @@ func MessageType[ValueT any](fieldNr uint, name string, opts ...FieldPathGetter)
 	return gf
 }
 
-type FieldPathGetter func(*protoFieldInternal)
+func MsgField[ValueT any](name, protoType string) *GenericField[ValueT] {
+	return MessageType[ValueT](name, protoType, "")
+}
 
-func WithImportPath(path string) FieldPathGetter {
-	return func(pfi *protoFieldInternal) {
-		pfi.imports = append(pfi.imports, path)
-	}
+func ImportedMsgField[ValueT any](name, protoType, importPath string) *GenericField[ValueT] {
+	return MessageType[ValueT](name, protoType, importPath)
 }
