@@ -4,6 +4,7 @@ package myapp.v1;
 
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "myapp/v1/Post.proto";
 
 message User {
   reserved 2010 to 2029, 3050 to 3055;
@@ -13,6 +14,7 @@ message User {
   string name = 1;
   int64 id = 2;
   google.protobuf.Timestamp created_at = 3;
+  repeated Post posts = 5;
 }
 
 message GetUserRequest {

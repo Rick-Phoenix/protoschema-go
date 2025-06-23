@@ -21,11 +21,14 @@ var UserSchema = ProtoMessageSchema{
 		1: ProtoString("name"),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
+		5: RepeatedField("posts", ExternalMsgField("post", &PostSchema)),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
 	DbModel:         &gofirst.User{},
+	DbIgnore:        []string{"posts"},
+	ImportPath:      "myapp/v1/user.proto",
 }
 
 var GetUserSchema = ProtoMessageSchema{
@@ -42,12 +45,13 @@ var SubRedditSchema = ProtoMessageSchema{
 		2: ProtoString("name").MinLen(1).MaxLen(48),
 		3: ProtoString("description").MaxLen(255),
 		4: ProtoInt32("creator_id"),
-		5: RepeatedField("posts", ImportedMsgField[gofirst.Post]("post", "Post", "myapp/v1/Post.proto")),
+		5: RepeatedField("posts", ExternalMsgField("post", &PostSchema)),
 		6: ProtoTimestamp("created_at"),
 	},
 }
 
 var PostSchema = ProtoMessageSchema{
+	Name: "Post",
 	Fields: ProtoFieldsMap{
 		1: ProtoString("id"),
 		2: ProtoTimestamp("created_at"),
@@ -56,35 +60,13 @@ var PostSchema = ProtoMessageSchema{
 		5: ProtoString("content"),
 		6: ProtoInt32("subreddit_id"),
 	},
+	ImportPath: "myapp/v1/Post.proto",
+	DbModel:    &gofirst.Post{},
 }
 
 type ServicesMap map[string]ProtoServiceSchema
 
 type ServicesData map[string]ProtoService
-
-func BuildFinalServicesMap(m ServicesMap) ServicesData {
-	out := make(ServicesData)
-	serviceErrors := []error{}
-
-	for resource, serviceSchema := range m {
-		serviceData, err := NewProtoService(resource, serviceSchema, "myapp/v1")
-		if err != nil {
-			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the schema %s:\n%s", resource, IndentString(err.Error())))
-		}
-		out[resource] = serviceData
-	}
-
-	if len(serviceErrors) > 0 {
-		fmt.Printf("The following errors occurred:\n\n")
-		for _, err := range serviceErrors {
-			fmt.Println(err)
-		}
-
-		os.Exit(1)
-	}
-
-	return out
-}
 
 var MyOptions = []CustomOption{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
@@ -97,7 +79,7 @@ var ProtoServices = ServicesMap{
 			"GetUser": {GetUserSchema, ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: ProtoFieldsMap{
-					1: MsgField[gofirst.User]("user", "User"),
+					1: InternalMsgField("user", &UserSchema),
 				},
 			}},
 			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
@@ -141,4 +123,28 @@ func GenerateProtoFiles() {
 			log.Fatalf("🔥 Generation failed: %v", err)
 		}
 	}
+}
+
+func BuildFinalServicesMap(m ServicesMap) ServicesData {
+	out := make(ServicesData)
+	serviceErrors := []error{}
+
+	for resource, serviceSchema := range m {
+		serviceData, err := NewProtoService(resource, serviceSchema, "myapp/v1")
+		if err != nil {
+			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the schema %s:\n%s", resource, IndentString(err.Error())))
+		}
+		out[resource] = serviceData
+	}
+
+	if len(serviceErrors) > 0 {
+		fmt.Printf("The following errors occurred:\n\n")
+		for _, err := range serviceErrors {
+			fmt.Println(err)
+		}
+
+		os.Exit(1)
+	}
+
+	return out
 }

@@ -142,20 +142,6 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
 }
 
-// func PickFields(s *ProtoMessageSchema, name string, f ...string) ProtoMessageSchema {
-// 	newFields := make(ProtoFieldsMap)
-//
-// 	for _, n := range f {
-// 		if field, exists := s.Fields[n]; exists {
-// 			newFields[n] = field
-// 			continue
-// 		}
-//
-// 		log.Fatalf("Could not find field %q to pick in schema %q", n, s.Name)
-// 	}
-// 	return ExtendProtoMessage(s, ProtoMessageExtension{ReplaceFields: true, Schema: &ProtoMessageSchema{Fields: newFields, Name: name}})
-// }
-
 func MessageRef(name string) ProtoMessageSchema {
 	return ProtoMessageSchema{Name: name, ReferenceOnly: true}
 }
@@ -175,6 +161,51 @@ type ProtoMessageExtension struct {
 	RemoveFields    []string
 	RemoveOneofs    []string
 	RemoveEnums     []string
+}
+
+var (
+	DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
+	ProtoDeprecated  = ProtoOption{Name: "deprecated", Value: true}
+)
+
+func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
+	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
+	values := make(map[string]any)
+	values["fields"] = fields
+
+	if required {
+		values["required"] = true
+	}
+
+	val, err := formatProtoValue(values)
+	if err != nil {
+		fmt.Printf("Error while formatting the fields for oneof: %v", err)
+	}
+
+	mo.Value = val
+	return mo
+}
+
+func MessageCelOption(o CelFieldOpts) ProtoOption {
+	out := ProtoOption{}
+
+	out.Name = "(buf.validate.message).cel"
+
+	out.Value = GetCelOption(o)
+
+	return out
+}
+
+func ReservedNumbers(numbers ...uint) []uint {
+	return numbers
+}
+
+func ReservedRanges(ranges ...Range) []Range {
+	return ranges
+}
+
+func ReservedNames(names ...string) []string {
+	return names
 }
 
 // func ExtendProtoMessage(s *ProtoMessageSchema, e ProtoMessageExtension) ProtoMessageSchema {
@@ -284,48 +315,3 @@ type ProtoMessageExtension struct {
 //
 // 	return newSchema
 // }
-
-var (
-	DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
-	ProtoDeprecated  = ProtoOption{Name: "deprecated", Value: true}
-)
-
-func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
-	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
-	values := make(map[string]any)
-	values["fields"] = fields
-
-	if required {
-		values["required"] = true
-	}
-
-	val, err := formatProtoValue(values)
-	if err != nil {
-		fmt.Printf("Error while formatting the fields for oneof: %v", err)
-	}
-
-	mo.Value = val
-	return mo
-}
-
-func MessageCelOption(o CelFieldOpts) ProtoOption {
-	out := ProtoOption{}
-
-	out.Name = "(buf.validate.message).cel"
-
-	out.Value = GetCelOption(o)
-
-	return out
-}
-
-func ReservedNumbers(numbers ...uint) []uint {
-	return numbers
-}
-
-func ReservedRanges(ranges ...Range) []Range {
-	return ranges
-}
-
-func ReservedNames(names ...string) []string {
-	return names
-}

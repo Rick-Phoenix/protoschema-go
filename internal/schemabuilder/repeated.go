@@ -30,6 +30,13 @@ func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	return self
 }
 
+func (b *ProtoRepeatedBuilder) GetData() ProtoFieldData {
+	data := b.protoFieldInternal.GetData()
+	data.Name = b.name
+
+	return data
+}
+
 func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldNr, imports)
 
