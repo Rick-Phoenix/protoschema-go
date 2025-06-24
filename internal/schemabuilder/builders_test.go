@@ -44,10 +44,17 @@ type ProtoOption struct {
 	Value any
 }
 
+type OneofData struct {
+	Name            string
+	Options         map[string]ProtoOption
+	RepeatedOptions []ProtoOption
+}
+
 type MessageData struct {
 	Name            string
 	Fields          map[string]FieldData
 	Enums           map[string]EnumData
+	Oneofs          map[string]OneofData
 	ReservedNames   []string
 	ReservedNumbers []int32
 	ReservedRanges  []schemabuilder.Range
@@ -320,21 +327,30 @@ func ExtractMessages(messages []*descriptorpb.DescriptorProto) map[string]Messag
 	for _, m := range messages {
 		fieldsMap := ExtractFields(m.GetField())
 
-		rawEnums := m.GetEnumType()
-		enumData := ExtractEnums(rawEnums)
+		oneofs := ExtractOneofs(m.GetOneofDecl())
+		enumData := ExtractEnums(m.GetEnumType())
 
-		rawMsgOpts := m.GetOptions().GetUninterpretedOption()
-		opts, repOpts := ExtractOpts(rawMsgOpts)
+		opts, repOpts := ExtractOpts(m.GetOptions().GetUninterpretedOption())
 
-		rawResRanges := m.GetReservedRange()
-		resNrs, resRanges := ExtractReservedNrs(rawResRanges)
+		resNrs, resRanges := ExtractReservedNrs(m.GetReservedRange())
 
 		msgData := MessageData{
-			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData,
+			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData, Oneofs: oneofs,
 		}
 
 		msgsMap[m.GetName()] = msgData
 	}
 
 	return msgsMap
+}
+
+func ExtractOneofs(oneofs []*descriptorpb.OneofDescriptorProto) map[string]OneofData {
+	data := make(map[string]OneofData)
+
+	for _, o := range oneofs {
+		opts, repOpts := ExtractOpts(o.GetOptions().GetUninterpretedOption())
+		data[o.GetName()] = OneofData{Name: o.GetName(), Options: opts, RepeatedOptions: repOpts}
+	}
+
+	return data
 }
