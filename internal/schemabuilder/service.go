@@ -67,8 +67,6 @@ type ProtoServiceSchema struct {
 	Enums            []ProtoEnumGroup
 }
 
-var FileLocations = map[string]string{}
-
 func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
@@ -77,6 +75,8 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	copy(messages, s.Messages)
 
 	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
+
+	fileOutput := path.Join(basePath, strings.ToLower(resourceName)+".proto")
 
 	var messageErrors error
 
@@ -131,7 +131,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		if _, seen := processedMessages[h.Request.Name]; !seen {
 			if h.Request.ReferenceOnly {
 				processedMessages[h.Request.Name] = present
-				if h.Request.ImportPath != "" {
+				if h.Request.ImportPath != "" && h.Request.ImportPath != fileOutput {
 					imports[h.Request.ImportPath] = present
 				}
 			} else {
@@ -142,7 +142,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		if _, seen := processedMessages[h.Response.Name]; !seen {
 			if h.Response.ReferenceOnly {
 				processedMessages[h.Response.Name] = present
-				if h.Response.ImportPath != "" {
+				if h.Response.ImportPath != "" && h.Request.ImportPath != fileOutput {
 					imports[h.Request.ImportPath] = present
 				}
 			} else {
@@ -159,9 +159,8 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		imports["google/protobuf/descriptor.proto"] = present
 	}
 
-	fileOutput := path.Join(basePath, strings.ToLower(resourceName)+".proto")
 	out.FileOutput = fileOutput
-	FileLocations[resourceName] = fileOutput
+	delete(imports, fileOutput)
 
 	return *out, nil
 }

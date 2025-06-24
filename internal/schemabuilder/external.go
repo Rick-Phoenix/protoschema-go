@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *GenericField {
+func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
 	rules := make(map[string]any)
 
 	if s == nil {
@@ -22,10 +22,7 @@ func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *Generi
 
 	imports := []string{}
 
-	if withImport {
-		if s.ImportPath == "" {
-			log.Fatalf("Message field %q is missing an import path.", name)
-		}
+	if s.ImportPath != "" {
 		imports = append(imports, s.ImportPath)
 	}
 
@@ -46,10 +43,6 @@ func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *Generi
 	return gf
 }
 
-func ImportedMsgField(name string, s *ProtoMessageSchema) *GenericField {
-	return createMsgField(name, s, true)
-}
-
 func MsgField(name string, s *ProtoMessageSchema) *GenericField {
-	return createMsgField(name, s, false)
+	return createMsgField(name, s)
 }
