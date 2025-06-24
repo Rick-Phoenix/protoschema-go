@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"testing"
@@ -88,7 +89,18 @@ type ExtensionData struct {
 }
 
 func TestFirst(t *testing.T) {
-	filePath := "/home/rick/go-first/gen/proto/myapp/v1/user.proto"
+	service, err := schemabuilder.NewProtoService("User", schemabuilder.UserService, "myapp/v1")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	err = schemabuilder.GenerateProtoFile(service, schemabuilder.Options{ProtoRoot: tmpDir})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filePath := path.Join(tmpDir, "myapp/v1", "user.proto")
 
 	data := ParseProtoFile(filePath)
 

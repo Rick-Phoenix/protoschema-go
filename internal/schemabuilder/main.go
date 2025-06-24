@@ -84,22 +84,24 @@ var MyOptions = []CustomOption{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
-var ProtoServices = ServicesMap{
-	"User": ProtoServiceSchema{
-		Messages: []ProtoMessageSchema{UserSchema},
-		Handlers: HandlersMap{
-			"GetUserService": {GetUserSchema, ProtoMessageSchema{
-				Name: "GetUserResponse",
-				Fields: ProtoFieldsMap{
-					1: MsgField("user", &UserSchema),
-				},
-			}},
-			"UpdateUserService": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
-				1: FieldMask("field_mask"),
-				2: MsgField("user", &UserSchema),
-			}}, ProtoEmpty()},
-		},
+var UserService = ProtoServiceSchema{
+	Messages: []ProtoMessageSchema{UserSchema},
+	Handlers: HandlersMap{
+		"GetUserService": {GetUserSchema, ProtoMessageSchema{
+			Name: "GetUserResponse",
+			Fields: ProtoFieldsMap{
+				1: MsgField("user", &UserSchema),
+			},
+		}},
+		"UpdateUserService": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
+			1: FieldMask("field_mask"),
+			2: MsgField("user", &UserSchema),
+		}}, ProtoEmpty()},
 	},
+}
+
+var ProtoServices = ServicesMap{
+	"User": UserService,
 	"Post": ProtoServiceSchema{
 		Messages: []ProtoMessageSchema{PostSchema},
 		Handlers: HandlersMap{
@@ -118,20 +120,19 @@ var ProtoServices = ServicesMap{
 }
 
 func GenerateProtoFiles() {
-	Services := BuildFinalServicesMap(ProtoServices)
-	templatePath := "templates/service.proto.tmpl"
+	Services := BuildServicesMap(ProtoServices)
 	outputRoot := "gen/proto"
 
-	options := &Options{TmplPath: templatePath, ProtoRoot: outputRoot}
+	options := Options{ProtoRoot: outputRoot}
 
 	for _, v := range Services {
-		if err := Generate(v, *options); err != nil {
-			log.Fatalf("🔥 Generation failed: %v", err)
+		if err := GenerateProtoFile(v, options); err != nil {
+			log.Fatal(err)
 		}
 	}
 }
 
-func BuildFinalServicesMap(m ServicesMap) ServicesData {
+func BuildServicesMap(m ServicesMap) ServicesData {
 	out := make(ServicesData)
 	serviceErrors := []error{}
 
