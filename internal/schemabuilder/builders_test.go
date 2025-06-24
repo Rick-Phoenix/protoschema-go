@@ -20,7 +20,6 @@ type FieldData struct {
 	Repeated        bool
 	Optional        bool
 	TypeName        string
-	Deprecated      bool
 	Options         map[string]ProtoOption
 	RepeatedOptions []ProtoOption
 }
@@ -52,7 +51,6 @@ type MessageData struct {
 	ReservedNames   []string
 	ReservedNumbers []int32
 	ReservedRanges  []schemabuilder.Range
-	Deprecated      bool
 	Options         map[string]ProtoOption
 	RepeatedOptions []ProtoOption
 }
@@ -113,42 +111,20 @@ func ParseProtoFile(filePath string) FileData {
 
 	desc := data.FileDescriptorProto()
 
-	msgsMap := make(map[string]MessageData)
+	msgsMap := ExtractMessages(desc.GetMessageType())
 	enumsMap := ExtractEnums(desc.GetEnumType())
 	servicesMap := ExtractServices(desc.GetService())
 	extensions := ExtractExtensions(desc.GetExtension())
 
 	fileData := FileData{Messages: msgsMap, Enums: enumsMap, Services: servicesMap, Extensions: extensions}
 
-	messages := desc.GetMessageType()
-
-	for _, m := range messages {
-		fieldsMap := ExtractFields(m.GetField())
-
-		rawEnums := m.GetEnumType()
-		enumData := ExtractEnums(rawEnums)
-
-		rawMsgOpts := m.GetOptions().GetUninterpretedOption()
-		opts, repOpts, deprecated := ExtractOpts(rawMsgOpts)
-
-		rawResRanges := m.GetReservedRange()
-		resNrs, resRanges := ExtractReservedNrs(rawResRanges)
-
-		msgData := MessageData{
-			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, Deprecated: deprecated, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData,
-		}
-
-		msgsMap[m.GetName()] = msgData
-	}
-
 	return fileData
 }
 
-func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]ProtoOption, repeatedOptions []ProtoOption, deprecated bool) {
+func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]ProtoOption, repeatedOptions []ProtoOption) {
 	optionsMap := make(map[string]ProtoOption)
 	repeatedOptsMap := make(map[string]struct{})
 	repeatedOpts := []ProtoOption{}
-	var isDeprecated bool
 	for _, o := range opts {
 		name := ""
 		var value any
@@ -176,10 +152,6 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]P
 				value = o.String()
 			} else {
 				value = strBool
-
-				if name == "deprecated" {
-					isDeprecated = strBool
-				}
 			}
 
 		} else if o.AggregateValue != nil {
@@ -202,7 +174,7 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]P
 
 	}
 
-	return optionsMap, repeatedOpts, isDeprecated
+	return optionsMap, repeatedOpts
 }
 
 func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([]int32, []schemabuilder.Range) {
@@ -250,7 +222,7 @@ func ExtractEnums(enums []*descriptorpb.EnumDescriptorProto) map[string]EnumData
 		var eData EnumData
 		eData.Name = e.GetName()
 
-		opts, repOpts, _ := ExtractOpts(e.GetOptions().GetUninterpretedOption())
+		opts, repOpts := ExtractOpts(e.GetOptions().GetUninterpretedOption())
 
 		eData.Options = opts
 		eData.RepeatedOptions = repOpts
@@ -280,7 +252,7 @@ func ExtractServices(services []*descriptorpb.ServiceDescriptorProto) map[string
 		var service ServiceData
 
 		service.Name = serv.GetName()
-		opts, repOpts, _ := ExtractOpts(serv.GetOptions().GetUninterpretedOption())
+		opts, repOpts := ExtractOpts(serv.GetOptions().GetUninterpretedOption())
 
 		service.Options = opts
 		service.RepeatedOptions = repOpts
@@ -305,11 +277,11 @@ func ExtractFields(fields []*descriptorpb.FieldDescriptorProto) map[string]Field
 	for _, f := range fields {
 		rawOpts := f.GetOptions().GetUninterpretedOption()
 
-		opts, repeatedOpts, deprecated := ExtractOpts(rawOpts)
+		opts, repeatedOpts := ExtractOpts(rawOpts)
 
 		fieldData := FieldData{
 			Number: f.GetNumber(), Optional: f.GetProto3Optional(), Repeated: f.GetLabel().String() == "LABEL_REPEATED",
-			TypeName: f.GetTypeName(), Name: f.GetName(), Options: opts, RepeatedOptions: repeatedOpts, Deprecated: deprecated,
+			TypeName: f.GetTypeName(), Name: f.GetName(), Options: opts, RepeatedOptions: repeatedOpts,
 		}
 
 		fieldsMap[f.GetName()] = fieldData
@@ -331,7 +303,7 @@ func ExtractExtensions(exts []*descriptorpb.FieldDescriptorProto) map[string]Ext
 			data[extendee] = ExtensionData{Extendee: extendee, Fields: make(map[string]FieldData)}
 		}
 
-		opts, repOpts, _ := ExtractOpts(f.GetOptions().GetUninterpretedOption())
+		opts, repOpts := ExtractOpts(f.GetOptions().GetUninterpretedOption())
 		fieldData.Options = opts
 		fieldData.RepeatedOptions = repOpts
 		fieldData.TypeName = strings.ToLower(strings.TrimPrefix(f.GetType().String(), "TYPE_"))
@@ -341,4 +313,28 @@ func ExtractExtensions(exts []*descriptorpb.FieldDescriptorProto) map[string]Ext
 	}
 
 	return data
+}
+
+func ExtractMessages(messages []*descriptorpb.DescriptorProto) map[string]MessageData {
+	msgsMap := make(map[string]MessageData)
+	for _, m := range messages {
+		fieldsMap := ExtractFields(m.GetField())
+
+		rawEnums := m.GetEnumType()
+		enumData := ExtractEnums(rawEnums)
+
+		rawMsgOpts := m.GetOptions().GetUninterpretedOption()
+		opts, repOpts := ExtractOpts(rawMsgOpts)
+
+		rawResRanges := m.GetReservedRange()
+		resNrs, resRanges := ExtractReservedNrs(rawResRanges)
+
+		msgData := MessageData{
+			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData,
+		}
+
+		msgsMap[m.GetName()] = msgData
+	}
+
+	return msgsMap
 }
