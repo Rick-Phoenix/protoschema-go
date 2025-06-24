@@ -12,56 +12,53 @@ type ProtoOneOfData struct {
 	Name    string
 	Choices []ProtoFieldData
 	Options []ProtoOption
-	Imports []string
 }
 
 type ProtoOneOfGroup struct {
+	name     string
 	required bool
 	choices  OneofChoicesMap
 	options  []ProtoOption
 }
 
 type ProtoOneOfBuilder interface {
-	Build(name string, imports Set) (ProtoOneOfData, error)
+	Build(imports Set) (ProtoOneOfData, error)
 }
 
-type ProtoOneofsMap map[string]ProtoOneOfBuilder
+type OneofChoicesMap map[uint32]ProtoFieldBuilder
 
-type OneofChoicesMap map[string]ProtoFieldBuilder
-
-func ProtoOneOf(choices OneofChoicesMap, options ...ProtoOption) *ProtoOneOfGroup {
+func ProtoOneOf(name string, choices OneofChoicesMap, options ...ProtoOption) *ProtoOneOfGroup {
 	return &ProtoOneOfGroup{
-		choices: choices, options: options,
+		choices: choices, options: options, name: name,
 	}
 }
 
-func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, error) {
+func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 	choicesData := []ProtoFieldData{}
 	var fieldErr error
 
 	oneofKeys := slices.Sorted(maps.Keys(of.choices))
 
-	for _, name := range oneofKeys {
-		field := of.choices[name]
+	for _, number := range oneofKeys {
+		field := of.choices[number]
 
-		data, err := field.Build(0, imports)
-
+		data, err := field.Build(number, imports)
 		fieldErr = errors.Join(fieldErr, err)
 
-		if data.Optional {
-			fmt.Printf("Ignoring 'optional' for member '%s' of a oneof group...\n", name)
+		if strings.HasPrefix(data.ProtoType, "map<") {
+			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use map fields in oneof groups (must be wrapped in a message type first)."))
 		}
 
 		if data.Repeated {
-			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use a repeated field inside a oneof group."))
+			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use repeated fields in oneof groups (must be wrapped in a message type first)."))
 		}
 
-		if strings.HasPrefix(data.ProtoType, "map<") {
-			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use a map field inside a oneof group."))
+		if data.Optional {
+			fmt.Printf("Ignoring 'optional' for member %q of oneof group %q...\n", data.Name, of.name)
+			data.Optional = false
 		}
 
 		choicesData = append(choicesData, data)
-
 	}
 
 	if fieldErr != nil {
@@ -69,7 +66,7 @@ func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, erro
 	}
 
 	return ProtoOneOfData{
-		Name: name, Options: of.options, Choices: choicesData,
+		Name: of.name, Options: of.options, Choices: choicesData,
 	}, nil
 }
 

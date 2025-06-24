@@ -121,7 +121,7 @@ func ParseProtoFile(filePath string) FileData {
 	return fileData
 }
 
-func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]ProtoOption, repeatedOptions []ProtoOption) {
+func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOption, []ProtoOption) {
 	optionsMap := make(map[string]ProtoOption)
 	repeatedOptsMap := make(map[string]struct{})
 	repeatedOpts := []ProtoOption{}

@@ -24,19 +24,13 @@ var UserSchema = ProtoMessageSchema{
 		5: RepeatedField("posts", MsgField("post", &PostSchema)),
 		8: ProtoMap("test", ProtoString("").MinLen(15), ProtoInt32("").In(1, 2)).Deprecated().RepeatedOptions([]ProtoOption{{"Myopt", 1}, {"Myopt", 2}}),
 	},
-	Enums: []ProtoEnumGroup{
-		ProtoEnum("myenum", ProtoEnumMap{
-			0: "VAL_1",
-			1: "VAL_2",
-		}),
-	},
-	ReservedNames:   ReservedNames("name2", "name3"),
-	ReservedNumbers: ReservedNumbers(101, 102),
-	Options:         []ProtoOption{ProtoDeprecated},
-	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
-	Model:           &gofirst.User{},
-	ModelIgnore:     []string{"posts", "test"},
-	ImportPath:      "myapp/v1/user.proto",
+	Oneofs: []ProtoOneOfBuilder{ProtoOneOf("myoneof", OneofChoicesMap{
+		9:  ProtoString("example"),
+		10: ProtoInt32("another"),
+	})},
+	Model:       &gofirst.User{},
+	ModelIgnore: []string{"posts", "test"},
+	ImportPath:  "myapp/v1/user.proto",
 }
 
 var GetUserSchema = ProtoMessageSchema{
@@ -92,18 +86,6 @@ var MyOptions = []CustomOption{{
 
 var ProtoServices = ServicesMap{
 	"User": ProtoServiceSchema{
-		Enums: []ProtoEnumGroup{
-			ProtoEnum("myenum", ProtoEnumMap{
-				0: "VAL_1",
-				1: "VAL_2",
-			}).Opts(AllowAlias),
-		},
-		OptionExtensions: OptionExtensions{
-			Field:   MyOptions,
-			Message: MyOptions,
-			File:    MyOptions,
-			OneOf:   MyOptions,
-		},
 		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
 			"GetUserService": {GetUserSchema, ProtoMessageSchema{

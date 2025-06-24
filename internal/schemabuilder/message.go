@@ -16,7 +16,7 @@ type Range [2]int32
 type ProtoMessageSchema struct {
 	Name            string
 	Fields          ProtoFieldsMap
-	Oneofs          map[string]ProtoOneOfBuilder
+	Oneofs          []ProtoOneOfBuilder
 	Enums           []ProtoEnumGroup
 	Options         []ProtoOption
 	ReservedNumbers []uint
@@ -134,11 +134,8 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	oneOfs := []ProtoOneOfData{}
 	var oneOfErrors error
 
-	oneOfKeys := slices.Sorted(maps.Keys(s.Oneofs))
-
-	for _, name := range oneOfKeys {
-		oneof := s.Oneofs[name]
-		data, oneofErr := oneof.Build(name, imports)
+	for _, oneof := range s.Oneofs {
+		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
 			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneOf member %s", data.Name), oneofErr))
