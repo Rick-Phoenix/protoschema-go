@@ -81,12 +81,17 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	var messageErrors error
 
 	processMessage := func(m ProtoMessageSchema) {
+		var errAgg error
+		if m.ImportPath != "" && m.ImportPath != fileOutput {
+			errors.Join(errAgg, fmt.Errorf("Import path for message %q (%s) not matching the output path (%s).", m.Name, m.ImportPath, fileOutput))
+		}
 		message, err := NewProtoMessage(m, imports)
+		errors.Join(errAgg, err)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present
 
-		if err != nil {
-			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", resourceName), err))
+		if errAgg != nil {
+			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", resourceName), errAgg))
 		}
 	}
 
@@ -142,8 +147,8 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		if _, seen := processedMessages[h.Response.Name]; !seen {
 			if h.Response.ReferenceOnly {
 				processedMessages[h.Response.Name] = present
-				if h.Response.ImportPath != "" && h.Request.ImportPath != fileOutput {
-					imports[h.Request.ImportPath] = present
+				if h.Response.ImportPath != "" && h.Response.ImportPath != fileOutput {
+					imports[h.Response.ImportPath] = present
 				}
 			} else {
 				processMessage(h.Response)

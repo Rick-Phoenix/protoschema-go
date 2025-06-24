@@ -67,42 +67,42 @@ func (s *ProtoMessageSchema) GetField(n string) ProtoFieldBuilder {
 }
 
 func (s *ProtoMessageSchema) CheckModel() error {
-	dbModel := reflect.TypeOf(s.Model).Elem()
-	dbModelName := dbModel.Name()
+	model := reflect.TypeOf(s.Model).Elem()
+	modelName := model.Name()
 	msgFields := s.GetFields()
 	var err error
 
-	for i := range dbModel.NumField() {
-		dbcol := dbModel.Field(i)
-		colname := dbcol.Tag.Get("json")
-		ignore := slices.Contains(s.ModelIgnore, colname)
-		coltype := dbcol.Type.String()
+	for i := range model.NumField() {
+		field := model.Field(i)
+		fieldName := field.Tag.Get("json")
+		ignore := slices.Contains(s.ModelIgnore, fieldName)
+		fieldType := field.Type.String()
 
 		if ignore {
 			continue
 		}
 
-		if pfield, exists := msgFields[colname]; exists {
-			delete(msgFields, colname)
+		if pfield, exists := msgFields[fieldName]; exists {
+			delete(msgFields, fieldName)
 			data := pfield.GetData()
-			if data.GoType != coltype && !slices.Contains(s.ModelIgnore, data.Name) {
-				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", coltype, colname, data.GoType))
+			if data.GoType != fieldType && !slices.Contains(s.ModelIgnore, data.Name) {
+				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, fieldName, data.GoType))
 			}
 		} else {
-			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", colname, dbModel))
+			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", fieldName, model))
 		}
 	}
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
 			if !slices.Contains(s.ModelIgnore, name) {
-				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the schema for db model %q.", name, dbModelName))
+				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the message schema for model %q.", name, modelName))
 			}
 		}
 	}
 
 	if err != nil {
-		err = IndentErrors(fmt.Sprintf("Validation errors for db model %s", dbModelName), err)
+		err = IndentErrors(fmt.Sprintf("Validation errors for model %s", modelName), err)
 	}
 
 	return err

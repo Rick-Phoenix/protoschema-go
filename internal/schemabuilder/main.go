@@ -21,7 +21,7 @@ var UserSchema = ProtoMessageSchema{
 		1: ProtoString("name").MinLen(2).MaxLen(48),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
-		5: RepeatedField("posts", ImportedMsgField("post", &PostSchema)),
+		5: RepeatedField("posts", MsgField("post", &PostSchema)),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
@@ -54,7 +54,7 @@ var SubRedditSchema = ProtoMessageSchema{
 		2: ProtoString("name").MinLen(1).MaxLen(48),
 		3: ProtoString("description").MaxLen(255),
 		4: ProtoInt32("creator_id"),
-		5: RepeatedField("posts", ImportedMsgField("post", &PostSchema)),
+		5: RepeatedField("posts", MsgField("post", &PostSchema)),
 		6: ProtoTimestamp("created_at"),
 	},
 }
@@ -93,6 +93,7 @@ var ProtoServices = ServicesMap{
 			}},
 			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
 				1: FieldMask("field_mask"),
+				2: MsgField("user", &UserSchema),
 			}}, ProtoEmpty()},
 		},
 	},
