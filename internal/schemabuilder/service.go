@@ -82,11 +82,13 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 
 	processMessage := func(m ProtoMessageSchema) {
 		var errAgg error
+
 		if m.ImportPath != "" && m.ImportPath != fileOutput {
-			errors.Join(errAgg, fmt.Errorf("Import path for message %q (%s) not matching the output path (%s).", m.Name, m.ImportPath, fileOutput))
+			errAgg = errors.Join(errAgg, fmt.Errorf("Import path for message %q (%s) not matching the output path (%s).", m.Name, m.ImportPath, fileOutput))
 		}
+
 		message, err := NewProtoMessage(m, imports)
-		errors.Join(errAgg, err)
+		errAgg = errors.Join(errAgg, err)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present
 

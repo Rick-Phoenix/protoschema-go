@@ -18,16 +18,17 @@ type UserWithPosts struct {
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
-		1: ProtoString("name").MinLen(2).MaxLen(48),
+		1: ProtoString("name"),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
 		5: RepeatedField("posts", MsgField("post", &PostSchema)),
+		8: ProtoMap("test", ProtoString("").MinLen(15), ProtoInt32("").In(1, 2)).Deprecated().RepeatedOptions([]ProtoOption{{"Myopt", 1}, {"Myopt", 2}}),
 	},
 	ReservedNames:   ReservedNames("name2", "name3"),
 	ReservedNumbers: ReservedNumbers(101, 102),
 	ReservedRanges:  []Range{{2010, 2029}, {3050, 3055}},
 	Model:           &gofirst.User{},
-	ModelIgnore:     []string{"posts"},
+	ModelIgnore:     []string{"posts", "test"},
 	ImportPath:      "myapp/v1/user.proto",
 }
 
@@ -50,7 +51,7 @@ var GetPostSchema = ProtoMessageSchema{
 var SubRedditSchema = ProtoMessageSchema{
 	Name: "Subreddit",
 	Fields: ProtoFieldsMap{
-		1: ProtoInt32("id"),
+		1: ProtoInt32("id").Optional(),
 		2: ProtoString("name").MinLen(1).MaxLen(48),
 		3: ProtoString("description").MaxLen(255),
 		4: ProtoInt32("creator_id"),
@@ -62,15 +63,16 @@ var SubRedditSchema = ProtoMessageSchema{
 var PostSchema = ProtoMessageSchema{
 	Name: "Post",
 	Fields: ProtoFieldsMap{
-		1: ProtoInt64("id"),
+		1: ProtoInt64("id").Optional(),
 		2: ProtoTimestamp("created_at"),
 		3: ProtoInt64("author_id"),
 		4: ProtoString("title").MinLen(5).MaxLen(64).Required(),
 		5: ProtoString("content").Optional(),
 		6: ProtoInt64("subreddit_id"),
 	},
-	ImportPath: "myapp/v1/post.proto",
-	Model:      &gofirst.Post{},
+	ImportPath:  "myapp/v1/post.proto",
+	ModelIgnore: []string{"content"},
+	Model:       &gofirst.Post{},
 }
 
 type ServicesMap map[string]ProtoServiceSchema

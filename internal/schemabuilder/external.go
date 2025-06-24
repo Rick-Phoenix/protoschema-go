@@ -17,7 +17,7 @@ func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
 	}
 
 	if s.Name == "" {
-		log.Fatalf("Could not generate the message type for field %q because the schema given was nil.", name)
+		log.Fatalf("Could not generate the message type for field %q because the schema given has no name.", name)
 	}
 
 	imports := []string{}

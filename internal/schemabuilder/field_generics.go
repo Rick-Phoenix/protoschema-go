@@ -44,7 +44,7 @@ func (b *ProtoFieldExternal[BuilderT]) IgnoreAlways() *BuilderT {
 }
 
 func (b *ProtoFieldExternal[BuilderT]) Deprecated() *BuilderT {
-	b.options["deprecated"] = "true"
+	b.options["deprecated"] = true
 	return b.self
 }
 
