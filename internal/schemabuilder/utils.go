@@ -281,6 +281,9 @@ func formatProtoValue[T any](value T) (string, error) {
 	default:
 		// If it's not one of the direct cases, use reflect to determine its kind.
 		val := reflect.ValueOf(value)
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
 		kind := val.Kind()
 
 		if kind == reflect.Slice || kind == reflect.Array { // Handle both slices and arrays identically
@@ -318,7 +321,23 @@ func formatProtoValue[T any](value T) (string, error) {
 			}
 			return fmt.Sprintf("{%s}", strings.Join(formattedEntries, ", ")), nil
 		} else if kind == reflect.Struct {
-			return fmt.Sprintf("%v", v), nil
+			fields := make(map[string]any)
+			typ := val.Type()
+			for i := range val.NumField() {
+				field := typ.Field(i)
+				if field.IsExported() {
+					fieldVal := val.Field(i)
+					fields[field.Name] = fieldVal.Interface()
+				}
+			}
+
+			valStr, err := formatProtoValue(fields)
+
+			if err != nil {
+				return "", err
+			}
+
+			return valStr, nil
 		}
 
 		return "", fmt.Errorf("unsupported type for proto value formatting: %T (kind: %s)", value, kind)

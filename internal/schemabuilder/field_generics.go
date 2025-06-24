@@ -56,7 +56,6 @@ func (b *ProtoFieldExternal[BuilderT, ValueT]) CelOptions(o ...CelFieldOpts) *Bu
 }
 
 func (b *ProtoFieldExternal[BuilderT, ValueT]) Required() *BuilderT {
-
 	b.options["(buf.validate.field).required"] = "true"
 	b.required = true
 	return b.self

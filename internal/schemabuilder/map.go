@@ -41,16 +41,10 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 	var err error
 
 	keysField, keysErr := b.keys.Build(fieldNr, imports)
-
-	if keysErr != nil {
-		err = errors.Join(err, keysErr)
-	}
+	err = errors.Join(err, keysErr)
 
 	valuesField, valsErr := b.values.Build(fieldNr, imports)
-
-	if valsErr != nil {
-		err = errors.Join(err, valsErr)
-	}
+	err = errors.Join(err, valsErr)
 
 	if !slices.Contains([]string{"string", "bool", "int32", "int64", "uint32", "uint64"}, keysField.ProtoType) {
 		err = errors.Join(err, fmt.Errorf("Invalid type for a protobuf map key: '%s'", keysField.ProtoType))
@@ -77,9 +71,7 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 			rulesMap := make(map[string]any)
 			rulesMap[item.Field.ProtoBaseType] = item.Field.Rules
 			stringRule, fmtErr := formatProtoValue(rulesMap)
-			if fmtErr != nil {
-				err = errors.Join(err, fmtErr)
-			}
+			err = errors.Join(err, fmtErr)
 
 			options = append(options, fmt.Sprintf("(buf.validate.field).map.%s = %s", item.MapType, stringRule))
 		}
@@ -88,16 +80,13 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 	extraOpts, optErr := GetOptions(b.options, b.repeatedOptions)
 
 	options = append(options, extraOpts...)
-
-	if optErr != nil {
-		err = errors.Join(err, optErr)
-	}
+	err = errors.Join(err, optErr)
 
 	if err != nil {
 		return ProtoFieldData{}, err
 	}
 
-	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: "[]" + keysField.GoType, Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: fmt.Sprintf("map[%s]%s", keysField.GoType, valuesField.GoType), Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {

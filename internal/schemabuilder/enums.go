@@ -3,9 +3,10 @@ package schemabuilder
 import (
 	"errors"
 	"maps"
+	"slices"
 )
 
-type ProtoEnumMap map[string]int32
+type ProtoEnumMap map[int32]string
 
 type ProtoEnumGroup struct {
 	Name            string
@@ -17,7 +18,15 @@ type ProtoEnumGroup struct {
 }
 
 func ProtoEnum(name string, members ProtoEnumMap) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: name, Members: members}
+	sorted := make(ProtoEnumMap)
+	keys := slices.Sorted(maps.Keys(members))
+
+	for _, k := range keys {
+		v := members[k]
+		sorted[k] = v
+	}
+
+	return ProtoEnumGroup{Name: name, Members: sorted}
 }
 
 func (e ProtoEnumGroup) Opts(o ...ProtoOption) ProtoEnumGroup {
@@ -44,8 +53,11 @@ type EnumField struct {
 
 func ProtoEnumField(name string, enumName string) *EnumField {
 	rules := make(map[string]any)
+	options := make(map[string]any)
+
 	ef := &EnumField{}
-	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum"}
+	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum", options: options}
+
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField, int32]{
 		protoFieldInternal: internal, self: ef}
 	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
@@ -58,13 +70,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) 
 	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, IsNonScalar: false, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
-	if ef.errors != nil {
-		errAgg = errors.Join(errAgg, ef.errors)
-	}
-
-	for _, v := range ef.imports {
-		imports[v] = present
-	}
+	errAgg = errors.Join(errAgg, ef.errors)
 
 	var options []string
 
@@ -87,9 +93,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) 
 	}
 
 	options, err := GetOptions(optsCollector, ef.repeatedOptions)
-	if err != nil {
-		errAgg = errors.Join(errAgg, err)
-	}
+	errAgg = errors.Join(errAgg, err)
 
 	data.Options = options
 

@@ -18,7 +18,7 @@ type UserWithPosts struct {
 var UserSchema = ProtoMessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
-		1: ProtoString("name"),
+		1: ProtoString("name").MinLen(2).MaxLen(48),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
 		5: RepeatedField("posts", ImportedMsgField("post", &PostSchema)),
@@ -37,6 +37,8 @@ var GetUserSchema = ProtoMessageSchema{
 		1: UserSchema.GetField("name"),
 	},
 }
+
+var impfield = ProtoString("field")
 
 var GetPostSchema = ProtoMessageSchema{
 	Name: "GetPostRequest",
@@ -63,7 +65,7 @@ var PostSchema = ProtoMessageSchema{
 		1: ProtoInt64("id"),
 		2: ProtoTimestamp("created_at"),
 		3: ProtoInt64("author_id"),
-		4: ProtoString("title"),
+		4: ProtoString("title").MinLen(5).MaxLen(64).Required(),
 		5: ProtoString("content").Optional(),
 		6: ProtoInt64("subreddit_id"),
 	},

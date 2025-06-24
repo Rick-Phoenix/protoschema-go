@@ -3,6 +3,8 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -37,7 +39,11 @@ func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, erro
 	choicesData := []ProtoFieldData{}
 	var fieldErr error
 
-	for name, field := range of.choices {
+	oneofKeys := slices.Sorted(maps.Keys(of.choices))
+
+	for _, name := range oneofKeys {
+		field := of.choices[name]
+
 		data, err := field.Build(0, imports)
 
 		fieldErr = errors.Join(fieldErr, err)
@@ -55,6 +61,7 @@ func (of *ProtoOneOfGroup) Build(name string, imports Set) (ProtoOneOfData, erro
 		}
 
 		choicesData = append(choicesData, data)
+
 	}
 
 	if fieldErr != nil {
