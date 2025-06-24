@@ -14,7 +14,7 @@ type Number interface {
 }
 
 type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
-	*ProtoFieldExternal[BuilderT, ValueT]
+	*ProtoFieldExternal[BuilderT]
 	*FieldWithConst[BuilderT, ValueT, ValueT]
 	*OptionalField[BuilderT]
 	self *BuilderT
@@ -32,7 +32,7 @@ type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 
 func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
-		ProtoFieldExternal: &ProtoFieldExternal[BuilderT, ValueT]{
+		ProtoFieldExternal: &ProtoFieldExternal[BuilderT]{
 			protoFieldInternal: pfi,
 			self:               self,
 		},
@@ -147,7 +147,7 @@ func ProtoInt32(name string) *IntField {
 }
 
 type FloatField struct {
-	*ProtoFieldExternal[FloatField, float32]
+	*ProtoFieldExternal[FloatField]
 	*NumericField[FloatField, float32]
 }
 
@@ -164,7 +164,7 @@ func ProtoFloat(name string) *FloatField {
 	}
 
 	floatField := &FloatField{}
-	floatField.ProtoFieldExternal = &ProtoFieldExternal[FloatField, float32]{
+	floatField.ProtoFieldExternal = &ProtoFieldExternal[FloatField]{
 		protoFieldInternal: internal,
 		self:               floatField,
 	}
@@ -173,7 +173,7 @@ func ProtoFloat(name string) *FloatField {
 }
 
 type DoubleField struct {
-	*ProtoFieldExternal[DoubleField, float64]
+	*ProtoFieldExternal[DoubleField]
 	*NumericField[DoubleField, float64]
 }
 
@@ -190,7 +190,7 @@ func ProtoDouble(name string) *DoubleField {
 	}
 
 	floatField := &DoubleField{}
-	floatField.ProtoFieldExternal = &ProtoFieldExternal[DoubleField, float64]{
+	floatField.ProtoFieldExternal = &ProtoFieldExternal[DoubleField]{
 		protoFieldInternal: internal,
 		self:               floatField,
 	}
@@ -199,7 +199,7 @@ func ProtoDouble(name string) *DoubleField {
 }
 
 type Int64Field struct {
-	*ProtoFieldExternal[Int64Field, int64]
+	*ProtoFieldExternal[Int64Field]
 	*NumericField[Int64Field, int64]
 }
 
@@ -216,7 +216,7 @@ func ProtoInt64(name string) *Int64Field {
 	}
 
 	int64Field := &Int64Field{}
-	int64Field.ProtoFieldExternal = &ProtoFieldExternal[Int64Field, int64]{
+	int64Field.ProtoFieldExternal = &ProtoFieldExternal[Int64Field]{
 		protoFieldInternal: internal,
 		self:               int64Field,
 	}
@@ -225,7 +225,7 @@ func ProtoInt64(name string) *Int64Field {
 }
 
 type UInt32Field struct {
-	*ProtoFieldExternal[UInt32Field, uint32]
+	*ProtoFieldExternal[UInt32Field]
 	*NumericField[UInt32Field, uint32]
 }
 
@@ -242,7 +242,7 @@ func ProtoUInt32(name string) *UInt32Field {
 	}
 
 	uint32Field := &UInt32Field{}
-	uint32Field.ProtoFieldExternal = &ProtoFieldExternal[UInt32Field, uint32]{
+	uint32Field.ProtoFieldExternal = &ProtoFieldExternal[UInt32Field]{
 		protoFieldInternal: internal,
 		self:               uint32Field,
 	}
@@ -251,7 +251,7 @@ func ProtoUInt32(name string) *UInt32Field {
 }
 
 type UInt64Field struct {
-	*ProtoFieldExternal[UInt64Field, uint64]
+	*ProtoFieldExternal[UInt64Field]
 	*NumericField[UInt64Field, uint64]
 }
 
@@ -268,7 +268,7 @@ func ProtoUInt64(name string) *UInt64Field {
 	}
 
 	uint64Field := &UInt64Field{}
-	uint64Field.ProtoFieldExternal = &ProtoFieldExternal[UInt64Field, uint64]{
+	uint64Field.ProtoFieldExternal = &ProtoFieldExternal[UInt64Field]{
 		protoFieldInternal: internal,
 		self:               uint64Field,
 	}
@@ -277,7 +277,7 @@ func ProtoUInt64(name string) *UInt64Field {
 }
 
 type SInt32Field struct {
-	*ProtoFieldExternal[SInt32Field, int32]
+	*ProtoFieldExternal[SInt32Field]
 	*NumericField[SInt32Field, int32]
 }
 
@@ -294,7 +294,7 @@ func ProtoSInt32(name string) *SInt32Field {
 	}
 
 	sint32Field := &SInt32Field{}
-	sint32Field.ProtoFieldExternal = &ProtoFieldExternal[SInt32Field, int32]{
+	sint32Field.ProtoFieldExternal = &ProtoFieldExternal[SInt32Field]{
 		protoFieldInternal: internal,
 		self:               sint32Field,
 	}
@@ -303,7 +303,7 @@ func ProtoSInt32(name string) *SInt32Field {
 }
 
 type SInt64Field struct {
-	*ProtoFieldExternal[SInt64Field, int64]
+	*ProtoFieldExternal[SInt64Field]
 	*NumericField[SInt64Field, int64]
 }
 
@@ -320,7 +320,7 @@ func ProtoSInt64(name string) *SInt64Field {
 	}
 
 	sint64Field := &SInt64Field{}
-	sint64Field.ProtoFieldExternal = &ProtoFieldExternal[SInt64Field, int64]{
+	sint64Field.ProtoFieldExternal = &ProtoFieldExternal[SInt64Field]{
 		protoFieldInternal: internal,
 		self:               sint64Field,
 	}
@@ -329,7 +329,7 @@ func ProtoSInt64(name string) *SInt64Field {
 }
 
 type Fixed32Field struct {
-	*ProtoFieldExternal[Fixed32Field, uint32]
+	*ProtoFieldExternal[Fixed32Field]
 	*NumericField[Fixed32Field, uint32]
 }
 
@@ -346,7 +346,7 @@ func ProtoFixed32(name string) *Fixed32Field {
 	}
 
 	fixed32Field := &Fixed32Field{}
-	fixed32Field.ProtoFieldExternal = &ProtoFieldExternal[Fixed32Field, uint32]{
+	fixed32Field.ProtoFieldExternal = &ProtoFieldExternal[Fixed32Field]{
 		protoFieldInternal: internal,
 		self:               fixed32Field,
 	}
@@ -355,7 +355,7 @@ func ProtoFixed32(name string) *Fixed32Field {
 }
 
 type Fixed64Field struct {
-	*ProtoFieldExternal[Fixed64Field, uint64]
+	*ProtoFieldExternal[Fixed64Field]
 	*NumericField[Fixed64Field, uint64]
 }
 
@@ -372,7 +372,7 @@ func ProtoFixed64(name string) *Fixed64Field {
 	}
 
 	fixed64Field := &Fixed64Field{}
-	fixed64Field.ProtoFieldExternal = &ProtoFieldExternal[Fixed64Field, uint64]{
+	fixed64Field.ProtoFieldExternal = &ProtoFieldExternal[Fixed64Field]{
 		protoFieldInternal: internal,
 		self:               fixed64Field,
 	}
@@ -381,7 +381,7 @@ func ProtoFixed64(name string) *Fixed64Field {
 }
 
 type SFixed32Field struct {
-	*ProtoFieldExternal[SFixed32Field, int32]
+	*ProtoFieldExternal[SFixed32Field]
 	*NumericField[SFixed32Field, int32]
 }
 
@@ -398,7 +398,7 @@ func ProtoSFixed32(name string) *SFixed32Field {
 	}
 
 	sfixed32Field := &SFixed32Field{}
-	sfixed32Field.ProtoFieldExternal = &ProtoFieldExternal[SFixed32Field, int32]{
+	sfixed32Field.ProtoFieldExternal = &ProtoFieldExternal[SFixed32Field]{
 		protoFieldInternal: internal,
 		self:               sfixed32Field,
 	}
@@ -407,7 +407,7 @@ func ProtoSFixed32(name string) *SFixed32Field {
 }
 
 type SFixed64Field struct {
-	*ProtoFieldExternal[SFixed64Field, int64]
+	*ProtoFieldExternal[SFixed64Field]
 	*NumericField[SFixed64Field, int64]
 }
 
@@ -424,7 +424,7 @@ func ProtoSFixed64(name string) *SFixed64Field {
 	}
 
 	sfixed64Field := &SFixed64Field{}
-	sfixed64Field.ProtoFieldExternal = &ProtoFieldExternal[SFixed64Field, int64]{
+	sfixed64Field.ProtoFieldExternal = &ProtoFieldExternal[SFixed64Field]{
 		protoFieldInternal: internal,
 		self:               sfixed64Field,
 	}

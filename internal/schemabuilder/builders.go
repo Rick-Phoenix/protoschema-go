@@ -109,11 +109,11 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 	return data, nil
 }
 
-type ProtoFieldExternal[BuilderT any, ValueT any] struct {
+type ProtoFieldExternal[BuilderT any] struct {
 	*protoFieldInternal
 	self *BuilderT
 }
 
-type GenericField[ValueT any] struct {
-	*ProtoFieldExternal[GenericField[ValueT], ValueT]
+type GenericField struct {
+	*ProtoFieldExternal[GenericField]
 }

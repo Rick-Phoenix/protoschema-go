@@ -13,7 +13,7 @@ type ProtoMapBuilder struct {
 	values   ProtoFieldBuilder
 	minPairs *uint
 	maxPairs *uint
-	*ProtoFieldExternal[ProtoMapBuilder, any]
+	*ProtoFieldExternal[ProtoMapBuilder]
 }
 
 func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
@@ -23,7 +23,7 @@ func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *Pr
 		keys: keys, values: values, name: name,
 	}
 
-	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder, any]{protoFieldInternal: &protoFieldInternal{
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder]{protoFieldInternal: &protoFieldInternal{
 		options: options, rules: rules,
 	}, self: self}
 

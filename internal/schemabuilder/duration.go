@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"slices"
 	"time"
-
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type DurationField struct {
-	*ProtoFieldExternal[DurationField, *durationpb.Duration]
+	*ProtoFieldExternal[DurationField]
 
 	hasLtOrLte bool
 	hasGtOrGte bool
@@ -28,7 +26,7 @@ func ProtoDuration(name string) *DurationField {
 	rules := make(map[string]any)
 
 	gf := &DurationField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[DurationField, *durationpb.Duration]{
+	gf.ProtoFieldExternal = &ProtoFieldExternal[DurationField]{
 		&protoFieldInternal{name: name, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf

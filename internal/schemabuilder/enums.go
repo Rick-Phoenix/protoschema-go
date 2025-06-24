@@ -46,7 +46,7 @@ func (e ProtoEnumGroup) RsvRanges(r ...Range) ProtoEnumGroup {
 }
 
 type EnumField struct {
-	*ProtoFieldExternal[EnumField, int32]
+	*ProtoFieldExternal[EnumField]
 	*FieldWithConst[EnumField, int32, int32]
 	*OptionalField[EnumField]
 }
@@ -58,7 +58,7 @@ func ProtoEnumField(name string, enumName string) *EnumField {
 	ef := &EnumField{}
 	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum", options: options}
 
-	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField, int32]{
+	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField]{
 		protoFieldInternal: internal, self: ef}
 	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
 	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}

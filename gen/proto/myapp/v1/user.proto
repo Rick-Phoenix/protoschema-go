@@ -24,18 +24,11 @@ message User {
 
   string name = 1 [
     (buf.validate.field).string.max_len = 48,
-    (buf.validate.field).string.min_len = 2,
-    test = {Id: 15, Name: "Alex"} 
+    (buf.validate.field).string.min_len = 2 
   ];
-  int64 id = 2 [
-    test = {Id: 15, Name: "Alex"} 
-  ];
-  google.protobuf.Timestamp created_at = 3 [
-    test = {Id: 15, Name: "Alex"} 
-  ];
-  repeated Post posts = 5 [
-    test = {Id: 15, Name: "Alex"} 
-  ];
+  int64 id = 2;
+  google.protobuf.Timestamp created_at = 3;
+  repeated Post posts = 5;
 }
 
 message GetUserRequest {
@@ -43,25 +36,20 @@ message GetUserRequest {
 
   string name = 1 [
     (buf.validate.field).string.max_len = 48,
-    (buf.validate.field).string.min_len = 2,
-    test = {Id: 15, Name: "Alex"} 
+    (buf.validate.field).string.min_len = 2 
   ];
 }
 
 message GetUserResponse {
 
 
-  User user = 1 [
-    test = {Id: 15, Name: "Alex"} 
-  ];
+  User user = 1;
 }
 
 message UpdateUserResponse {
 
 
-  google.protobuf.FieldMask field_mask = 1 [
-    test = {Id: 15, Name: "Alex"} 
-  ];
+  google.protobuf.FieldMask field_mask = 1;
 }
 
 

@@ -6,7 +6,7 @@ import (
 )
 
 type StringField struct {
-	*ProtoFieldExternal[StringField, string]
+	*ProtoFieldExternal[StringField]
 	*ByteOrStringField[StringField, string]
 	*FieldWithConst[StringField, string, string]
 }
@@ -95,7 +95,7 @@ func ProtoString(name string) *StringField {
 	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
 
 	sf := &StringField{}
-	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField, string]{
+	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField]{
 		protoFieldInternal: internal,
 		self:               sf,
 	}
@@ -228,7 +228,7 @@ func (b *StringField) HttpHeaderValue() *StringField {
 }
 
 type BytesField struct {
-	*ProtoFieldExternal[BytesField, []byte]
+	*ProtoFieldExternal[BytesField]
 	*ByteOrStringField[BytesField, []byte]
 	*FieldWithConst[BytesField, []byte, byte]
 }
@@ -239,7 +239,7 @@ func ProtoBytes(name string) *BytesField {
 	internal := &protoFieldInternal{name: name, protoType: "bytes", goType: "[]byte", options: options, rules: rules}
 
 	bf := &BytesField{}
-	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField, []byte]{
+	bf.ProtoFieldExternal = &ProtoFieldExternal[BytesField]{
 		protoFieldInternal: internal,
 		self:               bf,
 	}

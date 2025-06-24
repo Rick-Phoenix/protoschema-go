@@ -9,7 +9,7 @@ import (
 )
 
 type TimestampField struct {
-	*ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]
+	*ProtoFieldExternal[TimestampField]
 
 	hasLtOrLte bool
 	hasGtOrGte bool
@@ -25,7 +25,7 @@ func ProtoTimestamp(name string) *TimestampField {
 	options := make(map[string]any)
 
 	gf := &TimestampField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField, *timestamppb.Timestamp]{
+	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField]{
 		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "time.Time", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf

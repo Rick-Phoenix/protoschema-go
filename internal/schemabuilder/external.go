@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *GenericField[any] {
+func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *GenericField {
 	rules := make(map[string]any)
 
 	if s == nil {
@@ -38,18 +38,18 @@ func createMsgField(name string, s *ProtoMessageSchema, withImport bool) *Generi
 		imports:     imports,
 	}
 
-	gf := &GenericField[any]{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField[any], any]{
+	gf := &GenericField{}
+	gf.ProtoFieldExternal = &ProtoFieldExternal[GenericField]{
 		protoFieldInternal: internal,
 		self:               gf,
 	}
 	return gf
 }
 
-func ImportedMsgField(name string, s *ProtoMessageSchema) *GenericField[any] {
+func ImportedMsgField(name string, s *ProtoMessageSchema) *GenericField {
 	return createMsgField(name, s, true)
 }
 
-func MsgField(name string, s *ProtoMessageSchema) *GenericField[any] {
+func MsgField(name string, s *ProtoMessageSchema) *GenericField {
 	return createMsgField(name, s, false)
 }

@@ -13,7 +13,7 @@ type ProtoRepeatedBuilder struct {
 	unique   bool
 	minItems *uint
 	maxItems *uint
-	*ProtoFieldExternal[ProtoRepeatedBuilder, any]
+	*ProtoFieldExternal[ProtoRepeatedBuilder]
 }
 
 func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
@@ -23,7 +23,7 @@ func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 		field: b, name: name,
 	}
 
-	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder, any]{protoFieldInternal: &protoFieldInternal{
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder]{protoFieldInternal: &protoFieldInternal{
 		options: options, rules: rules,
 	}, self: self}
 
