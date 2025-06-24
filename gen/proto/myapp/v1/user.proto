@@ -1,18 +1,40 @@
 syntax = "proto3";
 
-package myapp.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/descriptor.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/post.proto";
 
-enum myenum {
-  option allow_alias = true;
+package myapp.v1;
+
+
+
+
+extend google.protobuf.FileOptions {
+  optional string testopt = 1;
+}
+
+extend google.protobuf.MessageOptions {
+  optional string testopt = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  optional string testopt = 1;
+}
+extend google.protobuf.OneofOptions {
+  optional string testopt = 1;
+}
+
+enum myenum {option allow_alias = true;
   VAL_1 = 0;
   VAL_2 = 1;
+  
 }
+
+
 
 message User {
   reserved 2010 to 2029, 3050 to 3055;
@@ -20,47 +42,52 @@ message User {
   reserved "name2", "name3";
 
   option deprecated = true;
-  enum myenum {
-    VAL_1 = 0;
-    VAL_2 = 1;
+enum myenum {
+  VAL_1 = 0;
+  VAL_2 = 1;
+  
   }
+
 
   string name = 1;
   int64 id = 2;
   google.protobuf.Timestamp created_at = 3;
   repeated Post posts = 5;
   map<string, int32> test = 8 [
-    (buf.validate.field).map.keys = {
-      string: {min_len: 15}
-    },
-    (buf.validate.field).map.values = {
-      int32: {
-        in: [
-          1,
-          2
-        ]
-      }
-    },
+    (buf.validate.field).map.keys = {string: {min_len: 15}},
+    (buf.validate.field).map.values = {int32: {in: [1, 2]}},
     deprecated = true,
     Myopt = 1,
-    Myopt = 2
+    Myopt = 2 
   ];
 }
 
 message GetUserRequest {
+
+
+
   string name = 1;
 }
 
 message GetUserResponse {
+
+
+
   User user = 1;
 }
 
 message UpdateUserResponse {
+
+
+
   google.protobuf.FieldMask field_mask = 1;
   User user = 2;
 }
 
+
 service UserService {
-  rpc GetUserService(GetUserRequest) returns (GetUserResponse);
-  rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
+  rpc GetUserService(GetUserRequest) returns(GetUserResponse);
+  rpc UpdateUserService(UpdateUserResponse) returns(google.protobuf.Empty);
 }
+
+

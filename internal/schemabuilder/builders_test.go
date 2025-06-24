@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
@@ -70,9 +71,15 @@ type MethodData struct {
 }
 
 type FileData struct {
-	Messages map[string]MessageData
-	Enums    map[string]EnumData
-	Services map[string]ServiceData
+	Messages   map[string]MessageData
+	Enums      map[string]EnumData
+	Services   map[string]ServiceData
+	Extensions map[string]ExtensionData
+}
+
+type ExtensionData struct {
+	Extendee string
+	Fields   map[string]FieldData
 }
 
 func TestFirst(t *testing.T) {
@@ -80,7 +87,7 @@ func TestFirst(t *testing.T) {
 
 	data := ParseProtoFile(filePath)
 
-	fmt.Printf("DEBUG: %+v\n", data.Services)
+	fmt.Printf("DEBUG: %+v\n", data.Extensions)
 }
 
 func ParseProtoFile(filePath string) FileData {
@@ -109,13 +116,14 @@ func ParseProtoFile(filePath string) FileData {
 	msgsMap := make(map[string]MessageData)
 	enumsMap := ExtractEnums(desc.GetEnumType())
 	servicesMap := ExtractServices(desc.GetService())
+	extensions := ExtractExtensions(desc.GetExtension())
 
-	fileData := FileData{Messages: msgsMap, Enums: enumsMap, Services: servicesMap}
+	fileData := FileData{Messages: msgsMap, Enums: enumsMap, Services: servicesMap, Extensions: extensions}
 
 	messages := desc.GetMessageType()
 
 	for _, m := range messages {
-		fieldsMap := make(map[string]FieldData)
+		fieldsMap := ExtractFields(m.GetField())
 
 		rawEnums := m.GetEnumType()
 		enumData := ExtractEnums(rawEnums)
@@ -128,22 +136,6 @@ func ParseProtoFile(filePath string) FileData {
 
 		msgData := MessageData{
 			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, Deprecated: deprecated, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData,
-		}
-
-		fields := m.GetField()
-
-		for _, f := range fields {
-			rawOpts := f.GetOptions().GetUninterpretedOption()
-
-			opts, repeatedOpts, deprecated := ExtractOpts(rawOpts)
-
-			fieldData := FieldData{
-				Number: f.GetNumber(), Optional: f.GetProto3Optional(), Repeated: f.GetLabel().String() == "LABEL_REPEATED",
-				TypeName: f.GetTypeName(), Name: f.GetName(), Options: opts, RepeatedOptions: repeatedOpts, Deprecated: deprecated,
-			}
-
-			fieldsMap[f.GetName()] = fieldData
-
 		}
 
 		msgsMap[m.GetName()] = msgData
@@ -303,6 +295,49 @@ func ExtractServices(services []*descriptorpb.ServiceDescriptorProto) map[string
 		}
 
 		data[service.Name] = service
+	}
+
+	return data
+}
+
+func ExtractFields(fields []*descriptorpb.FieldDescriptorProto) map[string]FieldData {
+	fieldsMap := make(map[string]FieldData)
+	for _, f := range fields {
+		rawOpts := f.GetOptions().GetUninterpretedOption()
+
+		opts, repeatedOpts, deprecated := ExtractOpts(rawOpts)
+
+		fieldData := FieldData{
+			Number: f.GetNumber(), Optional: f.GetProto3Optional(), Repeated: f.GetLabel().String() == "LABEL_REPEATED",
+			TypeName: f.GetTypeName(), Name: f.GetName(), Options: opts, RepeatedOptions: repeatedOpts, Deprecated: deprecated,
+		}
+
+		fieldsMap[f.GetName()] = fieldData
+
+	}
+
+	return fieldsMap
+}
+
+func ExtractExtensions(exts []*descriptorpb.FieldDescriptorProto) map[string]ExtensionData {
+	data := make(map[string]ExtensionData)
+
+	for _, f := range exts {
+		var fieldData FieldData
+
+		extendee := f.GetExtendee()
+
+		if _, exists := data[extendee]; !exists {
+			data[extendee] = ExtensionData{Extendee: extendee, Fields: make(map[string]FieldData)}
+		}
+
+		opts, repOpts, _ := ExtractOpts(f.GetOptions().GetUninterpretedOption())
+		fieldData.Options = opts
+		fieldData.RepeatedOptions = repOpts
+		fieldData.TypeName = strings.ToLower(strings.TrimPrefix(f.GetType().String(), "TYPE_"))
+		fieldData.Name = f.GetName()
+
+		data[extendee].Fields[fieldData.Name] = fieldData
 	}
 
 	return data

@@ -98,6 +98,12 @@ var ProtoServices = ServicesMap{
 				1: "VAL_2",
 			}).Opts(AllowAlias),
 		},
+		OptionExtensions: OptionExtensions{
+			Field:   MyOptions,
+			Message: MyOptions,
+			File:    MyOptions,
+			OneOf:   MyOptions,
+		},
 		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
 			"GetUserService": {GetUserSchema, ProtoMessageSchema{
