@@ -18,6 +18,7 @@ package myapp.v1;
 message Post {
 
 
+
   optional int64 id = 1;
   google.protobuf.Timestamp created_at = 2;
   int64 author_id = 3;
@@ -33,16 +34,19 @@ message Post {
 message GetPostRequest {
 
 
+
   optional int64 id = 1;
 }
 
 message GetPostResponse {
 
 
+
   Post post = 1;
 }
 
 message UpdatePostResponse {
+
 
 
   Post post = 1;

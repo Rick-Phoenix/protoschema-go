@@ -59,7 +59,8 @@ func ProtoEnumField(name string, enumName string) *EnumField {
 	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum", options: options}
 
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField]{
-		protoFieldInternal: internal, self: ef}
+		protoFieldInternal: internal, self: ef,
+	}
 	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
 	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}
 
@@ -108,3 +109,5 @@ func (ef *EnumField) DefinedOnly() *EnumField {
 	ef.rules["defined_only"] = true
 	return ef
 }
+
+var AllowAlias = ProtoOption{Name: "allow_alias", Value: true}

@@ -11,7 +11,7 @@ import (
 
 type ProtoFieldsMap map[uint32]ProtoFieldBuilder
 
-type Range [2]uint
+type Range [2]int32
 
 type ProtoMessageSchema struct {
 	Name            string
@@ -114,7 +114,6 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 
 	if s.Model != nil {
 		err := s.CheckModel()
-
 		if err != nil {
 			return ProtoMessage{}, err
 		}

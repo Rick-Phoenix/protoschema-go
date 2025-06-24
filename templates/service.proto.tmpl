@@ -45,7 +45,7 @@ enum {{ .Name }} {
   {{- range .Options -}}
     option {{ .Name }} = {{ .Value }};
   {{- end }}
-  {{ range $name, $val := .Members -}}
+  {{ range $val, $name := .Members -}}
     {{ $name }} = {{ $val }};
   {{ end -}}
   {{ if .ReservedNumbers -}}
@@ -74,11 +74,12 @@ message {{ .Name }} {
 {{ range .Options }}
   option {{ .Name }} = {{ .Value }};
 {{- end }}
-{{- range .Enums }}
+{{ range .Enums -}}
+  enum {{ .Name }} {
   {{- range .Options -}}
     option {{ .Name }} = {{ .Value }};
   {{- end }}
-  {{ range $name, $val := .Members -}}
+  {{ range $val, $name := .Members -}}
     {{ $name }} = {{ $val }};
   {{ end -}}
   {{ if .ReservedNumbers -}}
@@ -90,8 +91,8 @@ message {{ .Name }} {
   {{ if .ReservedRanges -}}
     reserved {{ joinRange .ReservedRanges }};
   {{- end }}
-}
-{{- end }}
+  }
+{{ end }}
 {{ range .Oneofs }}
   {{ range .Options -}}
   option {{ .Name }} = {{ .Value }};
