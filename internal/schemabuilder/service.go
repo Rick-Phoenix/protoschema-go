@@ -134,7 +134,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	for _, name := range handlerKeys {
 		h := s.Handlers[name]
 
-		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
+		out.Handlers = append(out.Handlers, HandlerData{Name: AddServiceSuffix(name), Request: h.Request.Name, Response: h.Response.Name})
 		if _, seen := processedMessages[h.Request.Name]; !seen {
 			if h.Request.ReferenceOnly {
 				processedMessages[h.Request.Name] = present

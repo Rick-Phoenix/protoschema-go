@@ -113,7 +113,7 @@ message {{ .Name }} {
 }
 {{ end }}
 
-service {{.Name}}Service {
+service {{.Name}} {
 {{- range .ServiceOptions}}
   option {{ .Name }} = {{ .Value }};
 {{ end }}

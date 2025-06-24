@@ -100,13 +100,13 @@ var ProtoServices = ServicesMap{
 		},
 		Messages: []ProtoMessageSchema{UserSchema},
 		Handlers: HandlersMap{
-			"GetUser": {GetUserSchema, ProtoMessageSchema{
+			"GetUserService": {GetUserSchema, ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: ProtoFieldsMap{
 					1: MsgField("user", &UserSchema),
 				},
 			}},
-			"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
+			"UpdateUserService": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
 				1: FieldMask("field_mask"),
 				2: MsgField("user", &UserSchema),
 			}}, ProtoEmpty()},

@@ -60,7 +60,7 @@ message UpdateUserResponse {
   User user = 2;
 }
 
-service UserServiceService {
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc UpdateUser(UpdateUserResponse) returns (google.protobuf.Empty);
+service UserService {
+  rpc GetUserService(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
 }

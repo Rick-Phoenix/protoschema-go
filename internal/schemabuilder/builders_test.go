@@ -56,17 +56,31 @@ type MessageData struct {
 	RepeatedOptions []ProtoOption
 }
 
+type ServiceData struct {
+	Name            string
+	Methods         []MethodData
+	Options         map[string]ProtoOption
+	RepeatedOptions []ProtoOption
+}
+
+type MethodData struct {
+	Name       string
+	InputType  string
+	OutputType string
+}
+
 type FileData struct {
 	Messages map[string]MessageData
 	Enums    map[string]EnumData
+	Services map[string]ServiceData
 }
 
 func TestFirst(t *testing.T) {
 	filePath := "/home/rick/go-first/gen/proto/myapp/v1/user.proto"
 
-	fileData := ParseProtoFile(filePath)
+	data := ParseProtoFile(filePath)
 
-	fmt.Printf("DEBUG: %+v\n", fileData.Enums)
+	fmt.Printf("DEBUG: %+v\n", data.Services)
 }
 
 func ParseProtoFile(filePath string) FileData {
@@ -94,8 +108,9 @@ func ParseProtoFile(filePath string) FileData {
 
 	msgsMap := make(map[string]MessageData)
 	enumsMap := ExtractEnums(desc.GetEnumType())
+	servicesMap := ExtractServices(desc.GetService())
 
-	serviceData := FileData{Messages: msgsMap, Enums: enumsMap}
+	fileData := FileData{Messages: msgsMap, Enums: enumsMap, Services: servicesMap}
 
 	messages := desc.GetMessageType()
 
@@ -134,7 +149,7 @@ func ParseProtoFile(filePath string) FileData {
 		msgsMap[m.GetName()] = msgData
 	}
 
-	return serviceData
+	return fileData
 }
 
 func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (optsMap map[string]ProtoOption, repeatedOptions []ProtoOption, deprecated bool) {
@@ -261,6 +276,33 @@ func ExtractEnums(enums []*descriptorpb.EnumDescriptorProto) map[string]EnumData
 		eData.ReservedNumbers = resNrs
 		eData.ReservedRanges = resRanges
 		data[eData.Name] = eData
+	}
+
+	return data
+}
+
+func ExtractServices(services []*descriptorpb.ServiceDescriptorProto) map[string]ServiceData {
+	data := make(map[string]ServiceData)
+
+	for _, serv := range services {
+		var service ServiceData
+
+		service.Name = serv.GetName()
+		opts, repOpts, _ := ExtractOpts(serv.GetOptions().GetUninterpretedOption())
+
+		service.Options = opts
+		service.RepeatedOptions = repOpts
+		for _, m := range serv.GetMethod() {
+			var method MethodData
+
+			method.Name = m.GetName()
+			method.InputType = m.GetInputType()
+			method.OutputType = m.GetOutputType()
+
+			service.Methods = append(service.Methods, method)
+		}
+
+		data[service.Name] = service
 	}
 
 	return data

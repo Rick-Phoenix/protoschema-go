@@ -32,7 +32,6 @@ func IsTitleCase(s string) bool {
 }
 
 func ToSnakeCase(s string) string {
-
 	if s == "" {
 		return ""
 	}
@@ -112,7 +111,6 @@ func MapEntries[K comparable, V any](m map[K]V) []Entry[K, V] {
 	}
 
 	return entries
-
 }
 
 func Dedupe[T comparable](s []T) []T {
@@ -249,7 +247,6 @@ func IndentErrors(description string, errs error) error {
 	sb.WriteString(":\n")
 
 	err := IndentList(errs.Error(), &sb)
-
 	if err != nil {
 		fmt.Printf("Internal error indenting string: %v\n", err)
 		return errs
@@ -332,7 +329,6 @@ func formatProtoValue[T any](value T) (string, error) {
 			}
 
 			valStr, err := formatProtoValue(fields)
-
 			if err != nil {
 				return "", err
 			}
@@ -441,5 +437,12 @@ func CompareString(a, b string) int {
 	}
 
 	return 0
+}
 
+func AddServiceSuffix(name string) string {
+	if !strings.HasSuffix(name, "Service") {
+		return name + "Service"
+	}
+
+	return name
 }

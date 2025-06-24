@@ -54,9 +54,9 @@ message UpdatePostResponse {
 }
 
 
-service PostServiceService {
-  rpc GetPost(GetPostRequest) returns(GetPostResponse);
-  rpc UpdatePost(UpdatePostResponse) returns(google.protobuf.Empty);
+service PostService {
+  rpc GetPostService(GetPostRequest) returns(GetPostResponse);
+  rpc UpdatePostService(UpdatePostResponse) returns(google.protobuf.Empty);
 }
 
 
