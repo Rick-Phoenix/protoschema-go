@@ -6,7 +6,6 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -23,37 +22,6 @@ type ProtoFileData struct {
 
 //go:embed templates/*
 var templateFS embed.FS
-
-func GenerateProtoFile(s ProtoService, o Options) error {
-	protoPackage := strings.ReplaceAll(path.Dir(s.FileOutput), "/", ".")
-	templatePath := "templates/service.proto.tmpl"
-
-	templateData := ProtoFileData{
-		PackageName:  protoPackage,
-		ProtoService: s,
-	}
-
-	tmpl, err := template.ParseFS(templateFS, "templates/service.proto.tmpl").Funcs(funcMap).ParseFiles(templatePath)
-	if err != nil {
-		return fmt.Errorf("Failed to parse template: %w", err)
-	}
-
-	var outputBuffer bytes.Buffer
-	if err := tmpl.Execute(&outputBuffer, templateData); err != nil {
-		return fmt.Errorf("Failed to execute template: %w", err)
-	}
-
-	outputPath := filepath.Join(o.ProtoRoot, s.FileOutput)
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return err
-	}
-	if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
-		return err
-	}
-
-	fmt.Printf("✅ Successfully generated proto file at: %s\n", outputPath)
-	return nil
-}
 
 var funcMap = template.FuncMap{
 	"join": func(e []string, sep string) string {
@@ -103,4 +71,34 @@ var funcMap = template.FuncMap{
 
 		return ""
 	},
+}
+
+func GenerateProtoFile(s ProtoService, o Options) error {
+	protoPackage := strings.ReplaceAll(filepath.Dir(s.FileOutput), "/", ".")
+
+	templateData := ProtoFileData{
+		PackageName:  protoPackage,
+		ProtoService: s,
+	}
+
+	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/service.proto.tmpl")
+	if err != nil {
+		return fmt.Errorf("Failed to parse template: %w", err)
+	}
+
+	var outputBuffer bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
+		return fmt.Errorf("Failed to execute template: %w", err)
+	}
+
+	outputPath := filepath.Join(o.ProtoRoot, s.FileOutput)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Successfully generated proto file at: %s\n", outputPath)
+	return nil
 }
