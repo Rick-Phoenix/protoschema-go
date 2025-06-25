@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 )
 
 type ProtoMapBuilder struct {
@@ -24,7 +23,7 @@ func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *Pr
 	}
 
 	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder]{protoFieldInternal: &protoFieldInternal{
-		options: options, rules: rules,
+		options: options, rules: rules, isMap: true, isNonScalar: true, goType: fmt.Sprintf("map[%s]%s", keys.GetGoType(), values.GetGoType()),
 	}, self: self}
 
 	return self
@@ -54,7 +53,7 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 		err = errors.Join(err, fmt.Errorf("Cannot use a repeated field as a value type in a protobuf map (must be wrapped in a message type first)."))
 	}
 
-	if strings.HasPrefix(valuesField.ProtoType, "map<") {
+	if valuesField.IsMap {
 		err = errors.Join(err, fmt.Errorf("Cannot use a map as a value type of another map (must be wrapped in a message type first.)"))
 	}
 
@@ -85,7 +84,7 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 		return ProtoFieldData{}, err
 	}
 
-	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: fmt.Sprintf("map[%s]%s", keysField.GoType, valuesField.GoType), Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: b.goType, Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true, IsMap: b.isMap}, nil
 }
 
 func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {

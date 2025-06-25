@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 )
@@ -11,7 +12,7 @@ import (
 type UserWithPosts struct {
 	ID        int64          `json:"id"`
 	Name      string         `json:"name"`
-	CreatedAt string         `dbignore:"true" json:"created_at"`
+	CreatedAt time.Time      `dbignore:"true" json:"created_at"`
 	Posts     []gofirst.Post `json:"posts"`
 }
 

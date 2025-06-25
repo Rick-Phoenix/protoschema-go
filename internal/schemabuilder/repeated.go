@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"strings"
 )
 
 type ProtoRepeatedBuilder struct {
@@ -24,7 +23,7 @@ func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
 	}
 
 	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder]{protoFieldInternal: &protoFieldInternal{
-		options: options, rules: rules,
+		options: options, rules: rules, repeated: true, goType: "[]" + b.GetGoType(),
 	}, self: self}
 
 	return self
@@ -54,7 +53,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		}
 	}
 
-	if strings.HasPrefix(fieldData.ProtoType, "map<") {
+	if fieldData.IsMap {
 		err = errors.Join(err, fmt.Errorf("Map fields cannot be repeated (must be wrapped in a message type)"))
 	}
 
@@ -92,7 +91,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		return ProtoFieldData{}, err
 	}
 
-	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
+	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
 func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {

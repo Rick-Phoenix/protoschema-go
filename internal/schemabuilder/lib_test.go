@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 	sb "github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
@@ -123,6 +124,18 @@ var UserSchema = sb.ProtoMessageSchema{
 	ImportPath:      "myapp/v1/user.proto",
 }
 
+var UserWithModel = sb.ProtoMessageSchema{
+	Name: "User",
+	Fields: sb.ProtoFieldsMap{
+		1: sb.ProtoString("name").Required().MinLen(2).MaxLen(32),
+		2: sb.ProtoInt64("id"),
+		3: sb.ProtoTimestamp("created_at"),
+		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
+	},
+	Model:      &sb.UserWithPosts{},
+	ImportPath: "myapp/v1/user.proto",
+}
+
 var PostSchema = sb.ProtoMessageSchema{
 	Name: "Post",
 	Fields: sb.ProtoFieldsMap{
@@ -133,6 +146,7 @@ var PostSchema = sb.ProtoMessageSchema{
 		5: sb.ProtoString("content").Optional(),
 		6: sb.ProtoInt64("subreddit_id"),
 	},
+	Model:      &gofirst.Post{},
 	ImportPath: "myapp/v1/post.proto",
 }
 
@@ -168,18 +182,24 @@ var UserService = sb.ProtoServiceSchema{
 			sb.ProtoMessageSchema{
 				Name: "GetUserResponse",
 				Fields: sb.ProtoFieldsMap{
-					1: sb.MsgField("user", &UserSchema),
+					1: sb.MsgField("user", &UserWithModel),
 				},
 			},
 		},
 		"UpdateUserService": {sb.ProtoMessageSchema{Name: "UpdateUserRequest", Fields: sb.ProtoFieldsMap{
 			1: sb.FieldMask("field_mask"),
-			2: sb.MsgField("user", &UserSchema),
+			2: sb.MsgField("user", &UserWithModel),
 		}}, sb.ProtoEmpty()},
 	},
 }
 
 func TestGeneration(t *testing.T) {
+	// Testing model validation
+	_, err := sb.NewProtoMessage(UserWithModel, sb.Set{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	service, err := sb.NewProtoService("User", UserService, "myapp/v1")
 	if err != nil {
 		log.Fatal(err)
@@ -251,61 +271,62 @@ func TestGeneration(t *testing.T) {
 	}
 
 	shouldFail := []sb.ProtoFieldBuilder{
-		sb.RepeatedField("nestedrepeatedfield", sb.RepeatedField("", sb.ProtoTimestamp(""))),
-		sb.RepeatedField("maprepeatedfield", sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
-		sb.RepeatedField("nonscalarunique", sb.ProtoTimestamp("")).Unique(),
-		sb.RepeatedField("min/maxitems", sb.ProtoTimestamp("")).MinItems(3).MaxItems(2),
-		sb.ProtoMap("min/maxpairs", sb.ProtoString(""), sb.ProtoString("")).MinPairs(2).MaxPairs(1),
-		sb.ProtoMap("repeatedasmapvaluetype", sb.ProtoString(""), sb.RepeatedField("", sb.ProtoTimestamp(""))),
-		sb.ProtoMap("mapasmapvaluetype", sb.ProtoString(""), sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
-		sb.ProtoMap("invalidmapkey", sb.ProtoTimestamp(""), sb.ProtoString("")),
-		sb.ProtoString("in/notin").In("str").NotIn("str"),
-		sb.ProtoString("minlen>maxlen").MinLen(2).MaxLen(1),
-		sb.ProtoString("maxlen<minlen").MaxLen(1).MinLen(2),
-		sb.ProtoString("maxlen+len").MaxLen(1).Len(2),
-		sb.ProtoString("minlen+len").MinLen(1).Len(2),
-		sb.ProtoString("min_bytes>max_bytes").MinBytes(2).MaxBytes(1),
-		sb.ProtoString("min_bytes<max_bytes").MaxBytes(1).MinBytes(2),
-		sb.ProtoString("min_bytes+len_bytes").MinBytes(2).LenBytes(1),
-		sb.ProtoInt32("lt=gt").Lt(1).Gt(1),
-		sb.ProtoInt32("lte<=gt").Lte(1).Gt(1),
-		sb.ProtoInt32("lt<=gte").Lt(1).Gte(1),
-		sb.ProtoInt32("lte<gte").Lte(0).Gte(1),
-		sb.ProtoInt32("gte>lte").Gte(2).Lte(1),
-		sb.ProtoInt32("gt>lte").Gt(2).Lte(1),
-		sb.ProtoInt32("gt>lt").Gt(2).Lt(1),
-		sb.ProtoInt32("nonfinite").Finite(),
-		sb.ProtoInt32("lt+lte").Lt(2).Lte(2),
-		sb.ProtoInt32("gt+gte").Gt(2).Gte(2),
-		sb.ProtoTimestamp("lt+lt_now").Lt(&timePast).LtNow(),
-		sb.ProtoTimestamp("lte+lt_now").Lte(&timePast).LtNow(),
-		sb.ProtoTimestamp("gt_now+lt_now").GtNow().LtNow(),
-		sb.ProtoTimestamp("lte+lt").Lte(&timePast).Lt(&timePast),
-		sb.ProtoTimestamp("lt<=gt").Lt(&timePast).Gt(&timePast),
-		sb.ProtoTimestamp("lte<=gt").Lte(&timePast).Gt(&timePast),
-		sb.ProtoTimestamp("lt<=gte").Lt(&timePast).Gte(&timePast),
-		sb.ProtoTimestamp("lte<gte").Lte(&timePast).Gte(&timeFuture),
-		sb.ProtoTimestamp("lt<gt_now").Lt(&timePast).GtNow(),
-		sb.ProtoTimestamp("lte<gt_now").Lte(&timePast).GtNow(),
-		sb.ProtoTimestamp("gt>lt_now").Gt(&timeFuture).LtNow(),
-		sb.ProtoTimestamp("gte>lt_now").Gte(&timeFuture).LtNow(),
-		sb.ProtoTimestamp("gte>lte").Gte(&timeFuture).Lte(&timePast),
-		sb.ProtoTimestamp("gt>lte").Gt(&timeFuture).Lte(&timePast),
-		sb.ProtoTimestamp("gt>lt").Gt(&timeFuture).Lt(&timePast),
-		sb.ProtoDuration("lt+lte").Lt("1s").Lte("1s"),
-		sb.ProtoDuration("gt+gte").Gt("1s").Gte("1s"),
-		sb.ProtoDuration("lt<=gt").Lt("1s").Gt("1m"),
-		sb.ProtoDuration("lt<=gte").Lt("1s").Gte("1m"),
-		sb.ProtoDuration("lte<gte").Lte("1s").Gte("1m"),
-		sb.ProtoDuration("gte>lte").Gte("1m").Lte("1s"),
-		sb.ProtoDuration("gt>lte").Gt("1m").Lte("1s"),
-		sb.ProtoDuration("gt>lt").Gt("1m").Lt("1s"),
-		sb.ProtoDuration("in/notin").In("1s").NotIn("1s"),
+		sb.RepeatedField("nested_repeated_field", sb.RepeatedField("", sb.ProtoTimestamp(""))),
+		sb.RepeatedField("repeated_map_field", sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
+		sb.RepeatedField("non_scalar_unique", sb.ProtoTimestamp("")).Unique(),
+		sb.RepeatedField("repeated_min_items>max_items", sb.ProtoTimestamp("")).MinItems(3).MaxItems(2),
+		sb.ProtoMap("map_min_pairs>max_pairs", sb.ProtoString(""), sb.ProtoString("")).MinPairs(2).MaxPairs(1),
+		sb.ProtoMap("map_repeated_as_value_type", sb.ProtoString(""), sb.RepeatedField("", sb.ProtoTimestamp(""))),
+		sb.ProtoMap("map_as_map_value_type", sb.ProtoString(""), sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
+		sb.ProtoMap("invalid_map_key", sb.ProtoTimestamp(""), sb.ProtoString("")),
+		sb.ProtoString("string_in=notin").In("str").NotIn("str"),
+		sb.ProtoString("string_min_len>max_len").MinLen(2).MaxLen(1),
+		sb.ProtoString("string_max_len<min_len").MaxLen(1).MinLen(2),
+		sb.ProtoString("string_max_len+len").MaxLen(1).Len(2),
+		sb.ProtoString("string_min_len+len").MinLen(1).Len(2),
+		sb.ProtoString("string_min_bytes>max_bytes").MinBytes(2).MaxBytes(1),
+		sb.ProtoString("string_min_bytes<max_bytes").MaxBytes(1).MinBytes(2),
+		sb.ProtoString("string_min_bytes+len_bytes").MinBytes(2).LenBytes(1),
+		sb.ProtoString("string_multi_well_known").Ip().Ipv6(),
+		sb.ProtoInt32("int32_lt=gt").Lt(1).Gt(1),
+		sb.ProtoInt32("int32_lte<=gt").Lte(1).Gt(1),
+		sb.ProtoInt32("int32_lt<=gte").Lt(1).Gte(1),
+		sb.ProtoInt32("int32_lte<gte").Lte(0).Gte(1),
+		sb.ProtoInt32("int32_gte>lte").Gte(2).Lte(1),
+		sb.ProtoInt32("int32_gt>lte").Gt(2).Lte(1),
+		sb.ProtoInt32("int32_gt>lt").Gt(2).Lt(1),
+		sb.ProtoInt32("int32_non_finite").Finite(),
+		sb.ProtoInt32("int32_lt+lte").Lt(2).Lte(2),
+		sb.ProtoInt32("int32_gt+gte").Gt(2).Gte(2),
+		sb.ProtoTimestamp("timestamp_lt+lt_now").Lt(&timePast).LtNow(),
+		sb.ProtoTimestamp("timestamp_lte+lt_now").Lte(&timePast).LtNow(),
+		sb.ProtoTimestamp("timestamp_gt_now+lt_now").GtNow().LtNow(),
+		sb.ProtoTimestamp("timestamp_lte+lt").Lte(&timePast).Lt(&timePast),
+		sb.ProtoTimestamp("timestamp_lt<=gt").Lt(&timePast).Gt(&timePast),
+		sb.ProtoTimestamp("timestamp_lte<=gt").Lte(&timePast).Gt(&timePast),
+		sb.ProtoTimestamp("timestamp_lt<=gte").Lt(&timePast).Gte(&timePast),
+		sb.ProtoTimestamp("timestamp_lte<gte").Lte(&timePast).Gte(&timeFuture),
+		sb.ProtoTimestamp("timestamp_lt<gt_now").Lt(&timePast).GtNow(),
+		sb.ProtoTimestamp("timestamp_lte<gt_now").Lte(&timePast).GtNow(),
+		sb.ProtoTimestamp("timestamp_gt>lt_now").Gt(&timeFuture).LtNow(),
+		sb.ProtoTimestamp("timestamp_gte>lt_now").Gte(&timeFuture).LtNow(),
+		sb.ProtoTimestamp("timestamp_gte>lte").Gte(&timeFuture).Lte(&timePast),
+		sb.ProtoTimestamp("timestamp_gt>lte").Gt(&timeFuture).Lte(&timePast),
+		sb.ProtoTimestamp("timestamp_gt>lt").Gt(&timeFuture).Lt(&timePast),
+		sb.ProtoDuration("duration_lt+lte").Lt("1s").Lte("1s"),
+		sb.ProtoDuration("duration_gt+gte").Gt("1s").Gte("1s"),
+		sb.ProtoDuration("duration_lt<=gt").Lt("1s").Gt("1m"),
+		sb.ProtoDuration("duration_lt<=gte").Lt("1s").Gte("1m"),
+		sb.ProtoDuration("duration_lte<gte").Lte("1s").Gte("1m"),
+		sb.ProtoDuration("duration_gte>lte").Gte("1m").Lte("1s"),
+		sb.ProtoDuration("duration_gt>lte").Gt("1m").Lte("1s"),
+		sb.ProtoDuration("duration_gt>lt").Gt("1m").Lt("1s"),
+		sb.ProtoDuration("duration_in=notin").In("1s").NotIn("1s"),
 	}
 
 	for _, test := range shouldFail {
-		_, err := test.Build(1, sb.Set{})
-		assert.Error(t, err)
+		data, err := test.Build(1, sb.Set{})
+		assert.Error(t, err, data.Name)
 	}
 
 	assert.NotContains(t, out.Messages, "Post")

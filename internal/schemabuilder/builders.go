@@ -29,6 +29,7 @@ type ProtoFieldData struct {
 	Name          string
 	Imports       []string
 	Repeated      bool
+	IsMap         bool
 	Required      bool
 	IsNonScalar   bool
 }
@@ -47,11 +48,32 @@ type protoFieldInternal struct {
 	required        bool
 	isNonScalar     bool
 	repeated        bool
+	isMap           bool
 }
 
 type ProtoFieldBuilder interface {
 	Build(fieldNr uint32, imports Set) (ProtoFieldData, error)
 	GetData() ProtoFieldData
+	IsMap() bool
+	IsRepeated() bool
+	GetGoType() string
+	GetName() string
+}
+
+func (b *protoFieldInternal) IsMap() bool {
+	return b.isMap
+}
+
+func (b *protoFieldInternal) IsRepeated() bool {
+	return b.repeated
+}
+
+func (b *protoFieldInternal) GetGoType() string {
+	return b.goType
+}
+
+func (b *protoFieldInternal) GetName() string {
+	return b.name
 }
 
 func (b *protoFieldInternal) GetData() ProtoFieldData {
@@ -59,14 +81,14 @@ func (b *protoFieldInternal) GetData() ProtoFieldData {
 		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
 		Imports:  slices.Clone(b.imports),
 		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
-		GoType: b.goType,
+		GoType: b.goType, IsMap: b.isMap,
 	}
 }
 
 func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	data := ProtoFieldData{
 		Name: b.name, ProtoType: b.protoType, GoType: b.goType, FieldNr: fieldNr,
-		Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType,
+		Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType, IsMap: b.isMap,
 	}
 
 	if data.ProtoBaseType == "" {

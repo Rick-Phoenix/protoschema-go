@@ -74,22 +74,24 @@ func (s *ProtoMessageSchema) CheckModel() error {
 
 	for i := range model.NumField() {
 		field := model.Field(i)
-		fieldName := field.Tag.Get("json")
-		ignore := slices.Contains(s.ModelIgnore, fieldName)
+		modelFieldName := field.Tag.Get("json")
+		ignore := slices.Contains(s.ModelIgnore, modelFieldName)
 		fieldType := field.Type.String()
 
 		if ignore {
 			continue
 		}
 
-		if pfield, exists := msgFields[fieldName]; exists {
-			delete(msgFields, fieldName)
-			data := pfield.GetData()
-			if data.GoType != fieldType && !slices.Contains(s.ModelIgnore, data.Name) {
-				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, fieldName, data.GoType))
+		if pfield, exists := msgFields[modelFieldName]; exists {
+			delete(msgFields, modelFieldName)
+			goType := pfield.GetGoType()
+			fieldName := pfield.GetName()
+
+			if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
+				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
 			}
 		} else {
-			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", fieldName, model))
+			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", modelFieldName, model))
 		}
 	}
 

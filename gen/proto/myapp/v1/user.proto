@@ -36,6 +36,11 @@ message User {
   ];
 }
 
+message UpdateUserResponse {
+  google.protobuf.FieldMask field_mask = 1;
+  User user = 2;
+}
+
 message GetUserRequest {
   string name = 1;
 }
@@ -44,12 +49,7 @@ message GetUserResponse {
   User user = 1;
 }
 
-message UpdateUserResponse {
-  google.protobuf.FieldMask field_mask = 1;
-  User user = 2;
-}
-
 service UserService {
-  rpc GetUserService(GetUserRequest) returns (GetUserResponse);
   rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
+  rpc GetUserService(GetUserRequest) returns (GetUserResponse);
 }

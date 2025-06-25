@@ -1,21 +1,24 @@
 package schemabuilder
 
 import (
+	"fmt"
 	"log"
 	"reflect"
-	"strings"
 )
 
-func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
+func MsgField(name string, s *ProtoMessageSchema) *GenericField {
 	rules := make(map[string]any)
 
 	if s == nil {
 		log.Fatalf("Could not generate the message type for field %q because the schema given was nil.", name)
 	}
 
-	goType := strings.ToLower(s.Name)
+	var goType string
 
-	if s.Model != nil {
+	if s.Model == nil {
+		fmt.Printf("Message schema %q referenced in field %q has no model to extract the go type from. Using 'any' as a fallback...\n", s.Name, name)
+		goType = "any"
+	} else {
 		goType = reflect.TypeOf(s.Model).Elem().String()
 	}
 
@@ -44,8 +47,4 @@ func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
 		self:               gf,
 	}
 	return gf
-}
-
-func MsgField(name string, s *ProtoMessageSchema) *GenericField {
-	return createMsgField(name, s)
 }
