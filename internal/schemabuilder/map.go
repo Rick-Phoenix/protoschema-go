@@ -38,7 +38,7 @@ func (b *ProtoMapBuilder) GetData() ProtoFieldData {
 }
 
 func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
-	var err error
+	err := b.errors
 
 	keysField, keysErr := b.keys.Build(fieldNr, imports)
 	err = errors.Join(err, keysErr)

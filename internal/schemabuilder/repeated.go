@@ -40,6 +40,8 @@ func (b *ProtoRepeatedBuilder) GetData() ProtoFieldData {
 func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldNr, imports)
 
+	err = errors.Join(err, b.errors)
+
 	if fieldData.Optional {
 		fmt.Printf("Ignoring 'optional' for repeated field %q...", b.name)
 	}
@@ -64,10 +66,6 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		fmt.Printf("Ignoring ineffective 'required' option for repeated field '%s' (you can set min_len to 1 instead to require at least one element)", b.name)
 	}
 
-	if err != nil {
-		return ProtoFieldData{}, err
-	}
-
 	if len(fieldData.Rules) > 0 {
 		rulesMap := make(map[string]any)
 		rulesCopy := make(map[string]any)
@@ -88,6 +86,10 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 
 	if optErr != nil {
 		err = errors.Join(err, optErr)
+	}
+
+	if err != nil {
+		return ProtoFieldData{}, err
 	}
 
 	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: "[]" + fieldData.GoType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil

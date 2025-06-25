@@ -92,7 +92,10 @@ type ExtensionData struct {
 	Fields   map[string]FieldData
 }
 
-var testTime = timestamppb.Timestamp{Seconds: time.Date(2025, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+var (
+	timePast   = timestamppb.Timestamp{Seconds: time.Date(2025, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+	timeFuture = timestamppb.Timestamp{Seconds: time.Date(3000, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+)
 
 var UserSchema = sb.ProtoMessageSchema{
 	Name: "User",
@@ -104,8 +107,8 @@ var UserSchema = sb.ProtoMessageSchema{
 		5: sb.ProtoString("fav_cat").Optional(),
 		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
 		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
-		8: sb.ProtoTimestamp("timetest").Lt(&testTime),
-		9: sb.ProtoTimestamp("timetest2").Const(&testTime),
+		8: sb.ProtoTimestamp("timetest").Lt(&timePast),
+		9: sb.ProtoTimestamp("timetest2").Const(&timePast),
 	},
 	Oneofs: []sb.ProtoOneOfBuilder{
 		sb.ProtoOneOf("myoneof", sb.OneofChoicesMap{
@@ -226,8 +229,8 @@ func TestGeneration(t *testing.T) {
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1)},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4)},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 , in : [ 1 , 2 ] }"},
-		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d , nanos : 0", testTime.GetSeconds())},
-		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d , nanos : 0", testTime.GetSeconds())},
+		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
+		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
 	}
 
 	containsTests := []struct {
@@ -258,6 +261,22 @@ func TestGeneration(t *testing.T) {
 		sb.ProtoInt32("lt/gt").Lt(1).Gt(1),
 		sb.ProtoInt32("lte/gt").Lte(1).Gt(1),
 		sb.ProtoInt32("lt/gte").Lt(1).Gte(1),
+		sb.RepeatedField("min/maxitems", sb.ProtoTimestamp("")).MinItems(3).MaxItems(2),
+		sb.ProtoMap("min/maxpairs", sb.ProtoString(""), sb.ProtoString("")).MinPairs(2).MaxPairs(1),
+		sb.ProtoInt32("nonfinite").Finite(),
+		sb.ProtoInt32("lt+lte").Lt(2).Lte(2),
+		sb.ProtoInt32("gt+gte").Gt(2).Gte(2),
+		sb.ProtoTimestamp("lt+lt_now").Lt(&timePast).LtNow(),
+		sb.ProtoTimestamp("lte+lt_now").Lte(&timePast).LtNow(),
+		sb.ProtoTimestamp("gt_now+lt_now").GtNow().LtNow(),
+		sb.ProtoTimestamp("lte+lt").Lte(&timePast).Lt(&timePast),
+		sb.ProtoTimestamp("lt/gt").Lt(&timePast).Gt(&timePast),
+		sb.ProtoTimestamp("lte/gt").Lte(&timePast).Gt(&timePast),
+		sb.ProtoTimestamp("lt/gte").Lt(&timePast).Gte(&timePast),
+		sb.ProtoTimestamp("lt<gt_now").Lt(&timePast).GtNow(),
+		sb.ProtoTimestamp("lte<gt_now").Lte(&timePast).GtNow(),
+		sb.ProtoTimestamp("gt>lt_now").Gt(&timeFuture).LtNow(),
+		sb.ProtoTimestamp("gte>lt_now").Gte(&timeFuture).LtNow(),
 	}
 
 	for _, test := range shouldFail {
