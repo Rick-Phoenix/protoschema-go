@@ -45,8 +45,6 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		fmt.Printf("Ignoring 'optional' for repeated field %q...", b.name)
 	}
 
-	options := []string{}
-
 	if b.unique {
 		if fieldData.IsNonScalar {
 			err = errors.Join(err, fmt.Errorf("Cannot apply contraint 'unique' to a non-scalar repeated field."))
@@ -65,6 +63,9 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		fmt.Printf("Ignoring ineffective 'required' option for repeated field '%s' (you can set min_len to 1 instead to require at least one element)", b.name)
 	}
 
+	options := make([]string, len(b.repeatedOptions))
+	copy(options, b.repeatedOptions)
+
 	if len(fieldData.Rules) > 0 {
 		rulesMap := make(map[string]any)
 		rulesCopy := make(map[string]any)
@@ -79,9 +80,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.items = %s", stringRules))
 	}
 
-	extraOpts, optErr := GetOptions(b.options, b.repeatedOptions)
-
-	options = append(options, extraOpts...)
+	options, optErr := GetOptions(b.options, options)
 
 	if optErr != nil {
 		err = errors.Join(err, optErr)

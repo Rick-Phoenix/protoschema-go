@@ -4,14 +4,14 @@ import (
 	"errors"
 )
 
-func (b *ProtoFieldExternal[BuilderT]) Options(o []ProtoOption) *BuilderT {
+func (b *ProtoFieldExternal[BuilderT]) Options(o ...ProtoOption) *BuilderT {
 	for _, op := range o {
 		b.options[op.Name] = op.Value
 	}
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) RepeatedOptions(o []ProtoOption) *BuilderT {
+func (b *ProtoFieldExternal[BuilderT]) RepeatedOptions(o ...ProtoOption) *BuilderT {
 	var opts []string
 
 	for _, v := range o {
@@ -48,7 +48,7 @@ func (b *ProtoFieldExternal[BuilderT]) Deprecated() *BuilderT {
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) CelOptions(o []CelFieldOpts) *BuilderT {
+func (b *ProtoFieldExternal[BuilderT]) CelOptions(o ...CelOption) *BuilderT {
 	opts := GetCelOptions(o)
 	b.repeatedOptions = append(b.repeatedOptions, opts...)
 

@@ -19,6 +19,9 @@ message User {
   google.protobuf.Timestamp created_at = 3;
   repeated Post posts = 5;
   map<string, int32> test = 8 [
+    deprecated = true,
+    Myopt = 1,
+    Myopt = 2,
     (buf.validate.field).map.keys = {
       string: {min_len: 15}
     },
@@ -29,16 +32,8 @@ message User {
           2
         ]
       }
-    },
-    deprecated = true,
-    Myopt = 1,
-    Myopt = 2
+    }
   ];
-}
-
-message UpdateUserResponse {
-  google.protobuf.FieldMask field_mask = 1;
-  User user = 2;
 }
 
 message GetUserRequest {
@@ -49,7 +44,12 @@ message GetUserResponse {
   User user = 1;
 }
 
+message UpdateUserResponse {
+  google.protobuf.FieldMask field_mask = 1;
+  User user = 2;
+}
+
 service UserService {
-  rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
   rpc GetUserService(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
 }

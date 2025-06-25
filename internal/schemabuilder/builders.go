@@ -105,13 +105,19 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 		imports[v] = present
 	}
 
-	var options []string
+	options := make([]string, len(b.repeatedOptions))
+	copy(options, b.repeatedOptions)
 
 	optsCollector := make(map[string]any)
 	maps.Copy(optsCollector, b.options)
 
-	if b.isConst && len(b.rules) > 1 {
-		errAgg = errors.Join(errAgg, fmt.Errorf("A constant field cannot have extra rules."))
+	if b.isConst {
+		if len(b.rules) > 1 {
+			errAgg = errors.Join(errAgg, fmt.Errorf("A constant field cannot have extra rules."))
+		}
+		if b.optional {
+			errAgg = errors.Join(errAgg, fmt.Errorf("A constant field cannot be optional."))
+		}
 	}
 
 	if len(b.rules) > 0 {
@@ -122,7 +128,7 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 		}
 	}
 
-	options, err := GetOptions(optsCollector, b.repeatedOptions)
+	options, err := GetOptions(optsCollector, options)
 	if err != nil {
 		errAgg = errors.Join(errAgg, err)
 	}

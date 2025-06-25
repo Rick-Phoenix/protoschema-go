@@ -56,7 +56,7 @@ func ProtoEnumField(name string, enumName string) *EnumField {
 	options := make(map[string]any)
 
 	ef := &EnumField{}
-	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, isNonScalar: true, protoBaseType: "enum", options: options}
+	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, protoBaseType: "enum", options: options}
 
 	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField]{
 		protoFieldInternal: internal, self: ef,
@@ -68,12 +68,13 @@ func ProtoEnumField(name string, enumName string) *EnumField {
 }
 
 func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, IsNonScalar: false, Optional: ef.optional, ProtoBaseType: "enum"}
+	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
 	errAgg = errors.Join(errAgg, ef.errors)
 
-	var options []string
+	options := make([]string, len(ef.repeatedOptions))
+	copy(options, ef.repeatedOptions)
 
 	optsCollector := make(map[string]any)
 	maps.Copy(optsCollector, ef.options)
@@ -93,7 +94,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) 
 		optsCollector["(buf.validate.field).enum"] = enumRules
 	}
 
-	options, err := GetOptions(optsCollector, ef.repeatedOptions)
+	options, err := GetOptions(optsCollector, options)
 	errAgg = errors.Join(errAgg, err)
 
 	data.Options = options

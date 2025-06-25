@@ -57,7 +57,8 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 		err = errors.Join(err, fmt.Errorf("Cannot use a map as a value type of another map (must be wrapped in a message type first.)"))
 	}
 
-	options := []string{}
+	options := make([]string, len(b.repeatedOptions))
+	copy(options, b.repeatedOptions)
 
 	for _, item := range []struct {
 		MapType string
@@ -76,9 +77,8 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 		}
 	}
 
-	extraOpts, optErr := GetOptions(b.options, b.repeatedOptions)
+	options, optErr := GetOptions(b.options, options)
 
-	options = append(options, extraOpts...)
 	err = errors.Join(err, optErr)
 	if err != nil {
 		return ProtoFieldData{}, err

@@ -23,7 +23,7 @@ var UserSchema = ProtoMessageSchema{
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
 		5: RepeatedField("posts", MsgField("post", &PostSchema)),
-		8: ProtoMap("test", ProtoString("").MinLen(15), ProtoInt32("").In(1, 2)).Deprecated().RepeatedOptions([]ProtoOption{{"Myopt", 1}, {"Myopt", 2}}),
+		8: ProtoMap("test", ProtoString("").MinLen(15), ProtoInt32("").In(1, 2)).Deprecated().RepeatedOptions([]ProtoOption{{"Myopt", 1}, {"Myopt", 2}}...),
 	},
 	Oneofs: []ProtoOneOfBuilder{ProtoOneOf("myoneof", OneofChoicesMap{
 		9:  ProtoString("example"),

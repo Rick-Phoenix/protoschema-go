@@ -105,7 +105,7 @@ var UserSchema = sb.ProtoMessageSchema{
 		2: sb.ProtoInt64("id"),
 		3: sb.ProtoTimestamp("created_at"),
 		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
-		5: sb.ProtoString("fav_cat").Optional(),
+		5: sb.ProtoString("fav_cat").Optional().CelOptions([]sb.CelOption{{Id: "cel", Message: "msg", Expression: "expr"}, {Id: "cel", Message: "msg", Expression: "expr"}}...).Options(sb.ProtoOption{Name: "myopt", Value: true}, sb.ProtoOption{Name: "myopt", Value: false}),
 		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
 		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
 		8: sb.ProtoTimestamp("timetest").Lt(&timePast),
@@ -251,6 +251,12 @@ func TestGeneration(t *testing.T) {
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 , in : [ 1 , 2 ] }"},
 		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
 		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
+		// Non repeated options should be overridden
+		{userMsg.Fields["fav_cat"].Options["myopt"].Value, false},
+		{len(userMsg.Fields["fav_cat"].Options), 1},
+		{len(userMsg.Fields["fav_cat"].RepeatedOptions), 2},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Name, "buf.validate.field.cel"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Value, `id : "cel" message : "msg" expression : "expr"`},
 	}
 
 	containsTests := []struct {
@@ -322,6 +328,8 @@ func TestGeneration(t *testing.T) {
 		sb.ProtoDuration("duration_gt>lte").Gt("1m").Lte("1s"),
 		sb.ProtoDuration("duration_gt>lt").Gt("1m").Lt("1s"),
 		sb.ProtoDuration("duration_in=notin").In("1s").NotIn("1s"),
+		sb.ProtoString("const_with_extra_rules").Const("const").MinLen(2),
+		sb.ProtoString("const_with_optional").Const("const").Optional(),
 	}
 
 	for _, test := range shouldFail {
@@ -377,8 +385,8 @@ func ParseProtoFile(filePath string) FileData {
 
 func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOption, []ProtoOption) {
 	optionsMap := make(map[string]ProtoOption)
-	repeatedOptsMap := make(map[string]struct{})
-	repeatedOpts := []ProtoOption{}
+	areRepeated := make(map[string]struct{})
+	flatOpts := []ProtoOption{}
 	for _, o := range opts {
 		name := ""
 		var value any
@@ -416,19 +424,26 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOpti
 			Name: name, Value: value,
 		}
 
-		if repeatedOption, exists := optionsMap[name]; exists {
-			if _, exists := repeatedOptsMap[name]; !exists {
-				repeatedOptsMap[name] = struct{}{}
-				repeatedOpts = append(repeatedOpts, repeatedOption)
-			}
-			repeatedOpts = append(repeatedOpts, optsData)
+		repeatedOpt, isRepeated := optionsMap[name]
+		_, markedAsRepeated := areRepeated[name]
+
+		if isRepeated && !markedAsRepeated {
+			areRepeated[name] = struct{}{}
+			markedAsRepeated = true
+			flatOpts = append(flatOpts, repeatedOpt)
+			delete(optionsMap, name)
+
 		} else {
 			optionsMap[name] = optsData
 		}
 
+		if markedAsRepeated {
+			flatOpts = append(flatOpts, optsData)
+		}
+
 	}
 
-	return optionsMap, repeatedOpts
+	return optionsMap, flatOpts
 }
 
 func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([]int32, []sb.Range) {

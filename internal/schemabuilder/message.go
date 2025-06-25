@@ -183,7 +183,7 @@ func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 	return mo
 }
 
-func MessageCelOption(o CelFieldOpts) ProtoOption {
+func MessageCelOption(o CelOption) ProtoOption {
 	out := ProtoOption{}
 
 	out.Name = "(buf.validate.message).cel"
