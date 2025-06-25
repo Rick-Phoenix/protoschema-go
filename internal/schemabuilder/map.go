@@ -81,7 +81,6 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 
 	options = append(options, extraOpts...)
 	err = errors.Join(err, optErr)
-
 	if err != nil {
 		return ProtoFieldData{}, err
 	}
@@ -93,7 +92,7 @@ func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {
 	if b.maxPairs != nil && *b.maxPairs < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
 	}
-	b.options["(buf.validate.field).repeated.min_pairs"] = n
+	b.options["(buf.validate.field).map.min_pairs"] = n
 	b.minPairs = &n
 	return b
 }
@@ -102,7 +101,7 @@ func (b *ProtoMapBuilder) MaxPairs(n uint) *ProtoMapBuilder {
 	if b.minPairs != nil && *b.minPairs > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
 	}
-	b.options["(buf.validate.field).repeated.max_pairs"] = n
+	b.options["(buf.validate.field).map.max_pairs"] = n
 	b.maxPairs = &n
 	return b
 }

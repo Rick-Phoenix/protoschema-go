@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
@@ -7,23 +8,10 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/post.proto";
 
-package myapp.v1;
-
-
-
-
-
-
-
-
 message User {
-
-
-
-  
   oneof myoneof {
     string example = 9;
-  int32 another = 10;
+    int32 another = 10;
   }
 
   string name = 1;
@@ -31,40 +19,37 @@ message User {
   google.protobuf.Timestamp created_at = 3;
   repeated Post posts = 5;
   map<string, int32> test = 8 [
-    (buf.validate.field).map.keys = {string: {min_len: 15}},
-    (buf.validate.field).map.values = {int32: {in: [1, 2]}},
+    (buf.validate.field).map.keys = {
+      string: {min_len: 15}
+    },
+    (buf.validate.field).map.values = {
+      int32: {
+        in: [
+          1,
+          2
+        ]
+      }
+    },
     deprecated = true,
     Myopt = 1,
-    Myopt = 2 
+    Myopt = 2
   ];
 }
 
 message GetUserRequest {
-
-
-
   string name = 1;
 }
 
 message GetUserResponse {
-
-
-
   User user = 1;
 }
 
 message UpdateUserResponse {
-
-
-
   google.protobuf.FieldMask field_mask = 1;
   User user = 2;
 }
 
-
 service UserService {
-  rpc GetUserService(GetUserRequest) returns(GetUserResponse);
-  rpc UpdateUserService(UpdateUserResponse) returns(google.protobuf.Empty);
+  rpc GetUserService(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUserService(UpdateUserResponse) returns (google.protobuf.Empty);
 }
-
-

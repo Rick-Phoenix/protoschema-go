@@ -3,6 +3,7 @@ package schemabuilder
 import (
 	"log"
 	"reflect"
+	"strings"
 )
 
 func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
@@ -12,8 +13,10 @@ func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
 		log.Fatalf("Could not generate the message type for field %q because the schema given was nil.", name)
 	}
 
-	if s.Model == nil {
-		log.Fatalf("Message field %q has no model to refer to.", name)
+	goType := strings.ToLower(s.Name)
+
+	if s.Model != nil {
+		goType = reflect.TypeOf(s.Model).Elem().String()
 	}
 
 	if s.Name == "" {
@@ -29,7 +32,7 @@ func createMsgField(name string, s *ProtoMessageSchema) *GenericField {
 	internal := &protoFieldInternal{
 		name:        name,
 		protoType:   s.Name,
-		goType:      reflect.TypeOf(s.Model).Elem().String(),
+		goType:      goType,
 		isNonScalar: true,
 		rules:       rules,
 		imports:     imports,

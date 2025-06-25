@@ -9,8 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
-	"github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
+	sb "github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
@@ -28,18 +27,17 @@ type FieldData struct {
 }
 
 type EnumMember struct {
-	Name   string
 	Number int32
 }
 
 type EnumData struct {
 	Name            string
-	Members         []EnumMember
+	Members         map[string]EnumMember
 	Options         map[string]ProtoOption
 	RepeatedOptions []ProtoOption
 	ReservedNames   []string
 	ReservedNumbers []int32
-	ReservedRanges  []schemabuilder.Range
+	ReservedRanges  []sb.Range
 }
 
 type ProtoOption struct {
@@ -60,14 +58,14 @@ type MessageData struct {
 	Oneofs          map[string]OneofData
 	ReservedNames   []string
 	ReservedNumbers []int32
-	ReservedRanges  []schemabuilder.Range
+	ReservedRanges  []sb.Range
 	Options         map[string]ProtoOption
 	RepeatedOptions []ProtoOption
 }
 
 type ServiceData struct {
 	Name            string
-	Methods         []MethodData
+	Handlers        map[string]MethodData
 	Options         map[string]ProtoOption
 	RepeatedOptions []ProtoOption
 }
@@ -92,75 +90,156 @@ type ExtensionData struct {
 	Fields   map[string]FieldData
 }
 
-var UserSchema = schemabuilder.ProtoMessageSchema{
+var UserSchema = sb.ProtoMessageSchema{
 	Name: "User",
-	Fields: schemabuilder.ProtoFieldsMap{
-		1: schemabuilder.ProtoString("name"),
-		2: schemabuilder.ProtoInt64("id"),
-		3: schemabuilder.ProtoTimestamp("created_at"),
+	Fields: sb.ProtoFieldsMap{
+		1: sb.ProtoString("name").Required().MinLen(2).MaxLen(32),
+		2: sb.ProtoInt64("id"),
+		3: sb.ProtoTimestamp("created_at"),
+		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
+		5: sb.ProtoString("fav_cat").Optional(),
+		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
+		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
 	},
-	Oneofs: []schemabuilder.ProtoOneOfBuilder{schemabuilder.ProtoOneOf("myoneof", schemabuilder.OneofChoicesMap{
-		9:  schemabuilder.ProtoString("example"),
-		10: schemabuilder.ProtoInt32("another"),
-	})},
-	Model:       &gofirst.User{},
-	ModelIgnore: []string{"posts", "test"},
-	ImportPath:  "myapp/v1/user.proto",
+	Oneofs: []sb.ProtoOneOfBuilder{
+		sb.ProtoOneOf("myoneof", sb.OneofChoicesMap{
+			9:  sb.ProtoString("example"),
+			10: sb.ProtoInt32("another"),
+		}),
+	},
+	ReservedNames:   []string{"name1", "name2"},
+	ReservedNumbers: []uint{20, 21},
+	ReservedRanges:  []sb.Range{{22, 25}},
+	Enums:           TestEnum,
+	ImportPath:      "myapp/v1/user.proto",
 }
 
-var UserService = schemabuilder.ProtoServiceSchema{
-	Messages: []schemabuilder.ProtoMessageSchema{UserSchema},
-	Handlers: schemabuilder.HandlersMap{
+var PostSchema = sb.ProtoMessageSchema{
+	Name: "Post",
+	Fields: sb.ProtoFieldsMap{
+		1: sb.ProtoInt64("id").Optional(),
+		2: sb.ProtoTimestamp("created_at"),
+		3: sb.ProtoInt64("author_id"),
+		4: sb.ProtoString("title").MinLen(5).MaxLen(64).Required(),
+		5: sb.ProtoString("content").Optional(),
+		6: sb.ProtoInt64("subreddit_id"),
+	},
+	ImportPath: "myapp/v1/post.proto",
+}
+
+var MyOptions = []sb.CustomOption{{
+	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
+}}
+
+var TestEnum = []sb.ProtoEnumGroup{
+	sb.ProtoEnum("myenum", sb.ProtoEnumMap{
+		0: "VAL_1",
+		1: "VAL_2",
+	}).Opts(sb.AllowAlias).RsvNames("name1", "name2").RsvNumbers(10, 11).RsvRanges(sb.Range{20, 23}),
+}
+
+var UserService = sb.ProtoServiceSchema{
+	OptionExtensions: sb.OptionExtensions{
+		Message: MyOptions,
+		File:    MyOptions,
+		OneOf:   MyOptions,
+		Service: MyOptions,
+		Field:   MyOptions,
+	},
+	Enums:    TestEnum,
+	Messages: []sb.ProtoMessageSchema{UserSchema},
+	Handlers: sb.HandlersMap{
+		// Testing the automatic addition of "Service" prefix
 		"GetUser": {
-			schemabuilder.ProtoMessageSchema{
-				Name: "GetUserRequest", Fields: schemabuilder.ProtoFieldsMap{
-					1: schemabuilder.ProtoInt64("id").Gt(0),
+			sb.ProtoMessageSchema{
+				Name: "GetUserRequest", Fields: sb.ProtoFieldsMap{
+					1: sb.ProtoInt64("id"),
 				},
 			},
-			schemabuilder.ProtoMessageSchema{
+			sb.ProtoMessageSchema{
 				Name: "GetUserResponse",
-				Fields: schemabuilder.ProtoFieldsMap{
-					1: schemabuilder.MsgField("user", &UserSchema),
+				Fields: sb.ProtoFieldsMap{
+					1: sb.MsgField("user", &UserSchema),
 				},
 			},
 		},
-		"UpdateUserService": {schemabuilder.ProtoMessageSchema{Name: "UpdateUserResponse", Fields: schemabuilder.ProtoFieldsMap{
-			1: schemabuilder.FieldMask("field_mask"),
-			2: schemabuilder.MsgField("user", &UserSchema),
-		}}, schemabuilder.ProtoEmpty()},
+		"UpdateUserService": {sb.ProtoMessageSchema{Name: "UpdateUserRequest", Fields: sb.ProtoFieldsMap{
+			1: sb.FieldMask("field_mask"),
+			2: sb.MsgField("user", &UserSchema),
+		}}, sb.ProtoEmpty()},
 	},
 }
 
 func TestGeneration(t *testing.T) {
-	service, err := schemabuilder.NewProtoService("User", UserService, "myapp/v1")
+	service, err := sb.NewProtoService("User", UserService, "myapp/v1")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	tmpDir := t.TempDir()
-	err = schemabuilder.GenerateProtoFile(service, schemabuilder.Options{ProtoRoot: tmpDir})
+	err = sb.GenerateProtoFile(service, sb.Options{ProtoRoot: tmpDir})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	filePath := path.Join(tmpDir, "myapp/v1", "user.proto")
 
-	data := ParseProtoFile(filePath)
+	out := ParseProtoFile(filePath)
+
+	userMsg := out.Messages["User"]
 
 	equalTests := []struct {
 		Target   any
 		Expected any
 	}{
-		{data.Package, "myapp.v1"},
-		{data.Messages["User"].Name, "User"},
+		{out.Package, "myapp.v1"},
+		{out.Messages["User"].Name, "User"},
+		{out.Services["UserService"].Handlers["GetUserService"].InputType, "GetUserRequest"},
+		{out.Services["UserService"].Handlers["GetUserService"].OutputType, "GetUserResponse"},
+		{out.Services["UserService"].Handlers["UpdateUserService"].InputType, "UpdateUserRequest"},
+		{out.Services["UserService"].Handlers["UpdateUserService"].OutputType, "google.protobuf.Empty"},
+		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Number, int32(1)},
+		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Optional, true},
+		{out.Extensions["google.protobuf.FileOptions"].Fields["testopt"].Number, int32(1)},
+		{out.Extensions["google.protobuf.ServiceOptions"].Fields["testopt"].Number, int32(1)},
+		{out.Extensions["google.protobuf.OneofOptions"].Fields["testopt"].Number, int32(1)},
+		{out.Extensions["google.protobuf.FieldOptions"].Fields["testopt"].Number, int32(1)},
+		{out.Enums["myenum"].Members["VAL_1"].Number, int32(0)},
+		{out.Enums["myenum"].Members["VAL_2"].Number, int32(1)},
+		{out.Enums["myenum"].Options["allow_alias"].Value, true},
+		{userMsg.Enums["myenum"].Members["VAL_1"].Number, int32(0)},
+		{userMsg.Enums["myenum"].Members["VAL_2"].Number, int32(1)},
+		{userMsg.Enums["myenum"].Options["allow_alias"].Value, true},
+		{userMsg.Oneofs["myoneof"].Name, "myoneof"},
+		{userMsg.Fields["posts"].Repeated, true},
+		{userMsg.Fields["fav_cat"].Optional, true},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.min_pairs"].Value, uint64(2)},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.max_pairs"].Value, uint64(4)},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.keys"].Value, "string : { min_len : 1 }"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.values"].Value, "int64 : { gt : 1 , in : [ 1 , 2 ] }"},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1)},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4)},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 , in : [ 1 , 2 ] }"},
 	}
 
 	containsTests := []struct {
 		Target   any
 		Expected []any
 	}{
-		{data.Imports, []any{"buf/validate/validate.proto", "google/protobuf/empty.proto", "google/protobuf/timestamp.proto", "google/protobuf/field_mask.proto"}},
+		{out.Imports, []any{"buf/validate/validate.proto", "google/protobuf/empty.proto", "google/protobuf/timestamp.proto", "google/protobuf/field_mask.proto", "myapp/v1/post.proto"}},
+		{out.Messages["UpdateUserRequest"].Fields, []any{"field_mask", "user"}},
+		{out.Messages["User"].Fields, []any{"id", "created_at", "posts", "name"}},
+		{out.Messages["GetUserRequest"].Fields, []any{"id"}},
+		{out.Messages["GetUserResponse"].Fields, []any{"user"}},
+		{out.Enums["myenum"].ReservedNames, []any{"name1", "name2"}},
+		{out.Enums["myenum"].ReservedNumbers, []any{int32(10), int32(11)}},
+		{out.Enums["myenum"].ReservedRanges, []any{sb.Range{20, 23}}},
+		{out.Messages["User"].ReservedNames, []any{"name1", "name2"}},
+		{out.Messages["User"].ReservedNumbers, []any{int32(20), int32(21)}},
+		{out.Messages["User"].ReservedRanges, []any{sb.Range{22, 25}}},
 	}
+
+	assert.NotContains(t, out.Messages, "Post")
 
 	for _, test := range equalTests {
 		assert.Equal(t, test.Expected, test.Target)
@@ -234,13 +313,13 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOpti
 
 			strBool, err := strconv.ParseBool(strVal)
 			if err != nil {
-				value = o.String()
+				value = strVal
 			} else {
 				value = strBool
 			}
 
 		} else if o.AggregateValue != nil {
-			value = o.String()
+			value = o.GetAggregateValue()
 		}
 
 		optsData := ProtoOption{
@@ -262,9 +341,9 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOpti
 	return optionsMap, repeatedOpts
 }
 
-func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([]int32, []schemabuilder.Range) {
+func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([]int32, []sb.Range) {
 	var reservedNumbers []int32
-	var reservedRanges []schemabuilder.Range
+	var reservedRanges []sb.Range
 	for _, r := range ranges {
 		if r.Start != nil && r.End != nil {
 			start := *r.Start
@@ -273,7 +352,8 @@ func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([
 			if end-start == 1 {
 				reservedNumbers = append(reservedNumbers, start)
 			} else {
-				reservedRanges = append(reservedRanges, schemabuilder.Range{start, end})
+				// Somehow this is not consistent between enums and fields
+				reservedRanges = append(reservedRanges, sb.Range{start, end - 1})
 			}
 		}
 	}
@@ -281,18 +361,18 @@ func ExtractReservedNrs(ranges []*descriptorpb.DescriptorProto_ReservedRange) ([
 	return reservedNumbers, reservedRanges
 }
 
-func ExtractEnumReservedNrs(ranges []*descriptorpb.EnumDescriptorProto_EnumReservedRange) ([]int32, []schemabuilder.Range) {
+func ExtractEnumReservedNrs(ranges []*descriptorpb.EnumDescriptorProto_EnumReservedRange) ([]int32, []sb.Range) {
 	var reservedNumbers []int32
-	var reservedRanges []schemabuilder.Range
+	var reservedRanges []sb.Range
 	for _, r := range ranges {
 		if r.Start != nil && r.End != nil {
 			start := *r.Start
 			end := *r.End
 
-			if end-start == 1 {
+			if end-start == 0 {
 				reservedNumbers = append(reservedNumbers, start)
 			} else {
-				reservedRanges = append(reservedRanges, schemabuilder.Range{start, end})
+				reservedRanges = append(reservedRanges, sb.Range{start, end})
 			}
 		}
 	}
@@ -311,12 +391,12 @@ func ExtractEnums(enums []*descriptorpb.EnumDescriptorProto) map[string]EnumData
 
 		eData.Options = opts
 		eData.RepeatedOptions = repOpts
+		eData.Members = make(map[string]EnumMember)
 
 		for _, member := range e.GetValue() {
 			var memData EnumMember
-			memData.Name = member.GetName()
 			memData.Number = member.GetNumber()
-			eData.Members = append(eData.Members, memData)
+			eData.Members[member.GetName()] = memData
 		}
 
 		eData.ReservedNames = e.GetReservedName()
@@ -337,6 +417,7 @@ func ExtractServices(services []*descriptorpb.ServiceDescriptorProto) map[string
 		var service ServiceData
 
 		service.Name = serv.GetName()
+		service.Handlers = make(map[string]MethodData)
 		opts, repOpts := ExtractOpts(serv.GetOptions().GetUninterpretedOption())
 
 		service.Options = opts
@@ -348,7 +429,7 @@ func ExtractServices(services []*descriptorpb.ServiceDescriptorProto) map[string
 			method.InputType = m.GetInputType()
 			method.OutputType = m.GetOutputType()
 
-			service.Methods = append(service.Methods, method)
+			service.Handlers[method.Name] = method
 		}
 
 		data[service.Name] = service
@@ -393,6 +474,8 @@ func ExtractExtensions(exts []*descriptorpb.FieldDescriptorProto) map[string]Ext
 		fieldData.RepeatedOptions = repOpts
 		fieldData.TypeName = strings.ToLower(strings.TrimPrefix(f.GetType().String(), "TYPE_"))
 		fieldData.Name = f.GetName()
+		fieldData.Number = f.GetNumber()
+		fieldData.Optional = f.GetProto3Optional()
 
 		data[extendee].Fields[fieldData.Name] = fieldData
 	}
