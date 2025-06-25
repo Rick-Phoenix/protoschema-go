@@ -164,6 +164,7 @@ func (tf *DurationField) Const(d string) *DurationField {
 	if err != nil {
 		tf.errors = errors.Join(tf.errors, err)
 	}
+	tf.protoFieldInternal.isConst = true
 	tf.rules["const"] = d
 	return tf.self
 }

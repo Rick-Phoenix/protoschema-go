@@ -190,6 +190,7 @@ func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
 		return tf.self
 	}
+	tf.protoFieldInternal.isConst = true
 	tf.rules["const"] = val
 	return tf.self
 }

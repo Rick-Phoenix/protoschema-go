@@ -49,6 +49,7 @@ type protoFieldInternal struct {
 	isNonScalar     bool
 	repeated        bool
 	isMap           bool
+	isConst         bool
 }
 
 type ProtoFieldBuilder interface {
@@ -108,6 +109,10 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 
 	optsCollector := make(map[string]any)
 	maps.Copy(optsCollector, b.options)
+
+	if b.isConst && len(b.rules) > 1 {
+		errAgg = errors.Join(errAgg, fmt.Errorf("A constant field cannot have extra rules."))
+	}
 
 	if len(b.rules) > 0 {
 		imports["buf/validate/validate.proto"] = present

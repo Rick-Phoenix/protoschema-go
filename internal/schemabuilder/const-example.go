@@ -14,11 +14,14 @@ type FieldWithConst[BuilderT, ValueT any, SingleValT comparable] struct {
 
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	b.constInternal.rules["const"] = val
+	b.constInternal.isConst = true
 	return b.self
 }
 
 func (b *FieldWithConst[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
-	b.constInternal.rules["example"] = val
+	opt, err := GetProtoOption("example", val)
+	b.constInternal.errors = errors.Join(b.constInternal.errors, err)
+	b.constInternal.repeatedOptions = append(b.constInternal.repeatedOptions, opt)
 	return b.self
 }
 
