@@ -105,7 +105,7 @@ var UserSchema = sb.ProtoMessageSchema{
 		2: sb.ProtoInt64("id"),
 		3: sb.ProtoTimestamp("created_at"),
 		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
-		5: sb.ProtoString("fav_cat").Optional().CelOptions([]sb.CelOption{{Id: "cel", Message: "msg", Expression: "expr"}, {Id: "cel", Message: "msg", Expression: "expr"}}...).Options(sb.ProtoOption{Name: "myopt", Value: true}, sb.ProtoOption{Name: "myopt", Value: false}),
+		5: sb.ProtoString("fav_cat").Optional().CelOptions([]sb.CelOption{{Id: "cel", Message: "msg", Expression: "expr"}, {Id: "cel", Message: "msg", Expression: "expr"}}...).Options(sb.ProtoOption{Name: "myopt", Value: true}, sb.ProtoOption{Name: "myopt", Value: false}).RepeatedOptions(sb.ProtoOption{Name: "repopt", Value: true}, sb.ProtoOption{Name: "repopt", Value: true}),
 		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
 		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
 		8: sb.ProtoTimestamp("timetest").Lt(&timePast),
@@ -254,9 +254,13 @@ func TestGeneration(t *testing.T) {
 		// Non repeated options should be overridden
 		{userMsg.Fields["fav_cat"].Options["myopt"].Value, false},
 		{len(userMsg.Fields["fav_cat"].Options), 1},
-		{len(userMsg.Fields["fav_cat"].RepeatedOptions), 2},
 		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Name, "buf.validate.field.cel"},
 		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Value, `id : "cel" message : "msg" expression : "expr"`},
+		// Repeated options should be stacked
+		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Name, "repopt"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Value, true},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Name, "repopt"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Value, true},
 	}
 
 	containsTests := []struct {
