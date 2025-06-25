@@ -15,6 +15,8 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	internal         *protoFieldInternal
 	self             *BuilderT
 	hasWellKnownRule bool
+	minLen           *uint
+	maxLen           *uint
 	*OptionalField[BuilderT]
 }
 
@@ -69,17 +71,37 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Ipv6() *BuilderT {
 	return b.self
 }
 
-func (l *ByteOrStringField[BuilderT, ValueT]) MinLen(n int) *BuilderT {
+func (l *ByteOrStringField[BuilderT, ValueT]) MinLen(n uint) *BuilderT {
+	if _, exists := l.internal.rules["len"]; exists {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use min_len and len together."))
+	}
+	if l.maxLen != nil && *l.maxLen < n {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("max_len cannot be smaller than min_len."))
+	}
+	l.minLen = &n
 	l.internal.rules["min_len"] = n
 	return l.self
 }
 
-func (l *ByteOrStringField[BuilderT, ValueT]) MaxLen(n int) *BuilderT {
+func (l *ByteOrStringField[BuilderT, ValueT]) MaxLen(n uint) *BuilderT {
+	if _, exists := l.internal.rules["len"]; exists {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use max_len and len together."))
+	}
+	if l.minLen != nil && *l.minLen > n {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("max_len cannot be smaller than min_len."))
+	}
+	l.maxLen = &n
 	l.internal.rules["max_len"] = n
 	return l.self
 }
 
-func (l *ByteOrStringField[BuilderT, ValueT]) Len(n int) *BuilderT {
+func (l *ByteOrStringField[BuilderT, ValueT]) Len(n uint) *BuilderT {
+	if l.minLen != nil {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use min_len and len together."))
+	}
+	if l.maxLen != nil {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use max_len and len together."))
+	}
 	l.internal.rules["len"] = n
 	return l.self
 }
