@@ -41,7 +41,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 	fieldData, err := b.field.Build(fieldNr, imports)
 
 	if fieldData.Optional {
-		err = errors.Join(err, fmt.Errorf("A field cannot be optional and repeated."))
+		fmt.Printf("Ignoring 'optional' for repeated field %q...", b.name)
 	}
 
 	options := []string{}

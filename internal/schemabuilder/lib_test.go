@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	sb "github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type FieldData struct {
@@ -90,6 +92,8 @@ type ExtensionData struct {
 	Fields   map[string]FieldData
 }
 
+var testTime = timestamppb.Timestamp{Seconds: time.Date(2025, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+
 var UserSchema = sb.ProtoMessageSchema{
 	Name: "User",
 	Fields: sb.ProtoFieldsMap{
@@ -100,6 +104,8 @@ var UserSchema = sb.ProtoMessageSchema{
 		5: sb.ProtoString("fav_cat").Optional(),
 		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
 		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
+		8: sb.ProtoTimestamp("timetest").Lt(&testTime),
+		9: sb.ProtoTimestamp("timetest2").Const(&testTime),
 	},
 	Oneofs: []sb.ProtoOneOfBuilder{
 		sb.ProtoOneOf("myoneof", sb.OneofChoicesMap{
@@ -220,6 +226,8 @@ func TestGeneration(t *testing.T) {
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1)},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4)},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 , in : [ 1 , 2 ] }"},
+		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d , nanos : 0", testTime.GetSeconds())},
+		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d , nanos : 0", testTime.GetSeconds())},
 	}
 
 	containsTests := []struct {
@@ -237,6 +245,24 @@ func TestGeneration(t *testing.T) {
 		{out.Messages["User"].ReservedNames, []any{"name1", "name2"}},
 		{out.Messages["User"].ReservedNumbers, []any{int32(20), int32(21)}},
 		{out.Messages["User"].ReservedRanges, []any{sb.Range{22, 25}}},
+	}
+
+	shouldFail := []sb.ProtoFieldBuilder{
+		sb.RepeatedField("nestedrepeatedfield", sb.RepeatedField("", sb.ProtoTimestamp(""))),
+		sb.RepeatedField("maprepeatedfield", sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
+		sb.RepeatedField("nonscalarunique", sb.ProtoTimestamp("")).Unique(),
+		sb.ProtoMap("repeatedasmapvaluetype", sb.ProtoString(""), sb.RepeatedField("", sb.ProtoTimestamp(""))),
+		sb.ProtoMap("mapasmapvaluetype", sb.ProtoString(""), sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
+		sb.ProtoMap("invalidmapkey", sb.ProtoTimestamp(""), sb.ProtoString("")),
+		sb.ProtoString("in/notin").In("str").NotIn("str"),
+		sb.ProtoInt32("lt/gt").Lt(1).Gt(1),
+		sb.ProtoInt32("lte/gt").Lte(1).Gt(1),
+		sb.ProtoInt32("lt/gte").Lt(1).Gte(1),
+	}
+
+	for _, test := range shouldFail {
+		_, err := test.Build(1, sb.Set{})
+		assert.Error(t, err)
 	}
 
 	assert.NotContains(t, out.Messages, "Post")
@@ -301,7 +327,7 @@ func ExtractOpts(opts []*descriptorpb.UninterpretedOption) (map[string]ProtoOpti
 		}
 
 		if o.StringValue != nil {
-			value = o.String()
+			value = string(o.GetStringValue())
 		} else if o.PositiveIntValue != nil {
 			value = o.GetPositiveIntValue()
 		} else if o.NegativeIntValue != nil {
