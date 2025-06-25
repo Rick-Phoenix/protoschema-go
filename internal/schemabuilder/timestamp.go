@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -31,11 +32,12 @@ func ProtoTimestamp(name string) *TimestampField {
 	return gf
 }
 
-func (tf *TimestampField) Within(t *timestamppb.Timestamp) *TimestampField {
+func (tf *TimestampField) Within(t *durationpb.Duration) *TimestampField {
 	if t == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
 		return tf.self
 	}
+
 	tf.rules["within"] = t
 	return tf.self
 }
