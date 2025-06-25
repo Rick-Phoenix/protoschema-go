@@ -22,10 +22,10 @@ type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 	hasLtOrLte bool
 	hasGtOrGte bool
 
-	lt  ValueT
-	lte ValueT
-	gt  ValueT
-	gte ValueT
+	lt  *ValueT
+	lte *ValueT
+	gt  *ValueT
+	gte *ValueT
 
 	isFloatType bool
 }
@@ -53,15 +53,15 @@ func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
 	}
 
-	if nf.gt >= val {
+	if nf.gt != nil && *nf.gt >= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lt'."))
 	}
-	if nf.gte >= val {
+	if nf.gte != nil && *nf.gte >= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gte' cannot be larger than or equal to 'lt'."))
 	}
 	nf.rules["lt"] = val
 	nf.hasLtOrLte = true
-	nf.lt = val
+	nf.lt = &val
 	return nf.ProtoFieldExternal.self
 }
 
@@ -70,15 +70,15 @@ func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
 	}
 
-	if nf.gt >= val {
+	if nf.gt != nil && *nf.gt >= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than or equal to 'lte'."))
 	}
-	if nf.gte > val {
+	if nf.gte != nil && *nf.gte > val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'gt' cannot be larger than 'lte'."))
 	}
 	nf.rules["lte"] = val
 	nf.hasLtOrLte = true
-	nf.lte = val
+	nf.lte = &val
 	return nf.ProtoFieldExternal.self
 }
 
@@ -87,15 +87,15 @@ func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
 	}
 
-	if nf.lt <= val {
+	if nf.lt != nil && *nf.lt <= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gt'."))
 	}
-	if nf.lte <= val {
+	if nf.lte != nil && *nf.lte <= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lte' cannot be smaller than or equal to 'gt'."))
 	}
 	nf.rules["gt"] = val
 	nf.hasGtOrGte = true
-	nf.gt = val
+	nf.gt = &val
 	return nf.ProtoFieldExternal.self
 }
 
@@ -104,15 +104,15 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
 	}
 
-	if nf.lt <= val {
+	if nf.lt != nil && *nf.lt <= val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lt' cannot be smaller than or equal to 'gte'."))
 	}
-	if nf.lte < val {
+	if nf.lte != nil && *nf.lte < val {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("'lte' cannot be smaller than 'gte'."))
 	}
 	nf.rules["gte"] = val
 	nf.hasGtOrGte = true
-	nf.gte = val
+	nf.gte = &val
 	return nf.ProtoFieldExternal.self
 }
 

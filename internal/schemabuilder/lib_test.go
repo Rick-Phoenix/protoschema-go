@@ -9,9 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 	"github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -77,6 +79,8 @@ type MethodData struct {
 }
 
 type FileData struct {
+	Package    string
+	Imports    []string
 	Messages   map[string]MessageData
 	Enums      map[string]EnumData
 	Services   map[string]ServiceData
@@ -88,8 +92,47 @@ type ExtensionData struct {
 	Fields   map[string]FieldData
 }
 
-func TestFirst(t *testing.T) {
-	service, err := schemabuilder.NewProtoService("User", schemabuilder.UserService, "myapp/v1")
+var UserSchema = schemabuilder.ProtoMessageSchema{
+	Name: "User",
+	Fields: schemabuilder.ProtoFieldsMap{
+		1: schemabuilder.ProtoString("name"),
+		2: schemabuilder.ProtoInt64("id"),
+		3: schemabuilder.ProtoTimestamp("created_at"),
+	},
+	Oneofs: []schemabuilder.ProtoOneOfBuilder{schemabuilder.ProtoOneOf("myoneof", schemabuilder.OneofChoicesMap{
+		9:  schemabuilder.ProtoString("example"),
+		10: schemabuilder.ProtoInt32("another"),
+	})},
+	Model:       &gofirst.User{},
+	ModelIgnore: []string{"posts", "test"},
+	ImportPath:  "myapp/v1/user.proto",
+}
+
+var UserService = schemabuilder.ProtoServiceSchema{
+	Messages: []schemabuilder.ProtoMessageSchema{UserSchema},
+	Handlers: schemabuilder.HandlersMap{
+		"GetUser": {
+			schemabuilder.ProtoMessageSchema{
+				Name: "GetUserRequest", Fields: schemabuilder.ProtoFieldsMap{
+					1: schemabuilder.ProtoInt64("id").Gt(0),
+				},
+			},
+			schemabuilder.ProtoMessageSchema{
+				Name: "GetUserResponse",
+				Fields: schemabuilder.ProtoFieldsMap{
+					1: schemabuilder.MsgField("user", &UserSchema),
+				},
+			},
+		},
+		"UpdateUserService": {schemabuilder.ProtoMessageSchema{Name: "UpdateUserResponse", Fields: schemabuilder.ProtoFieldsMap{
+			1: schemabuilder.FieldMask("field_mask"),
+			2: schemabuilder.MsgField("user", &UserSchema),
+		}}, schemabuilder.ProtoEmpty()},
+	},
+}
+
+func TestGeneration(t *testing.T) {
+	service, err := schemabuilder.NewProtoService("User", UserService, "myapp/v1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +147,30 @@ func TestFirst(t *testing.T) {
 
 	data := ParseProtoFile(filePath)
 
-	fmt.Printf("DEBUG: %+v\n", data.Extensions)
+	equalTests := []struct {
+		Target   any
+		Expected any
+	}{
+		{data.Package, "myapp.v1"},
+		{data.Messages["User"].Name, "User"},
+	}
+
+	containsTests := []struct {
+		Target   any
+		Expected []any
+	}{
+		{data.Imports, []any{"buf/validate/validate.proto", "google/protobuf/empty.proto", "google/protobuf/timestamp.proto", "google/protobuf/field_mask.proto"}},
+	}
+
+	for _, test := range equalTests {
+		assert.Equal(t, test.Expected, test.Target)
+	}
+
+	for _, test := range containsTests {
+		for _, e := range test.Expected {
+			assert.Contains(t, test.Target, e)
+		}
+	}
 }
 
 func ParseProtoFile(filePath string) FileData {
@@ -135,7 +201,7 @@ func ParseProtoFile(filePath string) FileData {
 	servicesMap := ExtractServices(desc.GetService())
 	extensions := ExtractExtensions(desc.GetExtension())
 
-	fileData := FileData{Messages: msgsMap, Enums: enumsMap, Services: servicesMap, Extensions: extensions}
+	fileData := FileData{Package: desc.GetPackage(), Imports: desc.GetDependency(), Messages: msgsMap, Enums: enumsMap, Services: servicesMap, Extensions: extensions}
 
 	return fileData
 }
