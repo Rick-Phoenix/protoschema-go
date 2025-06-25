@@ -9,6 +9,8 @@ type StringField struct {
 	*ProtoFieldExternal[StringField]
 	*ByteOrStringField[StringField, string]
 	*FieldWithConst[StringField, string, string]
+	minBytes *uint
+	maxBytes *uint
 }
 
 type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
@@ -137,17 +139,37 @@ func ProtoString(name string) *StringField {
 	return sf
 }
 
-func (b *StringField) LenBytes(n int) *StringField {
+func (b *StringField) LenBytes(n uint) *StringField {
+	if b.minBytes != nil {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use min_bytes and len_bytes together."))
+	}
+	if b.maxBytes != nil {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use max_bytes and len_bytes together."))
+	}
 	b.protoFieldInternal.rules["len_bytes"] = n
 	return b
 }
 
-func (b *StringField) MinBytes(n int) *StringField {
+func (b *StringField) MinBytes(n uint) *StringField {
+	if _, exists := b.internal.rules["len_bytes"]; exists {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use min_bytes and len_bytes together."))
+	}
+	if b.maxBytes != nil && *b.maxBytes < n {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("min_bytes cannot be larger than max_bytes."))
+	}
+	b.minBytes = &n
 	b.protoFieldInternal.rules["min_bytes"] = n
 	return b
 }
 
-func (b *StringField) MaxBytes(n int) *StringField {
+func (b *StringField) MaxBytes(n uint) *StringField {
+	if _, exists := b.internal.rules["len_bytes"]; exists {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use max_bytes and len_bytes together."))
+	}
+	if b.minBytes != nil && *b.minBytes > n {
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("min_bytes cannot be larger than max_bytes."))
+	}
+	b.maxBytes = &n
 	b.protoFieldInternal.rules["max_bytes"] = n
 	return b
 }
