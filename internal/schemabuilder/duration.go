@@ -135,14 +135,11 @@ func (tf *DurationField) In(values ...string) *DurationField {
 		}
 		if slices.Contains(tf.notIn, v) {
 			tf.errors = errors.Join(tf.errors, fmt.Errorf("field %s cannot be inside of 'in' and 'not_in' at the same time.", v))
-			return tf.self
 		}
 	}
-	list, err := formatProtoList(values)
-	if err != nil {
-		tf.errors = errors.Join(tf.errors, err)
-	}
-	tf.rules["in"] = list
+
+	tf.in = values
+	tf.rules["in"] = values
 	return tf.self
 }
 
@@ -154,14 +151,11 @@ func (tf *DurationField) NotIn(values ...string) *DurationField {
 		}
 		if slices.Contains(tf.in, v) {
 			tf.errors = errors.Join(tf.errors, fmt.Errorf("field %s cannot be inside of 'in' and 'not_in' at the same time.", v))
-			return tf.self
 		}
 	}
-	list, err := formatProtoList(values)
-	if err != nil {
-		tf.errors = errors.Join(tf.errors, err)
-	}
-	tf.rules["not_in"] = list
+
+	tf.notIn = values
+	tf.rules["not_in"] = values
 	return tf.self
 }
 
