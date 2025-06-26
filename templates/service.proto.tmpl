@@ -20,7 +20,7 @@ package {{ .PackageName }};
 {{ template "message" . }}
 {{ end }}
 
-service {{.Name}} {
+service {{ serviceSuffix .ResourceName }} {
 {{ range .ServiceOptions -}}
   {{ fmtOpt . }};
 {{ end }}
