@@ -15,20 +15,20 @@ type UserWithPosts struct {
 	Posts     []gofirst.Post `json:"posts"`
 }
 
-var UserSchema = ProtoMessageSchema{
+var UserSchema = MessageSchema{
 	Name: "User",
 	Fields: ProtoFieldsMap{
-		1: ProtoString("name"),
-		2: ProtoInt64("id"),
-		3: ProtoTimestamp("created_at"),
-		5: RepeatedField("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
+		1: String("name"),
+		2: Int64("id"),
+		3: Timestamp("created_at"),
+		5: Repeated("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
 	},
-	Oneofs: []ProtoOneOfBuilder{ProtoOneOf("myoneof", OneofChoicesMap{
-		9:  ProtoString("example"),
-		10: ProtoInt32("another"),
+	Oneofs: []OneofBuilder{OneOf("myoneof", OneofChoices{
+		9:  String("example"),
+		10: Int32("another"),
 	}, []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...)},
 	Enums: []ProtoEnumGroup{
-		ProtoEnum("myenum", ProtoEnumMap{
+		EnumGroup("myenum", ProtoEnumMap{
 			0: "VAL_1",
 			1: "VAL_2",
 		}).Opts([]ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...),
@@ -36,88 +36,88 @@ var UserSchema = ProtoMessageSchema{
 	Model:      &UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
 	Options:    []ProtoOption{MessageCelOption("myexpr", "x must not be y", "x != y")},
-	Messages:   []ProtoMessageSchema{PostSchema},
+	Messages:   []MessageSchema{PostSchema},
 }
 
-var GetUserSchema = ProtoMessageSchema{
+var GetUserSchema = MessageSchema{
 	Name: "GetUserRequest",
 	Fields: ProtoFieldsMap{
 		1: UserSchema.GetField("name"),
 	},
 }
 
-var GetPostSchema = ProtoMessageSchema{
+var GetPostSchema = MessageSchema{
 	Name: "GetPostRequest",
 	Fields: ProtoFieldsMap{
 		1: PostSchema.GetField("id"),
 	},
 }
 
-var SubRedditSchema = ProtoMessageSchema{
+var SubRedditSchema = MessageSchema{
 	Name: "Subreddit",
 	Fields: ProtoFieldsMap{
-		1: ProtoInt32("id").Optional(),
-		2: ProtoString("name").MinLen(1).MaxLen(48),
-		3: ProtoString("description").MaxLen(255),
-		4: ProtoInt32("creator_id"),
-		5: RepeatedField("posts", MsgField("post", &PostSchema)),
-		6: ProtoTimestamp("created_at"),
+		1: Int32("id").Optional(),
+		2: String("name").MinLen(1).MaxLen(48),
+		3: String("description").MaxLen(255),
+		4: Int32("creator_id"),
+		5: Repeated("posts", MsgField("post", &PostSchema)),
+		6: Timestamp("created_at"),
 	},
 }
 
-var PostSchema = ProtoMessageSchema{
+var PostSchema = MessageSchema{
 	Name: "Post",
 	Fields: ProtoFieldsMap{
-		1: ProtoInt64("id").Optional(),
-		2: ProtoTimestamp("created_at"),
-		3: ProtoInt64("author_id"),
-		4: ProtoString("title").MinLen(5).MaxLen(64).Required(),
-		5: ProtoString("content").Optional(),
-		6: ProtoInt64("subreddit_id"),
+		1: Int64("id").Optional(),
+		2: Timestamp("created_at"),
+		3: Int64("author_id"),
+		4: String("title").MinLen(5).MaxLen(64).Required(),
+		5: String("content").Optional(),
+		6: Int64("subreddit_id"),
 	},
 	ImportPath:  "myapp/v1/post.proto",
 	ModelIgnore: []string{"content"},
 	Model:       &gofirst.Post{},
 }
 
-var UserService = ProtoServiceSchema{
+var UserService = ServiceSchema{
 	Resource: UserSchema,
 	Handlers: HandlersMap{
-		"GetUser": {GetUserSchema, ProtoMessageSchema{
+		"GetUser": {GetUserSchema, MessageSchema{
 			Name: "GetUserResponse",
 			Fields: ProtoFieldsMap{
 				1: MsgField("user", &UserSchema),
 			},
 		}},
-		"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserRequest", Fields: ProtoFieldsMap{
+		"UpdateUser": {MessageSchema{Name: "UpdateUserRequest", Fields: ProtoFieldsMap{
 			1: FieldMask("field_mask"),
 			2: MsgField("user", &UserSchema),
-		}}, ProtoEmpty()},
+		}}, Empty()},
 	},
 	FileOptions:    []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
 	ServiceOptions: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
-	OptionExtensions: OptionExtensions{
-		Service: []CustomOption{{"extensionopt", "string", 1, true, true}},
+	OptionExtensions: Extensions{
+		Service: []ExtensionField{{"extensionopt", "string", 1, true, true}},
 	},
 }
 
-var PostService = ProtoServiceSchema{
+var PostService = ServiceSchema{
 	Resource: PostSchema,
 	Handlers: HandlersMap{
-		"GetPost": {GetPostSchema, ProtoMessageSchema{
+		"GetPost": {GetPostSchema, MessageSchema{
 			Name: "GetPostResponse",
 			Fields: ProtoFieldsMap{
 				1: MsgField("post", &PostSchema),
 			},
 		}},
-		"UpdatePost": {ProtoMessageSchema{Name: "UpdatePostRequest", Fields: ProtoFieldsMap{
+		"UpdatePost": {MessageSchema{Name: "UpdatePostRequest", Fields: ProtoFieldsMap{
 			1: MsgField("post", &PostSchema),
 			2: FieldMask("field_mask"),
-		}}, ProtoEmpty()},
+		}}, Empty()},
 	},
 }
 
-var ProtoServices = []ProtoServiceSchema{
+var ProtoServices = []ServiceSchema{
 	UserService, PostService,
 }
 

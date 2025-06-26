@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-type StringField struct {
-	*ProtoFieldExternal[StringField]
-	*ByteOrStringField[StringField, string]
-	*FieldWithConst[StringField, string, string]
+type ProtoStringField struct {
+	*ProtoFieldExternal[ProtoStringField]
+	*ByteOrStringField[ProtoStringField, string]
+	*ProtoConstField[ProtoStringField, string, string]
 	minBytes *uint
 	maxBytes *uint
 }
@@ -19,7 +19,33 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	hasWellKnownRule bool
 	minLen           *uint
 	maxLen           *uint
-	*OptionalField[BuilderT]
+	*ProtoOptionalField[BuilderT]
+}
+
+func String(name string) *ProtoStringField {
+	rules := make(map[string]any)
+	options := make(map[string]any)
+	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
+
+	sf := &ProtoStringField{}
+	sf.ProtoFieldExternal = &ProtoFieldExternal[ProtoStringField]{
+		protoFieldInternal: internal,
+		self:               sf,
+	}
+	sf.ByteOrStringField = &ByteOrStringField[ProtoStringField, string]{
+		internal: internal,
+		self:     sf,
+	}
+	sf.ProtoConstField = &ProtoConstField[ProtoStringField, string, string]{
+		constInternal: internal,
+		self:          sf,
+	}
+	sf.ProtoOptionalField = &ProtoOptionalField[ProtoStringField]{
+		optionalInternal: internal,
+		self:             sf,
+	}
+
+	return sf
 }
 
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
@@ -113,33 +139,7 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	return b.self
 }
 
-func ProtoString(name string) *StringField {
-	rules := make(map[string]any)
-	options := make(map[string]any)
-	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
-
-	sf := &StringField{}
-	sf.ProtoFieldExternal = &ProtoFieldExternal[StringField]{
-		protoFieldInternal: internal,
-		self:               sf,
-	}
-	sf.ByteOrStringField = &ByteOrStringField[StringField, string]{
-		internal: internal,
-		self:     sf,
-	}
-	sf.FieldWithConst = &FieldWithConst[StringField, string, string]{
-		constInternal: internal,
-		self:          sf,
-	}
-	sf.OptionalField = &OptionalField[StringField]{
-		optionalInternal: internal,
-		self:             sf,
-	}
-
-	return sf
-}
-
-func (b *StringField) LenBytes(n uint) *StringField {
+func (b *ProtoStringField) LenBytes(n uint) *ProtoStringField {
 	if b.minBytes != nil {
 		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use min_bytes and len_bytes together."))
 	}
@@ -150,7 +150,7 @@ func (b *StringField) LenBytes(n uint) *StringField {
 	return b
 }
 
-func (b *StringField) MinBytes(n uint) *StringField {
+func (b *ProtoStringField) MinBytes(n uint) *ProtoStringField {
 	if _, exists := b.internal.rules["len_bytes"]; exists {
 		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use min_bytes and len_bytes together."))
 	}
@@ -162,7 +162,7 @@ func (b *StringField) MinBytes(n uint) *StringField {
 	return b
 }
 
-func (b *StringField) MaxBytes(n uint) *StringField {
+func (b *ProtoStringField) MaxBytes(n uint) *ProtoStringField {
 	if _, exists := b.internal.rules["len_bytes"]; exists {
 		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("Cannot use max_bytes and len_bytes together."))
 	}
@@ -174,98 +174,98 @@ func (b *StringField) MaxBytes(n uint) *StringField {
 	return b
 }
 
-func (b *StringField) NotContains(s string) *StringField {
+func (b *ProtoStringField) NotContains(s string) *ProtoStringField {
 	b.protoFieldInternal.rules["not_contains"] = s
 	return b
 }
 
-func (b *StringField) Email() *StringField {
+func (b *ProtoStringField) Email() *ProtoStringField {
 	b.setWellKnownRule("email", true)
 	return b
 }
 
-func (b *StringField) Hostname() *StringField {
+func (b *ProtoStringField) Hostname() *ProtoStringField {
 	b.setWellKnownRule("hostname", true)
 	return b
 }
 
-func (b *StringField) URI() *StringField {
+func (b *ProtoStringField) URI() *ProtoStringField {
 	b.setWellKnownRule("uri", true)
 	return b
 }
 
-func (b *StringField) URIRef() *StringField {
+func (b *ProtoStringField) URIRef() *ProtoStringField {
 	b.setWellKnownRule("uri_ref", true)
 	return b
 }
 
-func (b *StringField) Address() *StringField {
+func (b *ProtoStringField) Address() *ProtoStringField {
 	b.setWellKnownRule("address", true)
 	return b
 }
 
-func (b *StringField) UUID() *StringField {
+func (b *ProtoStringField) UUID() *ProtoStringField {
 	b.setWellKnownRule("uuid", true)
 	return b
 }
 
-func (b *StringField) TUUID() *StringField {
+func (b *ProtoStringField) TUUID() *ProtoStringField {
 	b.setWellKnownRule("tuuid", true)
 	return b
 }
 
-func (b *StringField) IpWithMask() *StringField {
+func (b *ProtoStringField) IpWithMask() *ProtoStringField {
 	b.setWellKnownRule("ip_with_prefixlen", true)
 	return b
 }
 
-func (b *StringField) Ipv4WithMask() *StringField {
+func (b *ProtoStringField) Ipv4WithMask() *ProtoStringField {
 	b.setWellKnownRule("ipv4_with_prefixlen", true)
 	return b
 }
 
-func (b *StringField) Ipv6WithMask() *StringField {
+func (b *ProtoStringField) Ipv6WithMask() *ProtoStringField {
 	b.setWellKnownRule("ipv6_with_prefixlen", true)
 	return b
 }
 
-func (b *StringField) IpPrefix() *StringField {
+func (b *ProtoStringField) IpPrefix() *ProtoStringField {
 	b.setWellKnownRule("ip_prefix", true)
 	return b
 }
 
-func (b *StringField) Ipv4Prefix() *StringField {
+func (b *ProtoStringField) Ipv4Prefix() *ProtoStringField {
 	b.setWellKnownRule("ipv4_prefix", true)
 	return b
 }
 
-func (b *StringField) Ipv6Prefix() *StringField {
+func (b *ProtoStringField) Ipv6Prefix() *ProtoStringField {
 	b.setWellKnownRule("ipv6_prefix", true)
 	return b
 }
 
-func (b *StringField) HostAndPort() *StringField {
+func (b *ProtoStringField) HostAndPort() *ProtoStringField {
 	b.setWellKnownRule("host_and_port", true)
 	return b
 }
 
-func (b *StringField) HttpHeaderNameStrict() *StringField {
+func (b *ProtoStringField) HttpHeaderNameStrict() *ProtoStringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_NAME")
 	return b
 }
 
-func (b *StringField) HttpHeaderName() *StringField {
+func (b *ProtoStringField) HttpHeaderName() *ProtoStringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_NAME")
 	b.rules["strict"] = false
 	return b
 }
 
-func (b *StringField) HttpHeaderValueStrict() *StringField {
+func (b *ProtoStringField) HttpHeaderValueStrict() *ProtoStringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_VALUE")
 	return b
 }
 
-func (b *StringField) HttpHeaderValue() *StringField {
+func (b *ProtoStringField) HttpHeaderValue() *ProtoStringField {
 	b.setWellKnownRule("well_known_regex", "KNOWN_REGEX_HTTP_HEADER_VALUE")
 	b.rules["strict"] = false
 	return b
@@ -274,10 +274,10 @@ func (b *StringField) HttpHeaderValue() *StringField {
 type BytesField struct {
 	*ProtoFieldExternal[BytesField]
 	*ByteOrStringField[BytesField, []byte]
-	*FieldWithConst[BytesField, []byte, byte]
+	*ProtoConstField[BytesField, []byte, byte]
 }
 
-func ProtoBytes(name string) *BytesField {
+func Bytes(name string) *BytesField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
 	internal := &protoFieldInternal{name: name, protoType: "bytes", goType: "[]byte", options: options, rules: rules}
@@ -291,11 +291,11 @@ func ProtoBytes(name string) *BytesField {
 		internal: internal,
 		self:     bf,
 	}
-	bf.FieldWithConst = &FieldWithConst[BytesField, []byte, byte]{
+	bf.ProtoConstField = &ProtoConstField[BytesField, []byte, byte]{
 		constInternal: internal,
 		self:          bf,
 	}
-	bf.OptionalField = &OptionalField[BytesField]{
+	bf.ProtoOptionalField = &ProtoOptionalField[BytesField]{
 		optionalInternal: internal,
 		self:             bf,
 	}

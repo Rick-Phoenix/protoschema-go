@@ -7,7 +7,12 @@ import (
 	"slices"
 )
 
-func GetOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error) {
+type ProtoOption struct {
+	Name  string
+	Value any
+}
+
+func getOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error) {
 	flatOpts := []string{}
 	var err error
 
@@ -16,7 +21,7 @@ func GetOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error)
 	for _, name := range optsKeys {
 		value := optsMap[name]
 
-		val, fmtErr := GetProtoOption(name, value)
+		val, fmtErr := getProtoOption(name, value)
 
 		err = errors.Join(err, fmtErr)
 
@@ -32,7 +37,7 @@ func GetOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error)
 	return flatOpts, nil
 }
 
-func GetProtoOption(name string, value any) (string, error) {
+func getProtoOption(name string, value any) (string, error) {
 	val, err := formatProtoValue(value)
 	if err != nil {
 		return "", fmt.Errorf("Error while formatting option %q: %w", name, err)

@@ -12,15 +12,15 @@ import (
 	"text/template"
 )
 
-type ProtoFileData struct {
+type protoFileData struct {
 	PackageName string
 	ProtoService
 }
 
 type ProtoGenerator struct {
-	packageName string
-	outputDir   string
-	packageRoot string
+	PackageName string
+	OutputDir   string
+	PackageRoot string
 }
 
 //go:embed templates/*
@@ -28,7 +28,7 @@ var templateFS embed.FS
 
 var funcMap = template.FuncMap{
 	"fmtOpt": func(o ProtoOption) string {
-		opt, err := GetProtoOption(o.Name, o.Value)
+		opt, err := getProtoOption(o.Name, o.Value)
 		if err != nil {
 			fmt.Println(err.Error())
 			return "error"
@@ -90,13 +90,13 @@ func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {
 	packageRoot := strings.ReplaceAll(packageName, ".", "/")
 	outputDir := filepath.Join(protoRoot, packageRoot)
 	return &ProtoGenerator{
-		packageName: packageName, outputDir: outputDir, packageRoot: packageRoot,
+		PackageName: packageName, OutputDir: outputDir, PackageRoot: packageRoot,
 	}
 }
 
 func (g *ProtoGenerator) Generate(s ProtoService) error {
-	templateData := ProtoFileData{
-		PackageName:  g.packageName,
+	templateData := protoFileData{
+		PackageName:  g.PackageName,
 		ProtoService: s,
 	}
 
@@ -111,8 +111,8 @@ func (g *ProtoGenerator) Generate(s ProtoService) error {
 	}
 
 	outputFile := strings.ToLower(s.ResourceName) + ".proto"
-	outputPath := filepath.Join(g.outputDir, outputFile)
-	delete(s.Imports, filepath.Join(g.packageRoot, outputFile))
+	outputPath := filepath.Join(g.OutputDir, outputFile)
+	delete(s.Imports, filepath.Join(g.PackageRoot, outputFile))
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err

@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type TimestampField struct {
-	*ProtoFieldExternal[TimestampField]
+type ProtoTimestampField struct {
+	*ProtoFieldExternal[ProtoTimestampField]
 
 	hasLtOrLte bool
 	hasGtOrGte bool
@@ -21,18 +21,18 @@ type TimestampField struct {
 	gte *timestamppb.Timestamp
 }
 
-func ProtoTimestamp(name string) *TimestampField {
+func Timestamp(name string) *ProtoTimestampField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
 
-	gf := &TimestampField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[TimestampField]{
+	gf := &ProtoTimestampField{}
+	gf.ProtoFieldExternal = &ProtoFieldExternal[ProtoTimestampField]{
 		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "time.Time", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }
 
-func (tf *TimestampField) Within(t *durationpb.Duration) *TimestampField {
+func (tf *ProtoTimestampField) Within(t *durationpb.Duration) *ProtoTimestampField {
 	if t == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
 		return tf.self
@@ -42,7 +42,7 @@ func (tf *TimestampField) Within(t *durationpb.Duration) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Lt(t *timestamppb.Timestamp) *ProtoTimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
 	}
@@ -66,7 +66,7 @@ func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Lte(t *timestamppb.Timestamp) *ProtoTimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
 	}
@@ -89,7 +89,7 @@ func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) LtNow() *TimestampField {
+func (tf *ProtoTimestampField) LtNow() *ProtoTimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
 	}
@@ -110,7 +110,7 @@ func (tf *TimestampField) LtNow() *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Gt(t *timestamppb.Timestamp) *ProtoTimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
 	}
@@ -133,7 +133,7 @@ func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Gte(t *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Gte(t *timestamppb.Timestamp) *ProtoTimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
 	}
@@ -155,7 +155,7 @@ func (tf *TimestampField) Gte(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) GtNow() *TimestampField {
+func (tf *ProtoTimestampField) GtNow() *ProtoTimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
 	}
@@ -176,7 +176,7 @@ func (tf *TimestampField) GtNow() *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Example(val *timestamppb.Timestamp) *ProtoTimestampField {
 	if val == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
 		return tf.self
@@ -185,7 +185,7 @@ func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
-func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
+func (tf *ProtoTimestampField) Const(val *timestamppb.Timestamp) *ProtoTimestampField {
 	if val == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))
 		return tf.self

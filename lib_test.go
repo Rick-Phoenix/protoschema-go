@@ -98,14 +98,14 @@ var (
 	timeFuture = timestamppb.Timestamp{Seconds: time.Date(3000, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
 )
 
-var UserSchema = sb.ProtoMessageSchema{
+var UserSchema = sb.MessageSchema{
 	Name: "User",
 	Fields: sb.ProtoFieldsMap{
-		1: sb.ProtoString("name").Required().MinLen(2).MaxLen(32),
-		2: sb.ProtoInt64("id"),
-		3: sb.ProtoTimestamp("created_at"),
-		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
-		5: sb.ProtoString("fav_cat").
+		1: sb.String("name").Required().MinLen(2).MaxLen(32),
+		2: sb.Int64("id"),
+		3: sb.Timestamp("created_at"),
+		4: sb.Repeated("posts", sb.MsgField("post", &PostSchema)),
+		5: sb.String("fav_cat").
 			Optional().
 			CelOption("cel", "msg", "expr").
 			CelOption("cel", "msg", "expr").
@@ -113,15 +113,15 @@ var UserSchema = sb.ProtoMessageSchema{
 			RepeatedOptions([]sb.ProtoOption{{Name: "repopt", Value: true}, {Name: "repopt", Value: true}}...).
 			Example("tabby").
 			Example("calico"),
-		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
-		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
-		8: sb.ProtoTimestamp("timetest").Lt(&timePast),
-		9: sb.ProtoTimestamp("timetest2").Const(&timePast),
+		6: sb.Map("mymap", sb.String("").MinLen(1), sb.Int64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
+		7: sb.Repeated("reptest", sb.Int32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
+		8: sb.Timestamp("timetest").Lt(&timePast),
+		9: sb.Timestamp("timetest2").Const(&timePast),
 	},
-	Oneofs: []sb.ProtoOneOfBuilder{
-		sb.ProtoOneOf("myoneof", sb.OneofChoicesMap{
-			9:  sb.ProtoString("example"),
-			10: sb.ProtoInt32("another"),
+	Oneofs: []sb.OneofBuilder{
+		sb.OneOf("myoneof", sb.OneofChoices{
+			9:  sb.String("example"),
+			10: sb.Int32("another"),
 		}),
 	},
 	ReservedNames:   []string{"name1", "name2"},
@@ -131,46 +131,46 @@ var UserSchema = sb.ProtoMessageSchema{
 	ImportPath:      "myapp/v1/user.proto",
 }
 
-var UserWithModel = sb.ProtoMessageSchema{
+var UserWithModel = sb.MessageSchema{
 	Name: "User",
 	Fields: sb.ProtoFieldsMap{
-		1: sb.ProtoString("name").Required().MinLen(2).MaxLen(32),
-		2: sb.ProtoInt64("id"),
-		3: sb.ProtoTimestamp("created_at"),
-		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
+		1: sb.String("name").Required().MinLen(2).MaxLen(32),
+		2: sb.Int64("id"),
+		3: sb.Timestamp("created_at"),
+		4: sb.Repeated("posts", sb.MsgField("post", &PostSchema)),
 	},
 	Model:      &sb.UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
 }
 
-var PostSchema = sb.ProtoMessageSchema{
+var PostSchema = sb.MessageSchema{
 	Name: "Post",
 	Fields: sb.ProtoFieldsMap{
-		1: sb.ProtoInt64("id").Optional(),
-		2: sb.ProtoTimestamp("created_at"),
-		3: sb.ProtoInt64("author_id"),
-		4: sb.ProtoString("title").MinLen(5).MaxLen(64).Required(),
-		5: sb.ProtoString("content").Optional(),
-		6: sb.ProtoInt64("subreddit_id"),
+		1: sb.Int64("id").Optional(),
+		2: sb.Timestamp("created_at"),
+		3: sb.Int64("author_id"),
+		4: sb.String("title").MinLen(5).MaxLen(64).Required(),
+		5: sb.String("content").Optional(),
+		6: sb.Int64("subreddit_id"),
 	},
 	Model:      &gofirst.Post{},
 	ImportPath: "myapp/v1/post.proto",
 }
 
-var MyOptions = []sb.CustomOption{{
+var MyOptions = []sb.ExtensionField{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
 var TestEnum = []sb.ProtoEnumGroup{
-	sb.ProtoEnum("myenum", sb.ProtoEnumMap{
+	sb.EnumGroup("myenum", sb.ProtoEnumMap{
 		0: "VAL_1",
 		1: "VAL_2",
 	}).Opts(sb.AllowAlias).RsvNames("name1", "name2").RsvNumbers(10, 11).RsvRanges(sb.Range{20, 23}),
 }
 
-var UserService = sb.ProtoServiceSchema{
+var UserService = sb.ServiceSchema{
 	Resource: UserSchema,
-	OptionExtensions: sb.OptionExtensions{
+	OptionExtensions: sb.Extensions{
 		Message: MyOptions,
 		File:    MyOptions,
 		OneOf:   MyOptions,
@@ -180,22 +180,22 @@ var UserService = sb.ProtoServiceSchema{
 	Enums: TestEnum,
 	Handlers: sb.HandlersMap{
 		"GetUser": {
-			sb.ProtoMessageSchema{
+			sb.MessageSchema{
 				Name: "GetUserRequest", Fields: sb.ProtoFieldsMap{
-					1: sb.ProtoInt64("id"),
+					1: sb.Int64("id"),
 				},
 			},
-			sb.ProtoMessageSchema{
+			sb.MessageSchema{
 				Name: "GetUserResponse",
 				Fields: sb.ProtoFieldsMap{
 					1: sb.MsgField("user", &UserWithModel),
 				},
 			},
 		},
-		"UpdateUserService": {sb.ProtoMessageSchema{Name: "UpdateUserRequest", Fields: sb.ProtoFieldsMap{
+		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.ProtoFieldsMap{
 			1: sb.FieldMask("field_mask"),
 			2: sb.MsgField("user", &UserWithModel),
-		}}, sb.ProtoEmpty()},
+		}}, sb.Empty()},
 	},
 }
 
@@ -292,59 +292,59 @@ func TestGeneration(t *testing.T) {
 	}
 
 	shouldFail := []sb.ProtoFieldBuilder{
-		sb.RepeatedField("nested_repeated_field", sb.RepeatedField("", sb.ProtoTimestamp(""))),
-		sb.RepeatedField("repeated_map_field", sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
-		sb.RepeatedField("non_scalar_unique", sb.ProtoTimestamp("")).Unique(),
-		sb.RepeatedField("repeated_min_items>max_items", sb.ProtoTimestamp("")).MinItems(3).MaxItems(2),
-		sb.ProtoMap("map_min_pairs>max_pairs", sb.ProtoString(""), sb.ProtoString("")).MinPairs(2).MaxPairs(1),
-		sb.ProtoMap("map_repeated_as_value_type", sb.ProtoString(""), sb.RepeatedField("", sb.ProtoTimestamp(""))),
-		sb.ProtoMap("map_as_map_value_type", sb.ProtoString(""), sb.ProtoMap("", sb.ProtoString(""), sb.ProtoString(""))),
-		sb.ProtoMap("invalid_map_key", sb.ProtoTimestamp(""), sb.ProtoString("")),
-		sb.ProtoString("string_in=notin").In("str").NotIn("str"),
-		sb.ProtoString("string_min_len>max_len").MinLen(2).MaxLen(1),
-		sb.ProtoString("string_max_len<min_len").MaxLen(1).MinLen(2),
-		sb.ProtoString("string_max_len+len").MaxLen(1).Len(2),
-		sb.ProtoString("string_min_len+len").MinLen(1).Len(2),
-		sb.ProtoString("string_min_bytes>max_bytes").MinBytes(2).MaxBytes(1),
-		sb.ProtoString("string_min_bytes<max_bytes").MaxBytes(1).MinBytes(2),
-		sb.ProtoString("string_min_bytes+len_bytes").MinBytes(2).LenBytes(1),
-		sb.ProtoString("string_multi_well_known").Ip().Ipv6(),
-		sb.ProtoInt32("int32_lt=gt").Lt(1).Gt(1),
-		sb.ProtoInt32("int32_lte<=gt").Lte(1).Gt(1),
-		sb.ProtoInt32("int32_lt<=gte").Lt(1).Gte(1),
-		sb.ProtoInt32("int32_lte<gte").Lte(0).Gte(1),
-		sb.ProtoInt32("int32_gte>lte").Gte(2).Lte(1),
-		sb.ProtoInt32("int32_gt>lte").Gt(2).Lte(1),
-		sb.ProtoInt32("int32_gt>lt").Gt(2).Lt(1),
-		sb.ProtoInt32("int32_non_finite").Finite(),
-		sb.ProtoInt32("int32_lt+lte").Lt(2).Lte(2),
-		sb.ProtoInt32("int32_gt+gte").Gt(2).Gte(2),
-		sb.ProtoTimestamp("timestamp_lt+lt_now").Lt(&timePast).LtNow(),
-		sb.ProtoTimestamp("timestamp_lte+lt_now").Lte(&timePast).LtNow(),
-		sb.ProtoTimestamp("timestamp_gt_now+lt_now").GtNow().LtNow(),
-		sb.ProtoTimestamp("timestamp_lte+lt").Lte(&timePast).Lt(&timePast),
-		sb.ProtoTimestamp("timestamp_lt<=gt").Lt(&timePast).Gt(&timePast),
-		sb.ProtoTimestamp("timestamp_lte<=gt").Lte(&timePast).Gt(&timePast),
-		sb.ProtoTimestamp("timestamp_lt<=gte").Lt(&timePast).Gte(&timePast),
-		sb.ProtoTimestamp("timestamp_lte<gte").Lte(&timePast).Gte(&timeFuture),
-		sb.ProtoTimestamp("timestamp_lt<gt_now").Lt(&timePast).GtNow(),
-		sb.ProtoTimestamp("timestamp_lte<gt_now").Lte(&timePast).GtNow(),
-		sb.ProtoTimestamp("timestamp_gt>lt_now").Gt(&timeFuture).LtNow(),
-		sb.ProtoTimestamp("timestamp_gte>lt_now").Gte(&timeFuture).LtNow(),
-		sb.ProtoTimestamp("timestamp_gte>lte").Gte(&timeFuture).Lte(&timePast),
-		sb.ProtoTimestamp("timestamp_gt>lte").Gt(&timeFuture).Lte(&timePast),
-		sb.ProtoTimestamp("timestamp_gt>lt").Gt(&timeFuture).Lt(&timePast),
-		sb.ProtoDuration("duration_lt+lte").Lt("1s").Lte("1s"),
-		sb.ProtoDuration("duration_gt+gte").Gt("1s").Gte("1s"),
-		sb.ProtoDuration("duration_lt<=gt").Lt("1s").Gt("1m"),
-		sb.ProtoDuration("duration_lt<=gte").Lt("1s").Gte("1m"),
-		sb.ProtoDuration("duration_lte<gte").Lte("1s").Gte("1m"),
-		sb.ProtoDuration("duration_gte>lte").Gte("1m").Lte("1s"),
-		sb.ProtoDuration("duration_gt>lte").Gt("1m").Lte("1s"),
-		sb.ProtoDuration("duration_gt>lt").Gt("1m").Lt("1s"),
-		sb.ProtoDuration("duration_in=notin").In("1s").NotIn("1s"),
-		sb.ProtoString("const_with_extra_rules").Const("const").MinLen(2),
-		sb.ProtoString("const_with_optional").Const("const").Optional(),
+		sb.Repeated("nested_repeated_field", sb.Repeated("", sb.Timestamp(""))),
+		sb.Repeated("repeated_map_field", sb.Map("", sb.String(""), sb.String(""))),
+		sb.Repeated("non_scalar_unique", sb.Timestamp("")).Unique(),
+		sb.Repeated("repeated_min_items>max_items", sb.Timestamp("")).MinItems(3).MaxItems(2),
+		sb.Map("map_min_pairs>max_pairs", sb.String(""), sb.String("")).MinPairs(2).MaxPairs(1),
+		sb.Map("map_repeated_as_value_type", sb.String(""), sb.Repeated("", sb.Timestamp(""))),
+		sb.Map("map_as_map_value_type", sb.String(""), sb.Map("", sb.String(""), sb.String(""))),
+		sb.Map("invalid_map_key", sb.Timestamp(""), sb.String("")),
+		sb.String("string_in=notin").In("str").NotIn("str"),
+		sb.String("string_min_len>max_len").MinLen(2).MaxLen(1),
+		sb.String("string_max_len<min_len").MaxLen(1).MinLen(2),
+		sb.String("string_max_len+len").MaxLen(1).Len(2),
+		sb.String("string_min_len+len").MinLen(1).Len(2),
+		sb.String("string_min_bytes>max_bytes").MinBytes(2).MaxBytes(1),
+		sb.String("string_min_bytes<max_bytes").MaxBytes(1).MinBytes(2),
+		sb.String("string_min_bytes+len_bytes").MinBytes(2).LenBytes(1),
+		sb.String("string_multi_well_known").Ip().Ipv6(),
+		sb.Int32("int32_lt=gt").Lt(1).Gt(1),
+		sb.Int32("int32_lte<=gt").Lte(1).Gt(1),
+		sb.Int32("int32_lt<=gte").Lt(1).Gte(1),
+		sb.Int32("int32_lte<gte").Lte(0).Gte(1),
+		sb.Int32("int32_gte>lte").Gte(2).Lte(1),
+		sb.Int32("int32_gt>lte").Gt(2).Lte(1),
+		sb.Int32("int32_gt>lt").Gt(2).Lt(1),
+		sb.Int32("int32_non_finite").Finite(),
+		sb.Int32("int32_lt+lte").Lt(2).Lte(2),
+		sb.Int32("int32_gt+gte").Gt(2).Gte(2),
+		sb.Timestamp("timestamp_lt+lt_now").Lt(&timePast).LtNow(),
+		sb.Timestamp("timestamp_lte+lt_now").Lte(&timePast).LtNow(),
+		sb.Timestamp("timestamp_gt_now+lt_now").GtNow().LtNow(),
+		sb.Timestamp("timestamp_lte+lt").Lte(&timePast).Lt(&timePast),
+		sb.Timestamp("timestamp_lt<=gt").Lt(&timePast).Gt(&timePast),
+		sb.Timestamp("timestamp_lte<=gt").Lte(&timePast).Gt(&timePast),
+		sb.Timestamp("timestamp_lt<=gte").Lt(&timePast).Gte(&timePast),
+		sb.Timestamp("timestamp_lte<gte").Lte(&timePast).Gte(&timeFuture),
+		sb.Timestamp("timestamp_lt<gt_now").Lt(&timePast).GtNow(),
+		sb.Timestamp("timestamp_lte<gt_now").Lte(&timePast).GtNow(),
+		sb.Timestamp("timestamp_gt>lt_now").Gt(&timeFuture).LtNow(),
+		sb.Timestamp("timestamp_gte>lt_now").Gte(&timeFuture).LtNow(),
+		sb.Timestamp("timestamp_gte>lte").Gte(&timeFuture).Lte(&timePast),
+		sb.Timestamp("timestamp_gt>lte").Gt(&timeFuture).Lte(&timePast),
+		sb.Timestamp("timestamp_gt>lt").Gt(&timeFuture).Lt(&timePast),
+		sb.Duration("duration_lt+lte").Lt("1s").Lte("1s"),
+		sb.Duration("duration_gt+gte").Gt("1s").Gte("1s"),
+		sb.Duration("duration_lt<=gt").Lt("1s").Gt("1m"),
+		sb.Duration("duration_lt<=gte").Lt("1s").Gte("1m"),
+		sb.Duration("duration_lte<gte").Lte("1s").Gte("1m"),
+		sb.Duration("duration_gte>lte").Gte("1m").Lte("1s"),
+		sb.Duration("duration_gt>lte").Gt("1m").Lte("1s"),
+		sb.Duration("duration_gt>lt").Gt("1m").Lt("1s"),
+		sb.Duration("duration_in=notin").In("1s").NotIn("1s"),
+		sb.String("const_with_extra_rules").Const("const").MinLen(2),
+		sb.String("const_with_optional").Const("const").Optional(),
 	}
 
 	for _, test := range shouldFail {

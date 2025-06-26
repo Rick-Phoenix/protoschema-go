@@ -13,13 +13,13 @@ type ProtoFieldsMap map[uint32]ProtoFieldBuilder
 
 type Range [2]int32
 
-type ProtoMessageSchema struct {
+type MessageSchema struct {
 	Name            string
 	Fields          ProtoFieldsMap
-	Oneofs          []ProtoOneOfBuilder
+	Oneofs          []OneofBuilder
 	Enums           []ProtoEnumGroup
 	Options         []ProtoOption
-	Messages        []ProtoMessageSchema
+	Messages        []MessageSchema
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
@@ -27,9 +27,22 @@ type ProtoMessageSchema struct {
 	ImportPath      string
 	Model           any
 	ModelIgnore     []string
+	SkipValidation  bool
 }
 
-func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
+type ProtoMessageData struct {
+	Name            string
+	Fields          []ProtoFieldData
+	Oneofs          []ProtoOneofData
+	Messages        []ProtoMessageData
+	ReservedNumbers []uint
+	ReservedRanges  []Range
+	ReservedNames   []string
+	Options         []ProtoOption
+	Enums           []ProtoEnumGroup
+}
+
+func (s *MessageSchema) GetFields() map[string]ProtoFieldBuilder {
 	out := make(map[string]ProtoFieldBuilder)
 
 	keys := slices.Sorted(maps.Keys(s.Fields))
@@ -44,19 +57,7 @@ func (s *ProtoMessageSchema) GetFields() map[string]ProtoFieldBuilder {
 	return out
 }
 
-type ProtoMessage struct {
-	Name            string
-	Fields          []ProtoFieldData
-	Oneofs          []ProtoOneOfData
-	Messages        []ProtoMessage
-	ReservedNumbers []uint
-	ReservedRanges  []Range
-	ReservedNames   []string
-	Options         []ProtoOption
-	Enums           []ProtoEnumGroup
-}
-
-func (s *ProtoMessageSchema) GetField(n string) ProtoFieldBuilder {
+func (s *MessageSchema) GetField(n string) ProtoFieldBuilder {
 	for _, f := range s.Fields {
 		data := f.GetData()
 		if data.Name == n {
@@ -68,7 +69,7 @@ func (s *ProtoMessageSchema) GetField(n string) ProtoFieldBuilder {
 	return nil
 }
 
-func (s *ProtoMessageSchema) CheckModel() error {
+func (s *MessageSchema) CheckModel() error {
 	model := reflect.TypeOf(s.Model).Elem()
 	modelName := model.Name()
 	msgFields := s.GetFields()
@@ -112,14 +113,14 @@ func (s *ProtoMessageSchema) CheckModel() error {
 	return err
 }
 
-func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
+func NewProtoMessage(s MessageSchema, imports Set) (ProtoMessageData, error) {
 	var protoFields []ProtoFieldData
 	var fieldsErrors error
 
-	if s.Model != nil {
+	if s.Model != nil && !s.SkipValidation {
 		err := s.CheckModel()
 		if err != nil {
-			return ProtoMessage{}, err
+			return ProtoMessageData{}, err
 		}
 	}
 
@@ -135,7 +136,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		}
 	}
 
-	oneOfs := []ProtoOneOfData{}
+	oneOfs := []ProtoOneofData{}
 	var oneOfErrors error
 
 	for _, oneof := range s.Oneofs {
@@ -147,7 +148,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		oneOfs = append(oneOfs, data)
 	}
 
-	subMessages := []ProtoMessage{}
+	subMessages := []ProtoMessageData{}
 	var subMessagesErrors error
 
 	for _, m := range s.Messages {
@@ -160,18 +161,18 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	}
 
 	if fieldsErrors != nil || oneOfErrors != nil || subMessagesErrors != nil {
-		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
+		return ProtoMessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
+	return ProtoMessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
 }
 
-func MessageRef(s ProtoMessageSchema) ProtoMessageSchema {
-	return ProtoMessageSchema{Name: s.Name, ReferenceOnly: true, ImportPath: s.ImportPath}
+func MessageRef(s MessageSchema) MessageSchema {
+	return MessageSchema{Name: s.Name, ReferenceOnly: true, ImportPath: s.ImportPath}
 }
 
-func ProtoEmpty() ProtoMessageSchema {
-	return ProtoMessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto"}
+func Empty() MessageSchema {
+	return MessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto"}
 }
 
 var (
@@ -179,7 +180,7 @@ var (
 	ProtoDeprecated  = ProtoOption{Name: "deprecated", Value: true}
 )
 
-func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
+func ProtoVOneof(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
 	values := make(map[string]any)
 	values["fields"] = fields

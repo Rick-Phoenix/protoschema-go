@@ -6,37 +6,37 @@ import (
 	"maps"
 )
 
-type ProtoRepeatedBuilder struct {
+type ProtoRepeatedField struct {
 	name     string
 	field    ProtoFieldBuilder
 	unique   bool
 	minItems *uint
 	maxItems *uint
-	*ProtoFieldExternal[ProtoRepeatedBuilder]
+	*ProtoFieldExternal[ProtoRepeatedField]
 }
 
-func RepeatedField(name string, b ProtoFieldBuilder) *ProtoRepeatedBuilder {
+func Repeated(name string, b ProtoFieldBuilder) *ProtoRepeatedField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
-	self := &ProtoRepeatedBuilder{
+	self := &ProtoRepeatedField{
 		field: b, name: name,
 	}
 
-	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedBuilder]{protoFieldInternal: &protoFieldInternal{
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedField]{protoFieldInternal: &protoFieldInternal{
 		options: options, rules: rules, repeated: true, goType: "[]" + b.GetGoType(),
 	}, self: self}
 
 	return self
 }
 
-func (b *ProtoRepeatedBuilder) GetData() ProtoFieldData {
+func (b *ProtoRepeatedField) GetData() ProtoFieldData {
 	data := b.protoFieldInternal.GetData()
 	data.Name = b.name
 
 	return data
 }
 
-func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+func (b *ProtoRepeatedField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	fieldData, err := b.field.Build(fieldNr, imports)
 
 	err = errors.Join(err, b.errors)
@@ -80,7 +80,7 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 		options = append(options, fmt.Sprintf("(buf.validate.field).repeated.items = %s", stringRules))
 	}
 
-	options, optErr := GetOptions(b.options, options)
+	options, optErr := getOptions(b.options, options)
 
 	if optErr != nil {
 		err = errors.Join(err, optErr)
@@ -93,13 +93,13 @@ func (b *ProtoRepeatedBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldDat
 	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
-func (b *ProtoRepeatedBuilder) Unique() *ProtoRepeatedBuilder {
+func (b *ProtoRepeatedField) Unique() *ProtoRepeatedField {
 	b.options["(buf.validate.field).repeated.unique"] = true
 	b.unique = true
 	return b
 }
 
-func (b *ProtoRepeatedBuilder) MinItems(n uint) *ProtoRepeatedBuilder {
+func (b *ProtoRepeatedField) MinItems(n uint) *ProtoRepeatedField {
 	if b.maxItems != nil && *b.maxItems < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
 	}
@@ -110,7 +110,7 @@ func (b *ProtoRepeatedBuilder) MinItems(n uint) *ProtoRepeatedBuilder {
 	return b
 }
 
-func (b *ProtoRepeatedBuilder) MaxItems(n uint) *ProtoRepeatedBuilder {
+func (b *ProtoRepeatedField) MaxItems(n uint) *ProtoRepeatedField {
 	if b.minItems != nil && *b.minItems > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
 	}

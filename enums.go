@@ -17,7 +17,7 @@ type ProtoEnumGroup struct {
 	Options         []ProtoOption
 }
 
-func ProtoEnum(name string, members ProtoEnumMap) ProtoEnumGroup {
+func EnumGroup(name string, members ProtoEnumMap) ProtoEnumGroup {
 	sorted := make(ProtoEnumMap)
 	keys := slices.Sorted(maps.Keys(members))
 
@@ -45,29 +45,29 @@ func (e ProtoEnumGroup) RsvRanges(r ...Range) ProtoEnumGroup {
 	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers, ReservedRanges: r}
 }
 
-type EnumField struct {
-	*ProtoFieldExternal[EnumField]
-	*FieldWithConst[EnumField, int32, int32]
-	*OptionalField[EnumField]
+type ProtoEnumField struct {
+	*ProtoFieldExternal[ProtoEnumField]
+	*ProtoConstField[ProtoEnumField, int32, int32]
+	*ProtoOptionalField[ProtoEnumField]
 }
 
-func ProtoEnumField(name string, enumName string) *EnumField {
+func EnumField(name string, enumName string) *ProtoEnumField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
 
-	ef := &EnumField{}
+	ef := &ProtoEnumField{}
 	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, protoBaseType: "enum", options: options}
 
-	ef.ProtoFieldExternal = &ProtoFieldExternal[EnumField]{
+	ef.ProtoFieldExternal = &ProtoFieldExternal[ProtoEnumField]{
 		protoFieldInternal: internal, self: ef,
 	}
-	ef.FieldWithConst = &FieldWithConst[EnumField, int32, int32]{constInternal: internal, self: ef}
-	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}
+	ef.ProtoConstField = &ProtoConstField[ProtoEnumField, int32, int32]{constInternal: internal, self: ef}
+	ef.ProtoOptionalField = &ProtoOptionalField[ProtoEnumField]{optionalInternal: internal, self: ef}
 
 	return ef
 }
 
-func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
@@ -94,7 +94,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) 
 		optsCollector["(buf.validate.field).enum"] = enumRules
 	}
 
-	options, err := GetOptions(optsCollector, options)
+	options, err := getOptions(optsCollector, options)
 	errAgg = errors.Join(errAgg, err)
 
 	data.Options = options
@@ -106,7 +106,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) 
 	return data, nil
 }
 
-func (ef *EnumField) DefinedOnly() *EnumField {
+func (ef *ProtoEnumField) DefinedOnly() *ProtoEnumField {
 	ef.rules["defined_only"] = true
 	return ef
 }

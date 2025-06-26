@@ -4,7 +4,7 @@ type AnyField struct {
 	*ProtoFieldExternal[AnyField]
 }
 
-func ProtoAny(name string) *AnyField {
+func Any(name string) *AnyField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 

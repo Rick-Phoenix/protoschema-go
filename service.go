@@ -9,64 +9,41 @@ import (
 	"strings"
 )
 
-type OptionExtensions struct {
-	Service []CustomOption
-	Message []CustomOption
-	Field   []CustomOption
-	File    []CustomOption
-	OneOf   []CustomOption
-}
-
-type MessagesMap map[string]ProtoMessage
-
-type ProtoService struct {
-	ResourceName     string
-	Imports          Set
-	OptionExtensions OptionExtensions
-	Messages         []ProtoMessage
-	Enums            []ProtoEnumGroup
-	ServiceOptions   []ProtoOption
-	FileOptions      []ProtoOption
-	Handlers         []HandlerData
-}
-
 type HandlerData struct {
 	Name     string
 	Request  string
 	Response string
 }
 
-type ProtoOption struct {
-	Name  string
-	Value any
-}
-
-type CustomOption struct {
-	Name     string
-	Type     string
-	FieldNr  int
-	Optional bool
-	Repeated bool
-}
-
 type HandlersMap map[string]Handler
 
 type Handler struct {
-	Request  ProtoMessageSchema
-	Response ProtoMessageSchema
+	Request  MessageSchema
+	Response MessageSchema
 }
 
-type ProtoServiceSchema struct {
-	Resource         ProtoMessageSchema
+type ProtoService struct {
+	ResourceName   string
+	Imports        Set
+	Extensions     Extensions
+	Messages       []ProtoMessageData
+	Enums          []ProtoEnumGroup
+	ServiceOptions []ProtoOption
+	FileOptions    []ProtoOption
+	Handlers       []HandlerData
+}
+
+type ServiceSchema struct {
+	Resource         MessageSchema
 	Handlers         HandlersMap
-	Messages         []ProtoMessageSchema
+	Messages         []MessageSchema
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
-	OptionExtensions OptionExtensions
+	OptionExtensions Extensions
 	Enums            []ProtoEnumGroup
 }
 
-func BuildServices(services []ProtoServiceSchema) []ProtoService {
+func BuildServices(services []ServiceSchema) []ProtoService {
 	out := []ProtoService{}
 	var serviceErrors error
 
@@ -84,18 +61,18 @@ func BuildServices(services []ProtoServiceSchema) []ProtoService {
 	return out
 }
 
-func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
+func NewProtoService(s ServiceSchema) (ProtoService, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
 
-	messages := make([]ProtoMessageSchema, len(s.Messages))
+	messages := make([]MessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
 
-	out := &ProtoService{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
+	out := &ProtoService{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, Extensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
 
-	processMessage := func(m ProtoMessageSchema) {
+	processMessage := func(m MessageSchema) {
 		var errAgg error
 
 		message, err := NewProtoMessage(m, imports)

@@ -7,17 +7,6 @@ import (
 	"slices"
 )
 
-var present = struct{}{}
-
-const (
-	indent  = "  "
-	indent2 = "    "
-)
-
-type Set map[string]struct{}
-
-type Errors []error
-
 type ProtoFieldData struct {
 	Rules         map[string]any
 	Options       []string
@@ -128,7 +117,7 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 		}
 	}
 
-	options, err := GetOptions(optsCollector, options)
+	options, err := getOptions(optsCollector, options)
 	if err != nil {
 		errAgg = errors.Join(errAgg, err)
 	}
@@ -147,6 +136,6 @@ type ProtoFieldExternal[BuilderT any] struct {
 	self *BuilderT
 }
 
-type GenericField struct {
-	*ProtoFieldExternal[GenericField]
+type ProtoGenericField struct {
+	*ProtoFieldExternal[ProtoGenericField]
 }

@@ -7,7 +7,7 @@ type CelOption struct {
 }
 
 func (b *ProtoFieldExternal[BuilderT]) CelOption(id, message, expression string) *BuilderT {
-	opt, err := GetProtoOption("(buf.validate.field).cel", CelOption{Id: id, Message: message, Expression: expression})
+	opt, err := getProtoOption("(buf.validate.field).cel", CelOption{Id: id, Message: message, Expression: expression})
 	b.errors = errors.Join(b.errors, err)
 	b.repeatedOptions = append(b.repeatedOptions, opt)
 

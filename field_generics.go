@@ -15,7 +15,7 @@ func (b *ProtoFieldExternal[BuilderT]) RepeatedOptions(o ...ProtoOption) *Builde
 	var opts []string
 
 	for _, v := range o {
-		val, err := GetProtoOption(v.Name, v.Value)
+		val, err := getProtoOption(v.Name, v.Value)
 		if err != nil {
 			b.protoFieldInternal.errors = errors.Join(b.protoFieldInternal.errors, err)
 		}

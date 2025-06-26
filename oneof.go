@@ -7,39 +7,39 @@ import (
 	"slices"
 )
 
-type ProtoOneOfData struct {
+type ProtoOneofData struct {
 	Name    string
 	Choices []ProtoFieldData
 	Options []ProtoOption
 }
 
-type ProtoOneOfGroup struct {
-	name     string
-	required bool
-	choices  OneofChoicesMap
-	options  []ProtoOption
+type ProtoOneofGroup struct {
+	Name       string
+	IsRequired bool
+	Choices    OneofChoices
+	Options    []ProtoOption
 }
 
-type ProtoOneOfBuilder interface {
-	Build(imports Set) (ProtoOneOfData, error)
+type OneofBuilder interface {
+	Build(imports Set) (ProtoOneofData, error)
 }
 
-type OneofChoicesMap map[uint32]ProtoFieldBuilder
+type OneofChoices map[uint32]ProtoFieldBuilder
 
-func ProtoOneOf(name string, choices OneofChoicesMap, options ...ProtoOption) *ProtoOneOfGroup {
-	return &ProtoOneOfGroup{
-		choices: choices, options: options, name: name,
+func OneOf(name string, choices OneofChoices, options ...ProtoOption) *ProtoOneofGroup {
+	return &ProtoOneofGroup{
+		Choices: choices, Options: options, Name: name,
 	}
 }
 
-func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
+func (of *ProtoOneofGroup) Build(imports Set) (ProtoOneofData, error) {
 	choicesData := []ProtoFieldData{}
 	var fieldErr error
 
-	oneofKeys := slices.Sorted(maps.Keys(of.choices))
+	oneofKeys := slices.Sorted(maps.Keys(of.Choices))
 
 	for _, number := range oneofKeys {
-		field := of.choices[number]
+		field := of.Choices[number]
 
 		data, err := field.Build(number, imports)
 		fieldErr = errors.Join(fieldErr, err)
@@ -53,7 +53,7 @@ func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 		}
 
 		if data.Optional {
-			fmt.Printf("Ignoring 'optional' for member %q of oneof group %q...\n", data.Name, of.name)
+			fmt.Printf("Ignoring 'optional' for member %q of oneof group %q...\n", data.Name, of.Name)
 			data.Optional = false
 		}
 
@@ -61,16 +61,16 @@ func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 	}
 
 	if fieldErr != nil {
-		return ProtoOneOfData{}, fieldErr
+		return ProtoOneofData{}, fieldErr
 	}
 
-	return ProtoOneOfData{
-		Name: of.name, Options: of.options, Choices: choicesData,
+	return ProtoOneofData{
+		Name: of.Name, Options: of.Options, Choices: choicesData,
 	}, nil
 }
 
-func (of *ProtoOneOfGroup) Required() *ProtoOneOfGroup {
-	of.options = append(of.options, ProtoOption{
+func (of *ProtoOneofGroup) Required() *ProtoOneofGroup {
+	of.Options = append(of.Options, ProtoOption{
 		Name:  "(buf.validate.oneof).required",
 		Value: "true",
 	})

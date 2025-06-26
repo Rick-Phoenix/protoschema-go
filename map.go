@@ -6,37 +6,37 @@ import (
 	"slices"
 )
 
-type ProtoMapBuilder struct {
+type ProtoMapField struct {
 	name     string
 	keys     ProtoFieldBuilder
 	values   ProtoFieldBuilder
 	minPairs *uint
 	maxPairs *uint
-	*ProtoFieldExternal[ProtoMapBuilder]
+	*ProtoFieldExternal[ProtoMapField]
 }
 
-func ProtoMap(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapBuilder {
+func Map(name string, keys ProtoFieldBuilder, values ProtoFieldBuilder) *ProtoMapField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
-	self := &ProtoMapBuilder{
+	self := &ProtoMapField{
 		keys: keys, values: values, name: name,
 	}
 
-	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapBuilder]{protoFieldInternal: &protoFieldInternal{
+	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoMapField]{protoFieldInternal: &protoFieldInternal{
 		options: options, rules: rules, isMap: true, isNonScalar: true, goType: fmt.Sprintf("map[%s]%s", keys.GetGoType(), values.GetGoType()),
 	}, self: self}
 
 	return self
 }
 
-func (b *ProtoMapBuilder) GetData() ProtoFieldData {
+func (b *ProtoMapField) GetData() ProtoFieldData {
 	data := b.protoFieldInternal.GetData()
 	data.Name = b.name
 
 	return data
 }
 
-func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+func (b *ProtoMapField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
 	err := b.errors
 
 	keysField, keysErr := b.keys.Build(fieldNr, imports)
@@ -77,7 +77,7 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 		}
 	}
 
-	options, optErr := GetOptions(b.options, options)
+	options, optErr := getOptions(b.options, options)
 
 	err = errors.Join(err, optErr)
 	if err != nil {
@@ -87,7 +87,7 @@ func (b *ProtoMapBuilder) Build(fieldNr uint32, imports Set) (ProtoFieldData, er
 	return ProtoFieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: b.goType, Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true, IsMap: b.isMap}, nil
 }
 
-func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {
+func (b *ProtoMapField) MinPairs(n uint) *ProtoMapField {
 	if b.maxPairs != nil && *b.maxPairs < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
 	}
@@ -96,7 +96,7 @@ func (b *ProtoMapBuilder) MinPairs(n uint) *ProtoMapBuilder {
 	return b
 }
 
-func (b *ProtoMapBuilder) MaxPairs(n uint) *ProtoMapBuilder {
+func (b *ProtoMapField) MaxPairs(n uint) *ProtoMapField {
 	if b.minPairs != nil && *b.minPairs > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
 	}
