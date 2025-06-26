@@ -2,6 +2,7 @@ package schemabuilder
 
 import (
 	"log"
+	"testing"
 	"time"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
@@ -125,7 +126,7 @@ var (
 	services  = BuildServices(ProtoServices)
 )
 
-func GenerateProtoFiles() {
+func TestMain(t *testing.T) {
 	for _, v := range services {
 		if err := generator.Generate(v); err != nil {
 			log.Fatal(err)
