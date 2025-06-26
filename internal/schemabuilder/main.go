@@ -1,9 +1,7 @@
 package schemabuilder
 
 import (
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
@@ -81,13 +79,8 @@ var PostSchema = ProtoMessageSchema{
 	Model:       &gofirst.Post{},
 }
 
-type ServicesMap map[string]ProtoServiceSchema
-
-type ServicesData map[string]ProtoService
-
 var UserService = ProtoServiceSchema{
-	ResourceName: "User",
-	Messages:     []ProtoMessageSchema{UserSchema},
+	Resource: UserSchema,
 	Handlers: HandlersMap{
 		"GetUser": {GetUserSchema, ProtoMessageSchema{
 			Name: "GetUserResponse",
@@ -108,8 +101,7 @@ var UserService = ProtoServiceSchema{
 }
 
 var PostService = ProtoServiceSchema{
-	ResourceName: "Post",
-	Messages:     []ProtoMessageSchema{PostSchema},
+	Resource: PostSchema,
 	Handlers: HandlersMap{
 		"GetPost": {GetPostSchema, ProtoMessageSchema{
 			Name: "GetPostResponse",
@@ -130,39 +122,13 @@ var ProtoServices = []ProtoServiceSchema{
 
 var (
 	generator = NewProtoGenerator("gen/proto", "myapp.v1")
-	services  = BuildServices()
+	services  = BuildServices(ProtoServices)
 )
 
 func GenerateProtoFiles() {
-	Services := BuildServices()
-
-	for _, v := range Services {
+	for _, v := range services {
 		if err := generator.Generate(v); err != nil {
 			log.Fatal(err)
 		}
 	}
-}
-
-func BuildServices() []ProtoService {
-	out := []ProtoService{}
-	serviceErrors := []error{}
-
-	for _, s := range ProtoServices {
-		serviceData, err := NewProtoService(s)
-		if err != nil {
-			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the schema %s:\n%s", serviceData.ResourceName, IndentString(err.Error())))
-		}
-		out = append(out, serviceData)
-	}
-
-	if len(serviceErrors) > 0 {
-		fmt.Printf("The following errors occurred:\n\n")
-		for _, err := range serviceErrors {
-			fmt.Println(err)
-		}
-
-		os.Exit(1)
-	}
-
-	return out
 }

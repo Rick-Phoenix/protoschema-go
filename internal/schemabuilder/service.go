@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 )
@@ -57,13 +58,37 @@ type Handler struct {
 }
 
 type ProtoServiceSchema struct {
-	ResourceName     string
+	Resource         ProtoMessageSchema
 	Handlers         HandlersMap
 	Messages         []ProtoMessageSchema
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
 	OptionExtensions OptionExtensions
 	Enums            []ProtoEnumGroup
+}
+
+func BuildServices(services []ProtoServiceSchema) []ProtoService {
+	out := []ProtoService{}
+	serviceErrors := []error{}
+
+	for _, s := range services {
+		serviceData, err := NewProtoService(s)
+		if err != nil {
+			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the service schema %q:\n%s", serviceData.ResourceName, IndentString(err.Error())))
+		}
+		out = append(out, serviceData)
+	}
+
+	if len(serviceErrors) > 0 {
+		fmt.Printf("The following errors occurred:\n\n")
+		for _, err := range serviceErrors {
+			fmt.Println(err)
+		}
+
+		os.Exit(1)
+	}
+
+	return out
 }
 
 func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
@@ -73,7 +98,7 @@ func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
 	messages := make([]ProtoMessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
 
-	out := &ProtoService{ResourceName: s.ResourceName, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
+	out := &ProtoService{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
 
@@ -89,6 +114,8 @@ func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
 			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
 		}
 	}
+
+	processMessage(s.Resource)
 
 	for _, m := range messages {
 		processMessage(m)

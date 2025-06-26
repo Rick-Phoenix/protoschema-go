@@ -169,7 +169,7 @@ var TestEnum = []sb.ProtoEnumGroup{
 }
 
 var UserService = sb.ProtoServiceSchema{
-	ResourceName: "User",
+	Resource: UserSchema,
 	OptionExtensions: sb.OptionExtensions{
 		Message: MyOptions,
 		File:    MyOptions,
@@ -177,8 +177,7 @@ var UserService = sb.ProtoServiceSchema{
 		Service: MyOptions,
 		Field:   MyOptions,
 	},
-	Enums:    TestEnum,
-	Messages: []sb.ProtoMessageSchema{UserSchema},
+	Enums: TestEnum,
 	Handlers: sb.HandlersMap{
 		"GetUser": {
 			sb.ProtoMessageSchema{
