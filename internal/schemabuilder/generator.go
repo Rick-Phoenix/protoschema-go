@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -109,5 +110,14 @@ func GenerateProtoFile(s ProtoService, o Options) error {
 	}
 
 	fmt.Printf("✅ Successfully generated proto file at: %s\n", outputPath)
+
+	cmd := exec.Command("buf", "format", "-w", outputPath)
+
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("Error while attempting to format the file %q: %s\n", outputPath, err.Error())
+	}
+
 	return nil
 }
