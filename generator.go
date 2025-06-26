@@ -49,9 +49,9 @@ var funcMap = template.FuncMap{
 
 		return str
 	},
-	"joinInt":   JoinIntSlice,
-	"joinInt32": JoinInt32Slice,
-	"joinUint":  JoinUintSlice,
+	"joinInt":   joinIntSlice,
+	"joinInt32": joinInt32Slice,
+	"joinUint":  joinUintSlice,
 	"joinRange": func(r []Range) string {
 		str := ""
 
@@ -83,7 +83,7 @@ var funcMap = template.FuncMap{
 
 		return ""
 	},
-	"serviceSuffix": AddServiceSuffix,
+	"serviceSuffix": addServiceSuffix,
 }
 
 func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {

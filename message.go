@@ -106,7 +106,7 @@ func (s *ProtoMessageSchema) CheckModel() error {
 	}
 
 	if err != nil {
-		err = IndentErrors(fmt.Sprintf("Validation errors for model %s", modelName), err)
+		err = indentErrors(fmt.Sprintf("Validation errors for model %s", modelName), err)
 	}
 
 	return err
@@ -129,7 +129,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		fieldBuilder := s.Fields[fieldNr]
 		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
-			fieldsErrors = errors.Join(fieldsErrors, IndentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
+			fieldsErrors = errors.Join(fieldsErrors, indentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
 		} else {
 			protoFields = append(protoFields, field)
 		}
@@ -142,7 +142,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
-			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
+			oneOfErrors = errors.Join(oneOfErrors, indentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
 		}
 		oneOfs = append(oneOfs, data)
 	}
@@ -153,7 +153,7 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 	for _, m := range s.Messages {
 		data, err := NewProtoMessage(m, imports)
 		if err != nil {
-			subMessagesErrors = errors.Join(subMessagesErrors, IndentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
+			subMessagesErrors = errors.Join(subMessagesErrors, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
 
 		subMessages = append(subMessages, data)

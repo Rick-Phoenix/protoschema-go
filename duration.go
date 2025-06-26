@@ -129,7 +129,7 @@ func (tf *DurationField) Gte(d string) *DurationField {
 
 func (tf *DurationField) In(values ...string) *DurationField {
 	for _, v := range values {
-		err := ValidateDurationString(v)
+		err := validateDurationString(v)
 		if err != nil {
 			tf.errors = errors.Join(tf.errors, err)
 		}
@@ -145,7 +145,7 @@ func (tf *DurationField) In(values ...string) *DurationField {
 
 func (tf *DurationField) NotIn(values ...string) *DurationField {
 	for _, v := range values {
-		err := ValidateDurationString(v)
+		err := validateDurationString(v)
 		if err != nil {
 			tf.errors = errors.Join(tf.errors, err)
 		}
@@ -160,7 +160,7 @@ func (tf *DurationField) NotIn(values ...string) *DurationField {
 }
 
 func (tf *DurationField) Const(d string) *DurationField {
-	err := ValidateDurationString(d)
+	err := validateDurationString(d)
 	if err != nil {
 		tf.errors = errors.Join(tf.errors, err)
 	}

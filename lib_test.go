@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	sb "github.com/Rick-Phoenix/gofirst"
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
-	sb "github.com/Rick-Phoenix/gofirst/internal/schemabuilder"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"

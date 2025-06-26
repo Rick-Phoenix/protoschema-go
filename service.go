@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"maps"
-	"os"
 	"slices"
 	"strings"
 )
@@ -69,23 +68,17 @@ type ProtoServiceSchema struct {
 
 func BuildServices(services []ProtoServiceSchema) []ProtoService {
 	out := []ProtoService{}
-	serviceErrors := []error{}
+	var serviceErrors error
 
 	for _, s := range services {
 		serviceData, err := NewProtoService(s)
-		if err != nil {
-			serviceErrors = append(serviceErrors, fmt.Errorf("Errors for the service schema %q:\n%s", serviceData.ResourceName, IndentString(err.Error())))
-		}
+		serviceErrors = errors.Join(serviceErrors, indentErrors(fmt.Sprintf("Errors for the service schema %q", s.Resource.Name), err))
 		out = append(out, serviceData)
 	}
 
-	if len(serviceErrors) > 0 {
+	if serviceErrors != nil {
 		fmt.Printf("The following errors occurred:\n\n")
-		for _, err := range serviceErrors {
-			fmt.Println(err)
-		}
-
-		os.Exit(1)
+		log.Fatal(serviceErrors)
 	}
 
 	return out
@@ -111,7 +104,7 @@ func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
 		processedMessages[m.Name] = present
 
 		if errAgg != nil {
-			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
+			messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
 		}
 	}
 
@@ -145,7 +138,7 @@ func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
 		}
 
 		if scoreA == scoreB {
-			return CompareString(a, b)
+			return sortString(a, b)
 		}
 
 		return scoreA - scoreB
