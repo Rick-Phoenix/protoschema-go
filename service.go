@@ -57,7 +57,7 @@ func newProtoService(s ServiceSchema) (ServiceData, error) {
 	processMessage := func(m MessageSchema) {
 		var errAgg error
 
-		message, err := NewProtoMessage(m, imports)
+		message, err := newProtoMessage(m, imports)
 		errAgg = errors.Join(errAgg, err)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present

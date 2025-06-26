@@ -134,18 +134,6 @@ var UserSchema = sb.MessageSchema{
 	ImportPath:      "myapp/v1/user.proto",
 }
 
-var UserWithModel = sb.MessageSchema{
-	Name: "User",
-	Fields: sb.FieldsMap{
-		1: sb.String("name").Required().MinLen(2).MaxLen(32),
-		2: sb.Int64("id"),
-		3: sb.Timestamp("created_at"),
-		4: sb.Repeated("posts", sb.MsgField("post", &PostSchema)),
-	},
-	Model:      &sb.UserWithPosts{},
-	ImportPath: "myapp/v1/user.proto",
-}
-
 var PostSchema = sb.MessageSchema{
 	Name: "Post",
 	Fields: sb.FieldsMap{
@@ -198,28 +186,22 @@ var UserService = sb.ServiceSchema{
 			sb.MessageSchema{
 				Name: "GetUserResponse",
 				Fields: sb.FieldsMap{
-					1: sb.MsgField("user", &UserWithModel),
+					1: sb.MsgField("user", &sb.UserWithModel),
 				},
 			},
 		},
 		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.FieldsMap{
 			1: sb.FieldMask("field_mask"),
-			2: sb.MsgField("user", &UserWithModel),
+			2: sb.MsgField("user", &sb.UserWithModel),
 		}}, sb.Empty()},
 	},
 }
 
 func TestGeneration(t *testing.T) {
-	// Testing model validation
-	_, err := sb.NewProtoMessage(UserWithModel, sb.Set{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// tmpDir := t.TempDir()
 	tmpDir := "gen/temp"
 	gen := sb.NewProtoGenerator(tmpDir, "myapp.v1").Services(UserService)
-	err = gen.Generate()
+	err := gen.Generate()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -184,11 +184,11 @@ func indentString(text string) (string, error) {
 		return "", nil
 	}
 	reader := strings.NewReader(text)
-	var writer *strings.Builder
+	var writer strings.Builder
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
-		_, err := fmt.Fprintf(writer, "%s%s\n", indent, line)
+		_, err := fmt.Fprintf(&writer, "%s%s\n", indent, line)
 		if err != nil {
 			return "", fmt.Errorf("Failed to write indented line: %w", err)
 		}

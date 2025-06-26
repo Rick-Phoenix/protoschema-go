@@ -1,11 +1,11 @@
 package schemabuilder
 
 import (
-	"log"
 	"testing"
 	"time"
 
 	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
+	"github.com/stretchr/testify/assert"
 )
 
 type UserWithPosts struct {
@@ -121,9 +121,26 @@ var ProtoServices = []ServiceSchema{
 	UserService, PostService,
 }
 
+var UserWithModel = MessageSchema{
+	Name: "User",
+	Fields: FieldsMap{
+		1: String("name").Required().MinLen(2).MaxLen(32),
+		2: Int64("id"),
+		3: Timestamp("created_at"),
+		4: Repeated("posts", MsgField("post", &PostSchema)),
+	},
+	Model:      &UserWithPosts{},
+	ImportPath: "myapp/v1/user.proto",
+}
+
+func TestModelValidation(t *testing.T) {
+	_, err := newProtoMessage(UserWithModel, Set{})
+
+	assert.NoError(t, err, "Testing model validation")
+}
+
 func TestMain(t *testing.T) {
 	generator := NewProtoGenerator("gen/proto", "myapp.v1").Services(UserService)
-	if err := generator.Generate(); err != nil {
-		log.Fatal(err)
-	}
+	err := generator.Generate()
+	assert.NoError(t, err, "Main Test")
 }

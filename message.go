@@ -113,7 +113,7 @@ func (s *MessageSchema) CheckModel() error {
 	return err
 }
 
-func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
+func newProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 	var protoFields []FieldData
 	var fieldsErrors error
 
@@ -152,7 +152,7 @@ func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 	var subMessagesErrors error
 
 	for _, m := range s.Messages {
-		data, err := NewProtoMessage(m, imports)
+		data, err := newProtoMessage(m, imports)
 		if err != nil {
 			subMessagesErrors = errors.Join(subMessagesErrors, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
