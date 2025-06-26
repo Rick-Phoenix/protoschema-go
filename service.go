@@ -43,25 +43,7 @@ type ServiceSchema struct {
 	Enums            []EnumGroup
 }
 
-func BuildServices(services []ServiceSchema) []ServiceData {
-	out := []ServiceData{}
-	var serviceErrors error
-
-	for _, s := range services {
-		serviceData, err := NewProtoService(s)
-		serviceErrors = errors.Join(serviceErrors, indentErrors(fmt.Sprintf("Errors for the service schema %q", s.Resource.Name), err))
-		out = append(out, serviceData)
-	}
-
-	if serviceErrors != nil {
-		fmt.Printf("The following errors occurred:\n\n")
-		log.Fatal(serviceErrors)
-	}
-
-	return out
-}
-
-func NewProtoService(s ServiceSchema) (ServiceData, error) {
+func newProtoService(s ServiceSchema) (ServiceData, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
 

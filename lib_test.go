@@ -216,15 +216,10 @@ func TestGeneration(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	service, err := sb.NewProtoService(UserService)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// tmpDir := t.TempDir()
 	tmpDir := "gen/temp"
-	gen := sb.NewProtoGenerator(tmpDir, "myapp.v1")
-	err = gen.Generate(service)
+	gen := sb.NewProtoGenerator(tmpDir, "myapp.v1").Services(UserService)
+	err = gen.Generate()
 	if err != nil {
 		log.Fatal(err)
 	}

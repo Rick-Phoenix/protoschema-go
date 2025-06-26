@@ -121,15 +121,9 @@ var ProtoServices = []ServiceSchema{
 	UserService, PostService,
 }
 
-var (
-	generator = NewProtoGenerator("gen/proto", "myapp.v1")
-	services  = BuildServices(ProtoServices)
-)
-
 func TestMain(t *testing.T) {
-	for _, v := range services {
-		if err := generator.Generate(v); err != nil {
-			log.Fatal(err)
-		}
+	generator := NewProtoGenerator("gen/proto", "myapp.v1").Services(UserService)
+	if err := generator.Generate(); err != nil {
+		log.Fatal(err)
 	}
 }
