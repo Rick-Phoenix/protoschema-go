@@ -8,51 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type UserWithPosts struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt time.Time      `dbignore:"true" json:"created_at"`
-	Posts     []gofirst.Post `json:"posts"`
-}
-
-var UserSchema = MessageSchema{
-	Name: "User",
-	Fields: FieldsMap{
-		1: String("name"),
-		2: Int64("id"),
-		3: Timestamp("created_at"),
-		5: Repeated("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
-	},
-	Enums: []EnumGroup{
-		{
-			Name: "myenum",
-			Members: EnumMembers{
-				0: "VAL_1",
-				1: "VAL_2",
-			},
-			Options: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
-		},
-	},
-	Model:      &UserWithPosts{},
-	ImportPath: "myapp/v1/user.proto",
-	Options:    []ProtoOption{MessageCelOption("myexpr", "x must not be y", "x != y")},
-	Messages:   []MessageSchema{PostSchema},
-}
-
-var GetUserSchema = MessageSchema{
-	Name: "GetUserRequest",
-	Fields: FieldsMap{
-		1: UserSchema.GetField("name"),
-	},
-}
-
-var GetPostSchema = MessageSchema{
-	Name: "GetPostRequest",
-	Fields: FieldsMap{
-		1: PostSchema.GetField("id"),
-	},
-}
-
 var SubRedditSchema = MessageSchema{
 	Name: "Subreddit",
 	Fields: FieldsMap{
@@ -80,48 +35,47 @@ var PostSchema = MessageSchema{
 	Model:       &gofirst.Post{},
 }
 
-var UserService = ServiceSchema{
-	Resource: UserSchema,
-	Handlers: HandlersMap{
-		"GetUser": {GetUserSchema, MessageSchema{
-			Name: "GetUserResponse",
-			Fields: FieldsMap{
-				1: MsgField("user", &UserSchema),
-			},
-		}},
-		"UpdateUser": {MessageSchema{Name: "UpdateUserRequest", Fields: FieldsMap{
-			1: FieldMask("field_mask"),
-			2: MsgField("user", &UserSchema),
-		}}, Empty()},
-	},
-	FileOptions:    []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
-	ServiceOptions: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
-	OptionExtensions: Extensions{
-		Service: []ExtensionField{{"extensionopt", "string", 1, true, true}},
+var GetPostRequest = MessageSchema{
+	Name: "GetPostRequest",
+	Fields: FieldsMap{
+		1: PostSchema.GetField("id"),
 	},
 }
+
+var GetPostResponse = MessageSchema{
+	Name: "GetPostResponse",
+	Fields: FieldsMap{
+		1: MsgField("post", &PostSchema),
+	},
+}
+
+var UpdatePostRequest = MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
+	1: MsgField("post", &PostSchema),
+	2: FieldMask("field_mask"),
+}}
 
 var PostService = ServiceSchema{
 	Resource: PostSchema,
 	Handlers: HandlersMap{
-		"GetPost": {GetPostSchema, MessageSchema{
-			Name: "GetPostResponse",
-			Fields: FieldsMap{
-				1: MsgField("post", &PostSchema),
-			},
-		}},
-		"UpdatePost": {MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
-			1: MsgField("post", &PostSchema),
-			2: FieldMask("field_mask"),
-		}}, Empty()},
+		"GetPost": {
+			GetPostRequest,
+			GetPostResponse,
+		},
+		"UpdatePost": {
+			UpdatePostRequest,
+			Empty(),
+		},
 	},
 }
 
-var ProtoServices = []ServiceSchema{
-	UserService, PostService,
+type UserWithPosts struct {
+	ID        int64          `json:"id"`
+	Name      string         `json:"name"`
+	CreatedAt time.Time      `dbignore:"true" json:"created_at"`
+	Posts     []gofirst.Post `json:"posts"`
 }
 
-var UserWithModel = MessageSchema{
+var UserSchema = MessageSchema{
 	Name: "User",
 	Fields: FieldsMap{
 		1: String("name").Required().MinLen(2).MaxLen(32),
@@ -133,14 +87,31 @@ var UserWithModel = MessageSchema{
 	ImportPath: "myapp/v1/user.proto",
 }
 
-func TestModelValidation(t *testing.T) {
-	_, err := newProtoMessage(UserWithModel, Set{})
+var GetUserRequest = MessageSchema{
+	Name: "GetUserRequest",
+	Fields: FieldsMap{
+		1: UserSchema.GetField("name"),
+	},
+}
 
-	assert.NoError(t, err, "Testing model validation")
+var GetUserResponse = MessageSchema{
+	Name: "GetUserResponse",
+	Fields: FieldsMap{
+		1: MsgField("user", &UserSchema),
+	},
+}
+
+var UserService = ServiceSchema{
+	Resource: UserSchema,
+	Handlers: HandlersMap{
+		"GetUser": {
+			GetUserRequest, GetUserResponse,
+		},
+	},
 }
 
 func TestMain(t *testing.T) {
-	generator := NewProtoGenerator("gen/proto", "myapp.v1").Services(UserService)
+	generator := NewProtoGenerator("proto", "myapp.v1").Services(UserService, PostService)
 	err := generator.Generate()
 	assert.NoError(t, err, "Main Test")
 }

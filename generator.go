@@ -74,14 +74,14 @@ func (g *ProtoGenerator) Generate() error {
 			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
+		outputFile := strings.ToLower(s.ResourceName) + ".proto"
+		outputPath := filepath.Join(g.outputDir, outputFile)
+		delete(s.Imports, filepath.Join(g.packageRoot, outputFile))
+
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
-
-		outputFile := strings.ToLower(s.ResourceName) + ".proto"
-		outputPath := filepath.Join(g.outputDir, outputFile)
-		delete(s.Imports, filepath.Join(g.packageRoot, outputFile))
 
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 			return err

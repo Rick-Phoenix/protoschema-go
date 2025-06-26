@@ -11,7 +11,6 @@ import (
 	"time"
 
 	sb "github.com/Rick-Phoenix/gofirst"
-	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
@@ -98,6 +97,13 @@ var (
 	timeFuture = timestamppb.Timestamp{Seconds: time.Date(3000, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
 )
 
+type UserWithPosts struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `dbignore:"true" json:"created_at"`
+	Posts     []Post    `json:"posts"`
+}
+
 var UserSchema = sb.MessageSchema{
 	Name: "User",
 	Fields: sb.FieldsMap{
@@ -134,6 +140,15 @@ var UserSchema = sb.MessageSchema{
 	ImportPath:      "myapp/v1/user.proto",
 }
 
+type Post struct {
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Content     *string   `json:"content"`
+	CreatedAt   time.Time `json:"created_at"`
+	AuthorID    int64     `json:"author_id"`
+	SubredditID int64     `json:"subreddit_id"`
+}
+
 var PostSchema = sb.MessageSchema{
 	Name: "Post",
 	Fields: sb.FieldsMap{
@@ -144,7 +159,7 @@ var PostSchema = sb.MessageSchema{
 		5: sb.String("content").Optional(),
 		6: sb.Int64("subreddit_id"),
 	},
-	Model:      &gofirst.Post{},
+	Model:      &Post{},
 	ImportPath: "myapp/v1/post.proto",
 }
 
@@ -186,13 +201,13 @@ var UserService = sb.ServiceSchema{
 			sb.MessageSchema{
 				Name: "GetUserResponse",
 				Fields: sb.FieldsMap{
-					1: sb.MsgField("user", &sb.UserWithModel),
+					1: sb.MsgField("user", &UserSchema),
 				},
 			},
 		},
 		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.FieldsMap{
 			1: sb.FieldMask("field_mask"),
-			2: sb.MsgField("user", &sb.UserWithModel),
+			2: sb.MsgField("user", &UserSchema),
 		}}, sb.Empty()},
 	},
 }
