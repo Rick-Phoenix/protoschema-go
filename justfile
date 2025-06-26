@@ -1,3 +1,5 @@
+set dotenv-load := true
+
 [working-directory("proto")]
 generate:
     buf generate
@@ -7,3 +9,4 @@ dbtest:
 
 protogen:
     go run ./cmd/protogen/main.go
+
