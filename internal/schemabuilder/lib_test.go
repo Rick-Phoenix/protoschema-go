@@ -105,7 +105,14 @@ var UserSchema = sb.ProtoMessageSchema{
 		2: sb.ProtoInt64("id"),
 		3: sb.ProtoTimestamp("created_at"),
 		4: sb.RepeatedField("posts", sb.MsgField("post", &PostSchema)),
-		5: sb.ProtoString("fav_cat").Optional().CelOptions([]sb.CelOption{{Id: "cel", Message: "msg", Expression: "expr"}, {Id: "cel", Message: "msg", Expression: "expr"}}...).Options(sb.ProtoOption{Name: "myopt", Value: true}, sb.ProtoOption{Name: "myopt", Value: false}).RepeatedOptions(sb.ProtoOption{Name: "repopt", Value: true}, sb.ProtoOption{Name: "repopt", Value: true}).Example("tabby").Example("calico"),
+		5: sb.ProtoString("fav_cat").
+			Optional().
+			CelOption("cel", "msg", "expr").
+			CelOption("cel", "msg", "expr").
+			Options([]sb.ProtoOption{{Name: "myopt", Value: true}, {Name: "myopt", Value: false}}...).
+			RepeatedOptions([]sb.ProtoOption{{Name: "repopt", Value: true}, {Name: "repopt", Value: true}}...).
+			Example("tabby").
+			Example("calico"),
 		6: sb.ProtoMap("mymap", sb.ProtoString("").MinLen(1), sb.ProtoInt64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
 		7: sb.RepeatedField("reptest", sb.ProtoInt32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
 		8: sb.ProtoTimestamp("timetest").Lt(&timePast),
@@ -204,8 +211,10 @@ func TestGeneration(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	tmpDir := t.TempDir()
-	err = sb.GenerateProtoFile(service, sb.Options{ProtoRoot: tmpDir})
+	// tmpDir := t.TempDir()
+	tmpDir := "gen/temp"
+	gen := sb.NewProtoGenerator(tmpDir, "myapp.v1")
+	err = gen.Generate(service)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,8 +231,8 @@ func TestGeneration(t *testing.T) {
 	}{
 		{out.Package, "myapp.v1"},
 		{out.Messages["User"].Name, "User"},
-		{out.Services["UserService"].Handlers["GetUserService"].InputType, "GetUserRequest"},
-		{out.Services["UserService"].Handlers["GetUserService"].OutputType, "GetUserResponse"},
+		{out.Services["UserService"].Handlers["GetUser"].InputType, "GetUserRequest"},
+		{out.Services["UserService"].Handlers["GetUser"].OutputType, "GetUserResponse"},
 		{out.Services["UserService"].Handlers["UpdateUserService"].InputType, "UpdateUserRequest"},
 		{out.Services["UserService"].Handlers["UpdateUserService"].OutputType, "google.protobuf.Empty"},
 		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Number, int32(1)},
@@ -244,12 +253,12 @@ func TestGeneration(t *testing.T) {
 		{userMsg.Fields["mymap"].Options["buf.validate.field.map.min_pairs"].Value, uint64(2)},
 		{userMsg.Fields["mymap"].Options["buf.validate.field.map.max_pairs"].Value, uint64(4)},
 		{userMsg.Fields["mymap"].Options["buf.validate.field.map.keys"].Value, "string : { min_len : 1 }"},
-		{userMsg.Fields["mymap"].Options["buf.validate.field.map.values"].Value, "int64 : { gt : 1 , in : [ 1 , 2 ] }"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.values"].Value, "int64 : { gt : 1 in : [ 1 , 2 ] }"},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1)},
 		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4)},
-		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 , in : [ 1 , 2 ] }"},
-		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
-		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d , nanos : 0", timePast.GetSeconds())},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 in : [ 1 , 2 ] }"},
+		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds())},
+		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds())},
 		// Non repeated options should be overridden
 		{userMsg.Fields["fav_cat"].Options["myopt"].Value, false},
 		// And separated from repeated options

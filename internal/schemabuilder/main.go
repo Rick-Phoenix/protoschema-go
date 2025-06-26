@@ -125,14 +125,16 @@ var ProtoServices = ServicesMap{
 	},
 }
 
+var (
+	generator = NewProtoGenerator("gen/proto", "myapp.v1")
+	services  = BuildServicesMap(ProtoServices)
+)
+
 func GenerateProtoFiles() {
 	Services := BuildServicesMap(ProtoServices)
-	outputRoot := "gen/proto"
-
-	options := Options{ProtoRoot: outputRoot}
 
 	for _, v := range Services {
-		if err := GenerateProtoFile(v, options); err != nil {
+		if err := generator.Generate(v); err != nil {
 			log.Fatal(err)
 		}
 	}
