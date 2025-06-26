@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"maps"
-	"path"
 	"slices"
 	"strings"
 )
@@ -21,7 +20,7 @@ type OptionExtensions struct {
 type MessagesMap map[string]ProtoMessage
 
 type ProtoService struct {
-	Name             string
+	ResourceName     string
 	Imports          Set
 	OptionExtensions OptionExtensions
 	Messages         []ProtoMessage
@@ -29,7 +28,6 @@ type ProtoService struct {
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
 	Handlers         []HandlerData
-	FileOutput       string
 }
 
 type HandlerData struct {
@@ -59,6 +57,7 @@ type Handler struct {
 }
 
 type ProtoServiceSchema struct {
+	ResourceName     string
 	Handlers         HandlersMap
 	Messages         []ProtoMessageSchema
 	ServiceOptions   []ProtoOption
@@ -67,25 +66,19 @@ type ProtoServiceSchema struct {
 	Enums            []ProtoEnumGroup
 }
 
-func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string) (ProtoService, error) {
+func NewProtoService(s ProtoServiceSchema) (ProtoService, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
 
 	messages := make([]ProtoMessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
 
-	out := &ProtoService{FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Name: resourceName + "Service", Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
-
-	fileOutput := path.Join(basePath, strings.ToLower(resourceName)+".proto")
+	out := &ProtoService{ResourceName: s.ResourceName, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, OptionExtensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
 
 	processMessage := func(m ProtoMessageSchema) {
 		var errAgg error
-
-		if m.ImportPath != "" && m.ImportPath != fileOutput {
-			errAgg = errors.Join(errAgg, fmt.Errorf("Import path for message %q (%s) not matching the output path (%s).", m.Name, m.ImportPath, fileOutput))
-		}
 
 		message, err := NewProtoMessage(m, imports)
 		errAgg = errors.Join(errAgg, err)
@@ -93,7 +86,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		processedMessages[m.Name] = present
 
 		if errAgg != nil {
-			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", resourceName), errAgg))
+			messageErrors = errors.Join(messageErrors, IndentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
 		}
 	}
 
@@ -138,7 +131,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		if _, seen := processedMessages[h.Request.Name]; !seen {
 			if h.Request.ReferenceOnly {
 				processedMessages[h.Request.Name] = present
-				if h.Request.ImportPath != "" && h.Request.ImportPath != fileOutput {
+				if h.Request.ImportPath != "" {
 					imports[h.Request.ImportPath] = present
 				}
 			} else {
@@ -149,7 +142,7 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 		if _, seen := processedMessages[h.Response.Name]; !seen {
 			if h.Response.ReferenceOnly {
 				processedMessages[h.Response.Name] = present
-				if h.Response.ImportPath != "" && h.Response.ImportPath != fileOutput {
+				if h.Response.ImportPath != "" {
 					imports[h.Response.ImportPath] = present
 				}
 			} else {
@@ -165,9 +158,6 @@ func NewProtoService(resourceName string, s ProtoServiceSchema, basePath string)
 	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {
 		imports["google/protobuf/descriptor.proto"] = present
 	}
-
-	out.FileOutput = fileOutput
-	delete(imports, fileOutput)
 
 	return *out, nil
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -17,8 +18,9 @@ type ProtoFileData struct {
 }
 
 type ProtoGenerator struct {
-	protoRoot   string
 	packageName string
+	outputDir   string
+	packageRoot string
 }
 
 //go:embed templates/*
@@ -81,11 +83,14 @@ var funcMap = template.FuncMap{
 
 		return ""
 	},
+	"serviceSuffix": AddServiceSuffix,
 }
 
 func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {
+	packageRoot := strings.ReplaceAll(packageName, ".", "/")
+	outputDir := filepath.Join(protoRoot, packageRoot)
 	return &ProtoGenerator{
-		protoRoot: protoRoot, packageName: packageName,
+		packageName: packageName, outputDir: outputDir, packageRoot: packageRoot,
 	}
 }
 
@@ -105,7 +110,10 @@ func (g *ProtoGenerator) Generate(s ProtoService) error {
 		return fmt.Errorf("Failed to execute template: %w", err)
 	}
 
-	outputPath := filepath.Join(g.protoRoot, s.FileOutput)
+	outputFile := strings.ToLower(s.ResourceName) + ".proto"
+	outputPath := filepath.Join(g.outputDir, outputFile)
+	delete(s.Imports, filepath.Join(g.packageRoot, outputFile))
+
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return err
 	}

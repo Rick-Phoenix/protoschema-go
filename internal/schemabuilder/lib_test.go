@@ -169,6 +169,7 @@ var TestEnum = []sb.ProtoEnumGroup{
 }
 
 var UserService = sb.ProtoServiceSchema{
+	ResourceName: "User",
 	OptionExtensions: sb.OptionExtensions{
 		Message: MyOptions,
 		File:    MyOptions,
@@ -206,7 +207,7 @@ func TestGeneration(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	service, err := sb.NewProtoService("User", UserService, "myapp/v1")
+	service, err := sb.NewProtoService(UserService)
 	if err != nil {
 		log.Fatal(err)
 	}
