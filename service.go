@@ -27,7 +27,7 @@ type ServiceData struct {
 	Imports        Set
 	Extensions     Extensions
 	Messages       []MessageData
-	Enums          []ProtoEnumGroup
+	Enums          []EnumGroup
 	ServiceOptions []ProtoOption
 	FileOptions    []ProtoOption
 	Handlers       []HandlerData
@@ -40,7 +40,7 @@ type ServiceSchema struct {
 	ServiceOptions   []ProtoOption
 	FileOptions      []ProtoOption
 	OptionExtensions Extensions
-	Enums            []ProtoEnumGroup
+	Enums            []EnumGroup
 }
 
 func BuildServices(services []ServiceSchema) []ServiceData {

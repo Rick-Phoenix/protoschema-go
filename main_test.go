@@ -23,11 +23,15 @@ var UserSchema = MessageSchema{
 		3: Timestamp("created_at"),
 		5: Repeated("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
 	},
-	Enums: []ProtoEnumGroup{
-		EnumGroup("myenum", ProtoEnumMap{
-			0: "VAL_1",
-			1: "VAL_2",
-		}).Opts([]ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...),
+	Enums: []EnumGroup{
+		{
+			Name: "myenum",
+			Members: EnumMembers{
+				0: "VAL_1",
+				1: "VAL_2",
+			},
+			Options: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
+		},
 	},
 	Model:      &UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",

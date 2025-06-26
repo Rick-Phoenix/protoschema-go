@@ -3,71 +3,42 @@ package schemabuilder
 import (
 	"errors"
 	"maps"
-	"slices"
 )
 
-type ProtoEnumMap map[int32]string
+type EnumMembers map[int32]string
 
-type ProtoEnumGroup struct {
+type EnumGroup struct {
 	Name            string
-	Members         ProtoEnumMap
+	Members         EnumMembers
 	ReservedNames   []string
 	ReservedNumbers []int32
 	ReservedRanges  []Range
 	Options         []ProtoOption
 }
 
-func EnumGroup(name string, members ProtoEnumMap) ProtoEnumGroup {
-	sorted := make(ProtoEnumMap)
-	keys := slices.Sorted(maps.Keys(members))
-
-	for _, k := range keys {
-		v := members[k]
-		sorted[k] = v
-	}
-
-	return ProtoEnumGroup{Name: name, Members: sorted}
+type EnumField struct {
+	*ProtoField[EnumField]
+	*ConstField[EnumField, int32, int32]
+	*OptionalField[EnumField]
 }
 
-func (e ProtoEnumGroup) Opts(o ...ProtoOption) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: o, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers, ReservedRanges: e.ReservedRanges}
-}
-
-func (e ProtoEnumGroup) RsvNames(n ...string) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: n, ReservedNumbers: e.ReservedNumbers, ReservedRanges: e.ReservedRanges}
-}
-
-func (e ProtoEnumGroup) RsvNumbers(n ...int32) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: n, ReservedRanges: e.ReservedRanges}
-}
-
-func (e ProtoEnumGroup) RsvRanges(r ...Range) ProtoEnumGroup {
-	return ProtoEnumGroup{Name: e.Name, Members: e.Members, Options: e.Options, ReservedNames: e.ReservedNames, ReservedNumbers: e.ReservedNumbers, ReservedRanges: r}
-}
-
-type ProtoEnumField struct {
-	*ProtoField[ProtoEnumField]
-	*ConstField[ProtoEnumField, int32, int32]
-	*OptionalField[ProtoEnumField]
-}
-
-func EnumField(name string, enumName string) *ProtoEnumField {
+func Enum(name string, enumName string) *EnumField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
 
-	ef := &ProtoEnumField{}
+	ef := &EnumField{}
 	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, protoBaseType: "enum", options: options}
 
-	ef.ProtoField = &ProtoField[ProtoEnumField]{
+	ef.ProtoField = &ProtoField[EnumField]{
 		protoFieldInternal: internal, self: ef,
 	}
-	ef.ConstField = &ConstField[ProtoEnumField, int32, int32]{constInternal: internal, self: ef}
-	ef.OptionalField = &OptionalField[ProtoEnumField]{optionalInternal: internal, self: ef}
+	ef.ConstField = &ConstField[EnumField, int32, int32]{constInternal: internal, self: ef}
+	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}
 
 	return ef
 }
 
-func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
+func (ef *EnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	data := FieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
@@ -106,7 +77,7 @@ func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) 
 	return data, nil
 }
 
-func (ef *ProtoEnumField) DefinedOnly() *ProtoEnumField {
+func (ef *EnumField) DefinedOnly() *EnumField {
 	ef.rules["defined_only"] = true
 	return ef
 }

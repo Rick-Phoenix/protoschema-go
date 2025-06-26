@@ -17,7 +17,7 @@ type MessageSchema struct {
 	Name            string
 	Fields          FieldsMap
 	Oneofs          []OneofGroup
-	Enums           []ProtoEnumGroup
+	Enums           []EnumGroup
 	Options         []ProtoOption
 	Messages        []MessageSchema
 	ReservedNumbers []uint
@@ -39,7 +39,7 @@ type MessageData struct {
 	ReservedRanges  []Range
 	ReservedNames   []string
 	Options         []ProtoOption
-	Enums           []ProtoEnumGroup
+	Enums           []EnumGroup
 }
 
 func (s *MessageSchema) GetFields() map[string]FieldBuilder {

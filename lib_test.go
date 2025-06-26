@@ -164,11 +164,18 @@ var MyOptions = []sb.ExtensionField{{
 	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
 }}
 
-var TestEnum = []sb.ProtoEnumGroup{
-	sb.EnumGroup("myenum", sb.ProtoEnumMap{
-		0: "VAL_1",
-		1: "VAL_2",
-	}).Opts(sb.AllowAlias).RsvNames("name1", "name2").RsvNumbers(10, 11).RsvRanges(sb.Range{20, 23}),
+var TestEnum = []sb.EnumGroup{
+	{
+		Name: "myenum",
+		Members: sb.EnumMembers{
+			0: "VAL_1",
+			1: "VAL_2",
+		},
+		Options:         []sb.ProtoOption{sb.AllowAlias},
+		ReservedNames:   []string{"name1", "name2"},
+		ReservedNumbers: []int32{10, 11},
+		ReservedRanges:  []sb.Range{{20, 23}},
+	},
 }
 
 var UserService = sb.ServiceSchema{
