@@ -35,7 +35,7 @@ func GetOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error)
 func GetProtoOption(name string, value any) (string, error) {
 	val, err := formatProtoValue(value)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Error while formatting option %q: %w", name, err)
 	}
 
 	return fmt.Sprintf("%s = %s", name, val), nil

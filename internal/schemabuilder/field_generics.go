@@ -48,15 +48,8 @@ func (b *ProtoFieldExternal[BuilderT]) Deprecated() *BuilderT {
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) CelOptions(o ...CelOption) *BuilderT {
-	opts := GetCelOptions(o)
-	b.repeatedOptions = append(b.repeatedOptions, opts...)
-
-	return b.self
-}
-
 func (b *ProtoFieldExternal[BuilderT]) Required() *BuilderT {
-	b.options["(buf.validate.field).required"] = "true"
+	b.options["(buf.validate.field).required"] = true
 	b.required = true
 	return b.self
 }

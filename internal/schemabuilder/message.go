@@ -188,7 +188,7 @@ func MessageCelOption(o CelOption) ProtoOption {
 
 	out.Name = "(buf.validate.message).cel"
 
-	out.Value = GetCelOption(o)
+	out.Value = o
 
 	return out
 }

@@ -22,16 +22,21 @@ var UserSchema = ProtoMessageSchema{
 		1: ProtoString("name"),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
-		5: RepeatedField("posts", MsgField("post", &PostSchema)),
-		8: ProtoMap("test", ProtoString("").MinLen(15), ProtoInt32("").In(1, 2)).Deprecated().RepeatedOptions([]ProtoOption{{"Myopt", 1}, {"Myopt", 2}}...),
+		5: RepeatedField("posts", MsgField("post", &PostSchema)).CelOptions(NewCelOption("myexpr", "x must not be y", "x != y")),
 	},
 	Oneofs: []ProtoOneOfBuilder{ProtoOneOf("myoneof", OneofChoicesMap{
 		9:  ProtoString("example"),
 		10: ProtoInt32("another"),
-	})},
-	Model:       &gofirst.User{},
-	ModelIgnore: []string{"posts", "test"},
-	ImportPath:  "myapp/v1/user.proto",
+	}, []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...)},
+	Enums: []ProtoEnumGroup{
+		ProtoEnum("myenum", ProtoEnumMap{
+			0: "VAL_1",
+			1: "VAL_2",
+		}).Opts([]ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...),
+	},
+	Model:      &UserWithPosts{},
+	ImportPath: "myapp/v1/user.proto",
+	Options:    []ProtoOption{MessageCelOption(NewCelOption("myexpr", "x must not be y", "x != y"))},
 }
 
 var GetUserSchema = ProtoMessageSchema{
@@ -40,8 +45,6 @@ var GetUserSchema = ProtoMessageSchema{
 		1: UserSchema.GetField("name"),
 	},
 }
-
-var impfield = ProtoString("field")
 
 var GetPostSchema = ProtoMessageSchema{
 	Name: "GetPostRequest",
@@ -81,24 +84,22 @@ type ServicesMap map[string]ProtoServiceSchema
 
 type ServicesData map[string]ProtoService
 
-var MyOptions = []CustomOption{{
-	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
-}}
-
 var UserService = ProtoServiceSchema{
 	Messages: []ProtoMessageSchema{UserSchema},
 	Handlers: HandlersMap{
-		"GetUserService": {GetUserSchema, ProtoMessageSchema{
+		"GetUser": {GetUserSchema, ProtoMessageSchema{
 			Name: "GetUserResponse",
 			Fields: ProtoFieldsMap{
 				1: MsgField("user", &UserSchema),
 			},
 		}},
-		"UpdateUserService": {ProtoMessageSchema{Name: "UpdateUserResponse", Fields: ProtoFieldsMap{
+		"UpdateUser": {ProtoMessageSchema{Name: "UpdateUserRequest", Fields: ProtoFieldsMap{
 			1: FieldMask("field_mask"),
 			2: MsgField("user", &UserSchema),
 		}}, ProtoEmpty()},
 	},
+	FileOptions:    []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
+	ServiceOptions: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
 }
 
 var ProtoServices = ServicesMap{
@@ -112,7 +113,7 @@ var ProtoServices = ServicesMap{
 					1: MsgField("post", &PostSchema),
 				},
 			}},
-			"UpdatePost": {ProtoMessageSchema{Name: "UpdatePostResponse", Fields: ProtoFieldsMap{
+			"UpdatePost": {ProtoMessageSchema{Name: "UpdatePostRequest", Fields: ProtoFieldsMap{
 				1: MsgField("post", &PostSchema),
 				2: FieldMask("field_mask"),
 			}}, ProtoEmpty()},

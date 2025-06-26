@@ -6,17 +6,17 @@ syntax = "proto3";
 
 package {{ .PackageName }};
 
-{{ range .FileOptions }}
-option {{ .Name }} = {{ .Value }};
-{{- end }}
+{{ range .FileOptions -}}
+{{ fmtOpt . }};
+{{ end }}
 
-{{ range .OptionExtensions.File }}
+{{ range .OptionExtensions.File -}}
 extend google.protobuf.FileOptions {
   {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
 }
 {{ end }}
 
-{{- range .OptionExtensions.Service }}
+{{ range .OptionExtensions.Service }}
 extend google.protobuf.ServiceOptions {
   {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
 }
@@ -43,7 +43,7 @@ extend google.protobuf.OneofOptions {
 {{ range .Enums -}}
 enum {{ .Name }} {
   {{- range .Options -}}
-    option {{ .Name }} = {{ .Value }};
+    {{ fmtOpt . }};
   {{- end }}
   {{ range $val, $name := .Members -}}
     {{ $name }} = {{ $val }};
@@ -71,14 +71,14 @@ message {{ .Name }} {
 {{- if .ReservedNames }}
   reserved {{ join .ReservedNames ", "}};
 {{- end }}
-{{ range .Options }}
-  option {{ .Name }} = {{ .Value }};
-{{- end }}
+  {{- range .Options -}}
+    {{ fmtOpt . }};
+  {{- end }}
 {{ range .Enums -}}
   enum {{ .Name }} {
-  {{- range .Options -}}
-    option {{ .Name }} = {{ .Value }};
-  {{- end }}
+  {{ range .Options -}}
+    {{ fmtOpt . }};
+  {{ end }}
   {{ range $val, $name := .Members -}}
     {{ $name }} = {{ $val }};
   {{ end -}}
@@ -95,7 +95,7 @@ message {{ .Name }} {
 {{ end }}
 {{ range .Oneofs }}
   {{ range .Options -}}
-  option {{ .Name }} = {{ .Value }};
+    {{ fmtOpt . }};
   {{ end }}
   oneof {{ .Name }} {
     {{ range $idx, $field := .Choices -}}
@@ -114,8 +114,8 @@ message {{ .Name }} {
 {{ end }}
 
 service {{.Name}} {
-{{- range .ServiceOptions}}
-  option {{ .Name }} = {{ .Value }};
+{{ range .ServiceOptions -}}
+  {{ fmtOpt . }};
 {{ end }}
   {{- range .Handlers}}
   rpc {{ .Name }}({{ .Request }}) returns({{ .Response }});

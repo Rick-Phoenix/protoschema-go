@@ -1,32 +1,15 @@
 package schemabuilder
 
-import (
-	"fmt"
-)
+import "errors"
 
 type CelOption struct {
 	Id, Message, Expression string
 }
 
-func NewCelOption(id, message, expression string) CelOption {
-	return CelOption{Id: id, Message: message, Expression: expression}
-}
+func (b *ProtoFieldExternal[BuilderT]) CelOption(id, message, expression string) *BuilderT {
+	opt, err := GetProtoOption("(buf.validate.field).cel", CelOption{Id: id, Message: message, Expression: expression})
+	b.errors = errors.Join(b.errors, err)
+	b.repeatedOptions = append(b.repeatedOptions, opt)
 
-func GetCelOption(opt CelOption) string {
-	return fmt.Sprintf("{\nid: %q \nmessage: %q\nexpression: %q\n}",
-		opt.Id, opt.Message, opt.Expression)
-}
-
-func GetCelOptions(opts []CelOption) []string {
-	flatOpts := []string{}
-
-	for _, opt := range opts {
-		stringOpt := fmt.Sprintf(
-			"(buf.validate.field).cel = %s",
-			GetCelOption(opt))
-
-		flatOpts = append(flatOpts, stringOpt)
-	}
-
-	return flatOpts
+	return b.self
 }

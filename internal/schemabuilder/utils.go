@@ -275,6 +275,9 @@ func formatProtoValue[T any](value T) (string, error) {
 		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
 	case *timestamppb.Timestamp:
 		return fmt.Sprintf("{ seconds: %d, nanos: %d }", v.GetSeconds(), v.GetNanos()), nil
+	case CelOption:
+		return fmt.Sprintf("{\nid: %q \nmessage: %q\nexpression: %q\n}",
+			v.Id, v.Message, v.Expression), nil
 	default:
 		// If it's not one of the direct cases, use reflect to determine its kind.
 		val := reflect.ValueOf(value)
@@ -324,7 +327,7 @@ func formatProtoValue[T any](value T) (string, error) {
 				field := typ.Field(i)
 				if field.IsExported() {
 					fieldVal := val.Field(i)
-					fields[field.Name] = fieldVal.Interface()
+					fields[strings.ToLower(field.Name)] = fieldVal.Interface()
 				}
 			}
 

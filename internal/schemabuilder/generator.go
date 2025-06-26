@@ -24,6 +24,15 @@ type ProtoFileData struct {
 var templateFS embed.FS
 
 var funcMap = template.FuncMap{
+	"fmtOpt": func(o ProtoOption) string {
+		opt, err := GetProtoOption(o.Name, o.Value)
+		if err != nil {
+			fmt.Println(err.Error())
+			return "error"
+		}
+
+		return "option " + opt
+	},
 	"join": func(e []string, sep string) string {
 		str := ""
 
