@@ -22,7 +22,7 @@ var UserSchema = ProtoMessageSchema{
 		1: ProtoString("name"),
 		2: ProtoInt64("id"),
 		3: ProtoTimestamp("created_at"),
-		5: RepeatedField("posts", MsgField("post", &PostSchema)).CelOptions(NewCelOption("myexpr", "x must not be y", "x != y")),
+		5: RepeatedField("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
 	},
 	Oneofs: []ProtoOneOfBuilder{ProtoOneOf("myoneof", OneofChoicesMap{
 		9:  ProtoString("example"),
@@ -36,7 +36,7 @@ var UserSchema = ProtoMessageSchema{
 	},
 	Model:      &UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
-	Options:    []ProtoOption{MessageCelOption(NewCelOption("myexpr", "x must not be y", "x != y"))},
+	Options:    []ProtoOption{MessageCelOption("myexpr", "x must not be y", "x != y")},
 }
 
 var GetUserSchema = ProtoMessageSchema{

@@ -183,24 +183,12 @@ func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 	return mo
 }
 
-func MessageCelOption(o CelOption) ProtoOption {
+func MessageCelOption(id, message, expression string) ProtoOption {
 	out := ProtoOption{}
 
 	out.Name = "(buf.validate.message).cel"
 
-	out.Value = o
+	out.Value = CelOption{Id: id, Message: message, Expression: expression}
 
 	return out
-}
-
-func ReservedNumbers(numbers ...uint) []uint {
-	return numbers
-}
-
-func ReservedRanges(ranges ...Range) []Range {
-	return ranges
-}
-
-func ReservedNames(names ...string) []string {
-	return names
 }
