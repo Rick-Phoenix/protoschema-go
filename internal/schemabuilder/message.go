@@ -19,6 +19,7 @@ type ProtoMessageSchema struct {
 	Oneofs          []ProtoOneOfBuilder
 	Enums           []ProtoEnumGroup
 	Options         []ProtoOption
+	Messages        []ProtoMessageSchema
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
@@ -47,6 +48,7 @@ type ProtoMessage struct {
 	Name            string
 	Fields          []ProtoFieldData
 	Oneofs          []ProtoOneOfData
+	Messages        []ProtoMessage
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
@@ -140,20 +142,32 @@ func NewProtoMessage(s ProtoMessageSchema, imports Set) (ProtoMessage, error) {
 		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
-			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneOf member %s", data.Name), oneofErr))
+			oneOfErrors = errors.Join(oneOfErrors, IndentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
 		}
 		oneOfs = append(oneOfs, data)
 	}
 
-	if fieldsErrors != nil || oneOfErrors != nil {
-		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors)
+	subMessages := []ProtoMessage{}
+	var subMessagesErrors error
+
+	for _, m := range s.Messages {
+		data, err := NewProtoMessage(m, imports)
+		if err != nil {
+			subMessagesErrors = errors.Join(subMessagesErrors, IndentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
+		}
+
+		subMessages = append(subMessages, data)
 	}
 
-	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums}, nil
+	if fieldsErrors != nil || oneOfErrors != nil || subMessagesErrors != nil {
+		return ProtoMessage{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
+	}
+
+	return ProtoMessage{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
 }
 
-func MessageRef(name string, importPath string) ProtoMessageSchema {
-	return ProtoMessageSchema{Name: name, ReferenceOnly: true, ImportPath: importPath}
+func MessageRef(s ProtoMessageSchema) ProtoMessageSchema {
+	return ProtoMessageSchema{Name: s.Name, ReferenceOnly: true, ImportPath: s.ImportPath}
 }
 
 func ProtoEmpty() ProtoMessageSchema {
@@ -181,14 +195,4 @@ func ProtoCustomOneOf(required bool, fields ...string) ProtoOption {
 
 	mo.Value = val
 	return mo
-}
-
-func MessageCelOption(id, message, expression string) ProtoOption {
-	out := ProtoOption{}
-
-	out.Name = "(buf.validate.message).cel"
-
-	out.Value = CelOption{Id: id, Message: message, Expression: expression}
-
-	return out
 }

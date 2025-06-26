@@ -90,7 +90,7 @@ func GenerateProtoFile(s ProtoService, o Options) error {
 		ProtoService: s,
 	}
 
-	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/service.proto.tmpl")
+	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
 	if err != nil {
 		return fmt.Errorf("Failed to parse template: %w", err)
 	}

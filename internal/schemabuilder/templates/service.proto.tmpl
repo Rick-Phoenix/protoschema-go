@@ -10,107 +10,14 @@ package {{ .PackageName }};
 {{ fmtOpt . }};
 {{ end }}
 
-{{ range .OptionExtensions.File -}}
-extend google.protobuf.FileOptions {
-  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
-}
-{{ end }}
-
-{{ range .OptionExtensions.Service }}
-extend google.protobuf.ServiceOptions {
-  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
-}
-{{ end }}
-
-{{- range .OptionExtensions.Message }}
-extend google.protobuf.MessageOptions {
-  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
-}
-{{ end }}
-
-{{- range .OptionExtensions.Field }}
-extend google.protobuf.FieldOptions {
-  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
-}
-{{- end }}
-
-{{- range .OptionExtensions.OneOf }}
-extend google.protobuf.OneofOptions {
-  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
-}
-{{- end }}
+{{ template "extensions" . }}
 
 {{ range .Enums -}}
-enum {{ .Name }} {
-  {{- range .Options -}}
-    {{ fmtOpt . }};
-  {{- end }}
-  {{ range $val, $name := .Members -}}
-    {{ $name }} = {{ $val }};
-  {{ end -}}
-  {{ if .ReservedNumbers -}}
-    reserved {{ joinInt32 .ReservedNumbers ", "}};
-  {{ end -}}
-  {{ if .ReservedNames -}}
-    reserved {{ join .ReservedNames ", "}};
-  {{ end -}}
-  {{ if .ReservedRanges -}}
-    reserved {{ joinRange .ReservedRanges }};
-  {{- end }}
-}
+{{ template "enum" . }}
 {{ end }}
 
 {{ range .Messages }}
-message {{ .Name }} {
-{{- if .ReservedRanges }}
-  reserved {{ joinRange .ReservedRanges }};
-{{- end }}
-{{- if .ReservedNumbers }}
-  reserved {{ joinUint .ReservedNumbers ", " }};
-{{- end }}
-{{- if .ReservedNames }}
-  reserved {{ join .ReservedNames ", "}};
-{{- end }}
-  {{- range .Options -}}
-    {{ fmtOpt . }};
-  {{- end }}
-{{ range .Enums -}}
-  enum {{ .Name }} {
-  {{ range .Options -}}
-    {{ fmtOpt . }};
-  {{ end }}
-  {{ range $val, $name := .Members -}}
-    {{ $name }} = {{ $val }};
-  {{ end -}}
-  {{ if .ReservedNumbers -}}
-    reserved {{ joinInt32 .ReservedNumbers ", "}};
-  {{ end -}}
-  {{ if .ReservedNames -}}
-    reserved {{ join .ReservedNames ", "}};
-  {{ end -}}
-  {{ if .ReservedRanges -}}
-    reserved {{ joinRange .ReservedRanges }};
-  {{- end }}
-  }
-{{ end }}
-{{ range .Oneofs }}
-  {{ range .Options -}}
-    {{ fmtOpt . }};
-  {{ end }}
-  oneof {{ .Name }} {
-    {{ range $idx, $field := .Choices -}}
-      {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
-    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{- end -}} 
-  ]{{- end -}};
-  {{ end -}}
-  }
-{{ end }}
-{{- range $_, $field := .Fields}}
-  {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
-    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{ end }} 
-  ]{{- end -}};
-  {{- end }}
-}
+{{ template "message" . }}
 {{ end }}
 
 service {{.Name}} {

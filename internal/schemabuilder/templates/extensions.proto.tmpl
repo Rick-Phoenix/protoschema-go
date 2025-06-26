@@ -1,0 +1,31 @@
+{{- define "extensions" -}}
+{{ range .OptionExtensions.File -}}
+extend google.protobuf.FileOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{ range .OptionExtensions.Service }}
+extend google.protobuf.ServiceOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{- range .OptionExtensions.Message }}
+extend google.protobuf.MessageOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{ end }}
+
+{{- range .OptionExtensions.Field }}
+extend google.protobuf.FieldOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{- end }}
+
+{{- range .OptionExtensions.OneOf }}
+extend google.protobuf.OneofOptions {
+  {{ keyword .Optional .Repeated }}{{ .Type }} {{ .Name }} = {{ .FieldNr }};
+}
+{{- end }}
+{{ end }}

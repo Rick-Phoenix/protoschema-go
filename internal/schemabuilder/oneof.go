@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
 )
 
 type ProtoOneOfData struct {
@@ -45,7 +44,7 @@ func (of *ProtoOneOfGroup) Build(imports Set) (ProtoOneOfData, error) {
 		data, err := field.Build(number, imports)
 		fieldErr = errors.Join(fieldErr, err)
 
-		if strings.HasPrefix(data.ProtoType, "map<") {
+		if data.IsMap {
 			fieldErr = errors.Join(fieldErr, fmt.Errorf("Cannot use map fields in oneof groups (must be wrapped in a message type first)."))
 		}
 

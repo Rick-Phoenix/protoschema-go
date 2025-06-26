@@ -37,6 +37,7 @@ var UserSchema = ProtoMessageSchema{
 	Model:      &UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
 	Options:    []ProtoOption{MessageCelOption("myexpr", "x must not be y", "x != y")},
+	Messages:   []ProtoMessageSchema{PostSchema},
 }
 
 var GetUserSchema = ProtoMessageSchema{
@@ -100,6 +101,9 @@ var UserService = ProtoServiceSchema{
 	},
 	FileOptions:    []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
 	ServiceOptions: []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}},
+	OptionExtensions: OptionExtensions{
+		Service: []CustomOption{{"extensionopt", "string", 1, true, true}},
+	},
 }
 
 var ProtoServices = ServicesMap{
