@@ -7,10 +7,10 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-type ProtoNumericField[BuilderT any, ValueT constraints.Ordered] struct {
-	*ProtoFieldExternal[BuilderT]
-	*ProtoConstField[BuilderT, ValueT, ValueT]
-	*ProtoOptionalField[BuilderT]
+type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
+	*ProtoField[BuilderT]
+	*ConstField[BuilderT, ValueT, ValueT]
+	*OptionalField[BuilderT]
 	self *BuilderT
 
 	hasLtOrLte bool
@@ -24,25 +24,25 @@ type ProtoNumericField[BuilderT any, ValueT constraints.Ordered] struct {
 	isFloatType bool
 }
 
-func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *ProtoNumericField[BuilderT, ValueT] {
-	return &ProtoNumericField[BuilderT, ValueT]{
-		ProtoFieldExternal: &ProtoFieldExternal[BuilderT]{
+func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
+	return &NumericField[BuilderT, ValueT]{
+		ProtoField: &ProtoField[BuilderT]{
 			protoFieldInternal: pfi,
 			self:               self,
 		},
 		isFloatType: isFloat,
-		ProtoConstField: &ProtoConstField[BuilderT, ValueT, ValueT]{
+		ConstField: &ConstField[BuilderT, ValueT, ValueT]{
 			constInternal: pfi,
 			self:          self,
 		},
-		ProtoOptionalField: &ProtoOptionalField[BuilderT]{
+		OptionalField: &OptionalField[BuilderT]{
 			optionalInternal: pfi,
 			self:             self,
 		},
 	}
 }
 
-func (nf *ProtoNumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
+func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
 	}
@@ -56,10 +56,10 @@ func (nf *ProtoNumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	nf.rules["lt"] = val
 	nf.hasLtOrLte = true
 	nf.lt = &val
-	return nf.ProtoFieldExternal.self
+	return nf.ProtoField.self
 }
 
-func (nf *ProtoNumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
+func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
 	}
@@ -73,10 +73,10 @@ func (nf *ProtoNumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	nf.rules["lte"] = val
 	nf.hasLtOrLte = true
 	nf.lte = &val
-	return nf.ProtoFieldExternal.self
+	return nf.ProtoField.self
 }
 
-func (nf *ProtoNumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
+func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
 	}
@@ -90,10 +90,10 @@ func (nf *ProtoNumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	nf.rules["gt"] = val
 	nf.hasGtOrGte = true
 	nf.gt = &val
-	return nf.ProtoFieldExternal.self
+	return nf.ProtoField.self
 }
 
-func (nf *ProtoNumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
+func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
 	}
@@ -107,22 +107,22 @@ func (nf *ProtoNumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	nf.rules["gte"] = val
 	nf.hasGtOrGte = true
 	nf.gte = &val
-	return nf.ProtoFieldExternal.self
+	return nf.ProtoField.self
 }
 
-func (nf *ProtoNumericField[BuilderT, ValueT]) Finite() *BuilderT {
+func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	if !nf.isFloatType {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("The 'finite' rule is only applicable to float and double types."))
 	}
 	nf.rules["finite"] = true
-	return nf.ProtoFieldExternal.self
+	return nf.ProtoField.self
 }
 
-type ProtoInt32Field struct {
-	*ProtoNumericField[ProtoInt32Field, int32]
+type Int32Field struct {
+	*NumericField[Int32Field, int32]
 }
 
-func Int32(name string) *ProtoInt32Field {
+func Int32(name string) *Int32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -134,18 +134,18 @@ func Int32(name string) *ProtoInt32Field {
 		rules:     rules,
 	}
 
-	integerField := &ProtoInt32Field{}
+	integerField := &Int32Field{}
 
-	integerField.ProtoNumericField = newNumericField[ProtoInt32Field, int32](internal, integerField, false)
+	integerField.NumericField = newNumericField[Int32Field, int32](internal, integerField, false)
 	return integerField
 }
 
-type ProtoFloatField struct {
-	*ProtoFieldExternal[ProtoFloatField]
-	*ProtoNumericField[ProtoFloatField, float32]
+type FloatField struct {
+	*ProtoField[FloatField]
+	*NumericField[FloatField, float32]
 }
 
-func Float(name string) *ProtoFloatField {
+func Float(name string) *FloatField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -157,21 +157,21 @@ func Float(name string) *ProtoFloatField {
 		rules:     rules,
 	}
 
-	floatField := &ProtoFloatField{}
-	floatField.ProtoFieldExternal = &ProtoFieldExternal[ProtoFloatField]{
+	floatField := &FloatField{}
+	floatField.ProtoField = &ProtoField[FloatField]{
 		protoFieldInternal: internal,
 		self:               floatField,
 	}
-	floatField.ProtoNumericField = newNumericField[ProtoFloatField, float32](internal, floatField, true)
+	floatField.NumericField = newNumericField[FloatField, float32](internal, floatField, true)
 	return floatField
 }
 
-type ProtoDoubleField struct {
-	*ProtoFieldExternal[ProtoDoubleField]
-	*ProtoNumericField[ProtoDoubleField, float64]
+type DoubleField struct {
+	*ProtoField[DoubleField]
+	*NumericField[DoubleField, float64]
 }
 
-func Double(name string) *ProtoDoubleField {
+func Double(name string) *DoubleField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -183,21 +183,21 @@ func Double(name string) *ProtoDoubleField {
 		rules:     rules,
 	}
 
-	floatField := &ProtoDoubleField{}
-	floatField.ProtoFieldExternal = &ProtoFieldExternal[ProtoDoubleField]{
+	floatField := &DoubleField{}
+	floatField.ProtoField = &ProtoField[DoubleField]{
 		protoFieldInternal: internal,
 		self:               floatField,
 	}
-	floatField.ProtoNumericField = newNumericField[ProtoDoubleField, float64](internal, floatField, true)
+	floatField.NumericField = newNumericField[DoubleField, float64](internal, floatField, true)
 	return floatField
 }
 
-type ProtoInt64Field struct {
-	*ProtoFieldExternal[ProtoInt64Field]
-	*ProtoNumericField[ProtoInt64Field, int64]
+type Int64Field struct {
+	*ProtoField[Int64Field]
+	*NumericField[Int64Field, int64]
 }
 
-func Int64(name string) *ProtoInt64Field {
+func Int64(name string) *Int64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -209,21 +209,21 @@ func Int64(name string) *ProtoInt64Field {
 		rules:     rules,
 	}
 
-	int64Field := &ProtoInt64Field{}
-	int64Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoInt64Field]{
+	int64Field := &Int64Field{}
+	int64Field.ProtoField = &ProtoField[Int64Field]{
 		protoFieldInternal: internal,
 		self:               int64Field,
 	}
-	int64Field.ProtoNumericField = newNumericField[ProtoInt64Field, int64](internal, int64Field, false)
+	int64Field.NumericField = newNumericField[Int64Field, int64](internal, int64Field, false)
 	return int64Field
 }
 
-type ProtoUInt32Field struct {
-	*ProtoFieldExternal[ProtoUInt32Field]
-	*ProtoNumericField[ProtoUInt32Field, uint32]
+type UInt32Field struct {
+	*ProtoField[UInt32Field]
+	*NumericField[UInt32Field, uint32]
 }
 
-func UInt32(name string) *ProtoUInt32Field {
+func UInt32(name string) *UInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -235,21 +235,21 @@ func UInt32(name string) *ProtoUInt32Field {
 		rules:     rules,
 	}
 
-	uint32Field := &ProtoUInt32Field{}
-	uint32Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoUInt32Field]{
+	uint32Field := &UInt32Field{}
+	uint32Field.ProtoField = &ProtoField[UInt32Field]{
 		protoFieldInternal: internal,
 		self:               uint32Field,
 	}
-	uint32Field.ProtoNumericField = newNumericField[ProtoUInt32Field, uint32](internal, uint32Field, false)
+	uint32Field.NumericField = newNumericField[UInt32Field, uint32](internal, uint32Field, false)
 	return uint32Field
 }
 
-type ProtoUInt64Field struct {
-	*ProtoFieldExternal[ProtoUInt64Field]
-	*ProtoNumericField[ProtoUInt64Field, uint64]
+type UInt64Field struct {
+	*ProtoField[UInt64Field]
+	*NumericField[UInt64Field, uint64]
 }
 
-func UInt64(name string) *ProtoUInt64Field {
+func UInt64(name string) *UInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -261,21 +261,21 @@ func UInt64(name string) *ProtoUInt64Field {
 		rules:     rules,
 	}
 
-	uint64Field := &ProtoUInt64Field{}
-	uint64Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoUInt64Field]{
+	uint64Field := &UInt64Field{}
+	uint64Field.ProtoField = &ProtoField[UInt64Field]{
 		protoFieldInternal: internal,
 		self:               uint64Field,
 	}
-	uint64Field.ProtoNumericField = newNumericField[ProtoUInt64Field, uint64](internal, uint64Field, false)
+	uint64Field.NumericField = newNumericField[UInt64Field, uint64](internal, uint64Field, false)
 	return uint64Field
 }
 
-type ProtoSInt32Field struct {
-	*ProtoFieldExternal[ProtoSInt32Field]
-	*ProtoNumericField[ProtoSInt32Field, int32]
+type SInt32Field struct {
+	*ProtoField[SInt32Field]
+	*NumericField[SInt32Field, int32]
 }
 
-func SInt32(name string) *ProtoSInt32Field {
+func SInt32(name string) *SInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -287,21 +287,21 @@ func SInt32(name string) *ProtoSInt32Field {
 		rules:     rules,
 	}
 
-	sint32Field := &ProtoSInt32Field{}
-	sint32Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoSInt32Field]{
+	sint32Field := &SInt32Field{}
+	sint32Field.ProtoField = &ProtoField[SInt32Field]{
 		protoFieldInternal: internal,
 		self:               sint32Field,
 	}
-	sint32Field.ProtoNumericField = newNumericField[ProtoSInt32Field, int32](internal, sint32Field, false)
+	sint32Field.NumericField = newNumericField[SInt32Field, int32](internal, sint32Field, false)
 	return sint32Field
 }
 
-type ProtoSInt64Field struct {
-	*ProtoFieldExternal[ProtoSInt64Field]
-	*ProtoNumericField[ProtoSInt64Field, int64]
+type SInt64Field struct {
+	*ProtoField[SInt64Field]
+	*NumericField[SInt64Field, int64]
 }
 
-func SInt64(name string) *ProtoSInt64Field {
+func SInt64(name string) *SInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -313,21 +313,21 @@ func SInt64(name string) *ProtoSInt64Field {
 		rules:     rules,
 	}
 
-	sint64Field := &ProtoSInt64Field{}
-	sint64Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoSInt64Field]{
+	sint64Field := &SInt64Field{}
+	sint64Field.ProtoField = &ProtoField[SInt64Field]{
 		protoFieldInternal: internal,
 		self:               sint64Field,
 	}
-	sint64Field.ProtoNumericField = newNumericField[ProtoSInt64Field, int64](internal, sint64Field, false)
+	sint64Field.NumericField = newNumericField[SInt64Field, int64](internal, sint64Field, false)
 	return sint64Field
 }
 
-type ProtoFixed32Field struct {
-	*ProtoFieldExternal[ProtoFixed32Field]
-	*ProtoNumericField[ProtoFixed32Field, uint32]
+type Fixed32Field struct {
+	*ProtoField[Fixed32Field]
+	*NumericField[Fixed32Field, uint32]
 }
 
-func Fixed32(name string) *ProtoFixed32Field {
+func Fixed32(name string) *Fixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -339,21 +339,21 @@ func Fixed32(name string) *ProtoFixed32Field {
 		rules:     rules,
 	}
 
-	fixed32Field := &ProtoFixed32Field{}
-	fixed32Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoFixed32Field]{
+	fixed32Field := &Fixed32Field{}
+	fixed32Field.ProtoField = &ProtoField[Fixed32Field]{
 		protoFieldInternal: internal,
 		self:               fixed32Field,
 	}
-	fixed32Field.ProtoNumericField = newNumericField[ProtoFixed32Field, uint32](internal, fixed32Field, false)
+	fixed32Field.NumericField = newNumericField[Fixed32Field, uint32](internal, fixed32Field, false)
 	return fixed32Field
 }
 
-type ProtoFixed64Field struct {
-	*ProtoFieldExternal[ProtoFixed64Field]
-	*ProtoNumericField[ProtoFixed64Field, uint64]
+type Fixed64Field struct {
+	*ProtoField[Fixed64Field]
+	*NumericField[Fixed64Field, uint64]
 }
 
-func Fixed64(name string) *ProtoFixed64Field {
+func Fixed64(name string) *Fixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -365,21 +365,21 @@ func Fixed64(name string) *ProtoFixed64Field {
 		rules:     rules,
 	}
 
-	fixed64Field := &ProtoFixed64Field{}
-	fixed64Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoFixed64Field]{
+	fixed64Field := &Fixed64Field{}
+	fixed64Field.ProtoField = &ProtoField[Fixed64Field]{
 		protoFieldInternal: internal,
 		self:               fixed64Field,
 	}
-	fixed64Field.ProtoNumericField = newNumericField[ProtoFixed64Field, uint64](internal, fixed64Field, false)
+	fixed64Field.NumericField = newNumericField[Fixed64Field, uint64](internal, fixed64Field, false)
 	return fixed64Field
 }
 
-type ProtoSFixed32Field struct {
-	*ProtoFieldExternal[ProtoSFixed32Field]
-	*ProtoNumericField[ProtoSFixed32Field, int32]
+type SFixed32Field struct {
+	*ProtoField[SFixed32Field]
+	*NumericField[SFixed32Field, int32]
 }
 
-func SFixed32(name string) *ProtoSFixed32Field {
+func SFixed32(name string) *SFixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -391,21 +391,21 @@ func SFixed32(name string) *ProtoSFixed32Field {
 		rules:     rules,
 	}
 
-	sfixed32Field := &ProtoSFixed32Field{}
-	sfixed32Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoSFixed32Field]{
+	sfixed32Field := &SFixed32Field{}
+	sfixed32Field.ProtoField = &ProtoField[SFixed32Field]{
 		protoFieldInternal: internal,
 		self:               sfixed32Field,
 	}
-	sfixed32Field.ProtoNumericField = newNumericField[ProtoSFixed32Field, int32](internal, sfixed32Field, false)
+	sfixed32Field.NumericField = newNumericField[SFixed32Field, int32](internal, sfixed32Field, false)
 	return sfixed32Field
 }
 
-type ProtoSFixed64Field struct {
-	*ProtoFieldExternal[ProtoSFixed64Field]
-	*ProtoNumericField[ProtoSFixed64Field, int64]
+type SFixed64Field struct {
+	*ProtoField[SFixed64Field]
+	*NumericField[SFixed64Field, int64]
 }
 
-func SFixed64(name string) *ProtoSFixed64Field {
+func SFixed64(name string) *SFixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
@@ -417,11 +417,11 @@ func SFixed64(name string) *ProtoSFixed64Field {
 		rules:     rules,
 	}
 
-	sfixed64Field := &ProtoSFixed64Field{}
-	sfixed64Field.ProtoFieldExternal = &ProtoFieldExternal[ProtoSFixed64Field]{
+	sfixed64Field := &SFixed64Field{}
+	sfixed64Field.ProtoField = &ProtoField[SFixed64Field]{
 		protoFieldInternal: internal,
 		self:               sfixed64Field,
 	}
-	sfixed64Field.ProtoNumericField = newNumericField[ProtoSFixed64Field, int64](internal, sfixed64Field, false)
+	sfixed64Field.NumericField = newNumericField[SFixed64Field, int64](internal, sfixed64Field, false)
 	return sfixed64Field
 }

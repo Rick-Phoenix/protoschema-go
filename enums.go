@@ -46,9 +46,9 @@ func (e ProtoEnumGroup) RsvRanges(r ...Range) ProtoEnumGroup {
 }
 
 type ProtoEnumField struct {
-	*ProtoFieldExternal[ProtoEnumField]
-	*ProtoConstField[ProtoEnumField, int32, int32]
-	*ProtoOptionalField[ProtoEnumField]
+	*ProtoField[ProtoEnumField]
+	*ConstField[ProtoEnumField, int32, int32]
+	*OptionalField[ProtoEnumField]
 }
 
 func EnumField(name string, enumName string) *ProtoEnumField {
@@ -58,17 +58,17 @@ func EnumField(name string, enumName string) *ProtoEnumField {
 	ef := &ProtoEnumField{}
 	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, protoBaseType: "enum", options: options}
 
-	ef.ProtoFieldExternal = &ProtoFieldExternal[ProtoEnumField]{
+	ef.ProtoField = &ProtoField[ProtoEnumField]{
 		protoFieldInternal: internal, self: ef,
 	}
-	ef.ProtoConstField = &ProtoConstField[ProtoEnumField, int32, int32]{constInternal: internal, self: ef}
-	ef.ProtoOptionalField = &ProtoOptionalField[ProtoEnumField]{optionalInternal: internal, self: ef}
+	ef.ConstField = &ConstField[ProtoEnumField, int32, int32]{constInternal: internal, self: ef}
+	ef.OptionalField = &OptionalField[ProtoEnumField]{optionalInternal: internal, self: ef}
 
 	return ef
 }
 
-func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
+func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
+	data := FieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
 	errAgg = errors.Join(errAgg, ef.errors)

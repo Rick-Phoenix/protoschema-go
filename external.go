@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-func MsgField(name string, s *MessageSchema) *ProtoGenericField {
+func MsgField(name string, s *MessageSchema) *GenericField {
 	rules := make(map[string]any)
 
 	if s == nil {
@@ -41,8 +41,8 @@ func MsgField(name string, s *MessageSchema) *ProtoGenericField {
 		imports:     imports,
 	}
 
-	gf := &ProtoGenericField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[ProtoGenericField]{
+	gf := &GenericField{}
+	gf.ProtoField = &ProtoField[GenericField]{
 		protoFieldInternal: internal,
 		self:               gf,
 	}

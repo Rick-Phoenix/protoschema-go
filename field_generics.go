@@ -4,14 +4,14 @@ import (
 	"errors"
 )
 
-func (b *ProtoFieldExternal[BuilderT]) Options(o ...ProtoOption) *BuilderT {
+func (b *ProtoField[BuilderT]) Options(o ...ProtoOption) *BuilderT {
 	for _, op := range o {
 		b.options[op.Name] = op.Value
 	}
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) RepeatedOptions(o ...ProtoOption) *BuilderT {
+func (b *ProtoField[BuilderT]) RepeatedOptions(o ...ProtoOption) *BuilderT {
 	var opts []string
 
 	for _, v := range o {
@@ -28,27 +28,27 @@ func (b *ProtoFieldExternal[BuilderT]) RepeatedOptions(o ...ProtoOption) *Builde
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) IgnoreIfUnpopulated() *BuilderT {
+func (b *ProtoField[BuilderT]) IgnoreIfUnpopulated() *BuilderT {
 	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_UNPOPULATED"
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) IgnoreIfDefaultValue() *BuilderT {
+func (b *ProtoField[BuilderT]) IgnoreIfDefaultValue() *BuilderT {
 	b.options["(buf.validate.field).ignore"] = "IGNORE_IF_DEFAULT_VALUE"
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) IgnoreAlways() *BuilderT {
+func (b *ProtoField[BuilderT]) IgnoreAlways() *BuilderT {
 	b.options["(buf.validate.field).ignore"] = "IGNORE_ALWAYS"
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) Deprecated() *BuilderT {
+func (b *ProtoField[BuilderT]) Deprecated() *BuilderT {
 	b.options["deprecated"] = true
 	return b.self
 }
 
-func (b *ProtoFieldExternal[BuilderT]) Required() *BuilderT {
+func (b *ProtoField[BuilderT]) Required() *BuilderT {
 	b.options["(buf.validate.field).required"] = true
 	b.required = true
 	return b.self

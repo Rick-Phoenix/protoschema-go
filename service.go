@@ -22,11 +22,11 @@ type Handler struct {
 	Response MessageSchema
 }
 
-type ProtoService struct {
+type ServiceData struct {
 	ResourceName   string
 	Imports        Set
 	Extensions     Extensions
-	Messages       []ProtoMessageData
+	Messages       []MessageData
 	Enums          []ProtoEnumGroup
 	ServiceOptions []ProtoOption
 	FileOptions    []ProtoOption
@@ -43,8 +43,8 @@ type ServiceSchema struct {
 	Enums            []ProtoEnumGroup
 }
 
-func BuildServices(services []ServiceSchema) []ProtoService {
-	out := []ProtoService{}
+func BuildServices(services []ServiceSchema) []ServiceData {
+	out := []ServiceData{}
 	var serviceErrors error
 
 	for _, s := range services {
@@ -61,14 +61,14 @@ func BuildServices(services []ServiceSchema) []ProtoService {
 	return out
 }
 
-func NewProtoService(s ServiceSchema) (ProtoService, error) {
+func NewProtoService(s ServiceSchema) (ServiceData, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
 
 	messages := make([]MessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
 
-	out := &ProtoService{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, Extensions: s.OptionExtensions, Enums: s.Enums}
+	out := &ServiceData{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, Extensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
 

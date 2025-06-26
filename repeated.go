@@ -6,37 +6,37 @@ import (
 	"maps"
 )
 
-type ProtoRepeatedField struct {
+type RepeatedField struct {
 	name     string
-	field    ProtoFieldBuilder
+	field    FieldBuilder
 	unique   bool
 	minItems *uint
 	maxItems *uint
-	*ProtoFieldExternal[ProtoRepeatedField]
+	*ProtoField[RepeatedField]
 }
 
-func Repeated(name string, b ProtoFieldBuilder) *ProtoRepeatedField {
+func Repeated(name string, b FieldBuilder) *RepeatedField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
-	self := &ProtoRepeatedField{
+	self := &RepeatedField{
 		field: b, name: name,
 	}
 
-	self.ProtoFieldExternal = &ProtoFieldExternal[ProtoRepeatedField]{protoFieldInternal: &protoFieldInternal{
+	self.ProtoField = &ProtoField[RepeatedField]{protoFieldInternal: &protoFieldInternal{
 		options: options, rules: rules, repeated: true, goType: "[]" + b.GetGoType(),
 	}, self: self}
 
 	return self
 }
 
-func (b *ProtoRepeatedField) GetData() ProtoFieldData {
+func (b *RepeatedField) GetData() FieldData {
 	data := b.protoFieldInternal.GetData()
 	data.Name = b.name
 
 	return data
 }
 
-func (b *ProtoRepeatedField) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
+func (b *RepeatedField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	fieldData, err := b.field.Build(fieldNr, imports)
 
 	err = errors.Join(err, b.errors)
@@ -87,19 +87,19 @@ func (b *ProtoRepeatedField) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 	}
 
 	if err != nil {
-		return ProtoFieldData{}, err
+		return FieldData{}, err
 	}
 
-	return ProtoFieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
+	return FieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
 }
 
-func (b *ProtoRepeatedField) Unique() *ProtoRepeatedField {
+func (b *RepeatedField) Unique() *RepeatedField {
 	b.options["(buf.validate.field).repeated.unique"] = true
 	b.unique = true
 	return b
 }
 
-func (b *ProtoRepeatedField) MinItems(n uint) *ProtoRepeatedField {
+func (b *RepeatedField) MinItems(n uint) *RepeatedField {
 	if b.maxItems != nil && *b.maxItems < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
 	}
@@ -110,7 +110,7 @@ func (b *ProtoRepeatedField) MinItems(n uint) *ProtoRepeatedField {
 	return b
 }
 
-func (b *ProtoRepeatedField) MaxItems(n uint) *ProtoRepeatedField {
+func (b *RepeatedField) MaxItems(n uint) *RepeatedField {
 	if b.minItems != nil && *b.minItems > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
 	}

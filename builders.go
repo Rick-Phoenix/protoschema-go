@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-type ProtoFieldData struct {
+type FieldData struct {
 	Rules         map[string]any
 	Options       []string
 	ProtoType     string
@@ -41,9 +41,9 @@ type protoFieldInternal struct {
 	isConst         bool
 }
 
-type ProtoFieldBuilder interface {
-	Build(fieldNr uint32, imports Set) (ProtoFieldData, error)
-	GetData() ProtoFieldData
+type FieldBuilder interface {
+	Build(fieldNr uint32, imports Set) (FieldData, error)
+	GetData() FieldData
 	IsMap() bool
 	IsRepeated() bool
 	GetGoType() string
@@ -66,8 +66,8 @@ func (b *protoFieldInternal) GetName() string {
 	return b.name
 }
 
-func (b *protoFieldInternal) GetData() ProtoFieldData {
-	return ProtoFieldData{
+func (b *protoFieldInternal) GetData() FieldData {
+	return FieldData{
 		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
 		Imports:  slices.Clone(b.imports),
 		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
@@ -75,8 +75,8 @@ func (b *protoFieldInternal) GetData() ProtoFieldData {
 	}
 }
 
-func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData, error) {
-	data := ProtoFieldData{
+func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (FieldData, error) {
+	data := FieldData{
 		Name: b.name, ProtoType: b.protoType, GoType: b.goType, FieldNr: fieldNr,
 		Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType, IsMap: b.isMap,
 	}
@@ -131,11 +131,11 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (ProtoFieldData,
 	return data, nil
 }
 
-type ProtoFieldExternal[BuilderT any] struct {
+type ProtoField[BuilderT any] struct {
 	*protoFieldInternal
 	self *BuilderT
 }
 
-type ProtoGenericField struct {
-	*ProtoFieldExternal[ProtoGenericField]
+type GenericField struct {
+	*ProtoField[GenericField]
 }

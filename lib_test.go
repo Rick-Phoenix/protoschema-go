@@ -100,7 +100,7 @@ var (
 
 var UserSchema = sb.MessageSchema{
 	Name: "User",
-	Fields: sb.ProtoFieldsMap{
+	Fields: sb.FieldsMap{
 		1: sb.String("name").Required().MinLen(2).MaxLen(32),
 		2: sb.Int64("id"),
 		3: sb.Timestamp("created_at"),
@@ -118,11 +118,14 @@ var UserSchema = sb.MessageSchema{
 		8: sb.Timestamp("timetest").Lt(&timePast),
 		9: sb.Timestamp("timetest2").Const(&timePast),
 	},
-	Oneofs: []sb.OneofBuilder{
-		sb.OneOf("myoneof", sb.OneofChoices{
-			9:  sb.String("example"),
-			10: sb.Int32("another"),
-		}),
+	Oneofs: []sb.OneofGroup{
+		{
+			Name: "myoneof",
+			Choices: sb.OneofChoices{
+				9:  sb.String("example"),
+				10: sb.Int32("another"),
+			},
+		},
 	},
 	ReservedNames:   []string{"name1", "name2"},
 	ReservedNumbers: []uint{20, 21},
@@ -133,7 +136,7 @@ var UserSchema = sb.MessageSchema{
 
 var UserWithModel = sb.MessageSchema{
 	Name: "User",
-	Fields: sb.ProtoFieldsMap{
+	Fields: sb.FieldsMap{
 		1: sb.String("name").Required().MinLen(2).MaxLen(32),
 		2: sb.Int64("id"),
 		3: sb.Timestamp("created_at"),
@@ -145,7 +148,7 @@ var UserWithModel = sb.MessageSchema{
 
 var PostSchema = sb.MessageSchema{
 	Name: "Post",
-	Fields: sb.ProtoFieldsMap{
+	Fields: sb.FieldsMap{
 		1: sb.Int64("id").Optional(),
 		2: sb.Timestamp("created_at"),
 		3: sb.Int64("author_id"),
@@ -181,18 +184,18 @@ var UserService = sb.ServiceSchema{
 	Handlers: sb.HandlersMap{
 		"GetUser": {
 			sb.MessageSchema{
-				Name: "GetUserRequest", Fields: sb.ProtoFieldsMap{
+				Name: "GetUserRequest", Fields: sb.FieldsMap{
 					1: sb.Int64("id"),
 				},
 			},
 			sb.MessageSchema{
 				Name: "GetUserResponse",
-				Fields: sb.ProtoFieldsMap{
+				Fields: sb.FieldsMap{
 					1: sb.MsgField("user", &UserWithModel),
 				},
 			},
 		},
-		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.ProtoFieldsMap{
+		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.FieldsMap{
 			1: sb.FieldMask("field_mask"),
 			2: sb.MsgField("user", &UserWithModel),
 		}}, sb.Empty()},
@@ -291,7 +294,7 @@ func TestGeneration(t *testing.T) {
 		{out.Messages["User"].ReservedRanges, []any{sb.Range{22, 25}}},
 	}
 
-	shouldFail := []sb.ProtoFieldBuilder{
+	shouldFail := []sb.FieldBuilder{
 		sb.Repeated("nested_repeated_field", sb.Repeated("", sb.Timestamp(""))),
 		sb.Repeated("repeated_map_field", sb.Map("", sb.String(""), sb.String(""))),
 		sb.Repeated("non_scalar_unique", sb.Timestamp("")).Unique(),

@@ -7,33 +7,23 @@ import (
 	"slices"
 )
 
-type ProtoOneofData struct {
+type OneofData struct {
 	Name    string
-	Choices []ProtoFieldData
+	Choices []FieldData
 	Options []ProtoOption
 }
 
-type ProtoOneofGroup struct {
-	Name       string
-	IsRequired bool
-	Choices    OneofChoices
-	Options    []ProtoOption
+type OneofGroup struct {
+	Name     string
+	Required bool
+	Choices  OneofChoices
+	Options  []ProtoOption
 }
 
-type OneofBuilder interface {
-	Build(imports Set) (ProtoOneofData, error)
-}
+type OneofChoices map[uint32]FieldBuilder
 
-type OneofChoices map[uint32]ProtoFieldBuilder
-
-func OneOf(name string, choices OneofChoices, options ...ProtoOption) *ProtoOneofGroup {
-	return &ProtoOneofGroup{
-		Choices: choices, Options: options, Name: name,
-	}
-}
-
-func (of *ProtoOneofGroup) Build(imports Set) (ProtoOneofData, error) {
-	choicesData := []ProtoFieldData{}
+func (of OneofGroup) Build(imports Set) (OneofData, error) {
+	choicesData := []FieldData{}
 	var fieldErr error
 
 	oneofKeys := slices.Sorted(maps.Keys(of.Choices))
@@ -60,19 +50,20 @@ func (of *ProtoOneofGroup) Build(imports Set) (ProtoOneofData, error) {
 		choicesData = append(choicesData, data)
 	}
 
-	if fieldErr != nil {
-		return ProtoOneofData{}, fieldErr
+	options := slices.Clone(of.Options)
+
+	if of.Required {
+		options = append(options, ProtoOption{
+			Name:  "(buf.validate.oneof).required",
+			Value: "true",
+		})
 	}
 
-	return ProtoOneofData{
-		Name: of.Name, Options: of.Options, Choices: choicesData,
-	}, nil
-}
+	if fieldErr != nil {
+		return OneofData{}, fieldErr
+	}
 
-func (of *ProtoOneofGroup) Required() *ProtoOneofGroup {
-	of.Options = append(of.Options, ProtoOption{
-		Name:  "(buf.validate.oneof).required",
-		Value: "true",
-	})
-	return of
+	return OneofData{
+		Name: of.Name, Options: options, Choices: choicesData,
+	}, nil
 }

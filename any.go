@@ -1,7 +1,7 @@
 package schemabuilder
 
 type AnyField struct {
-	*ProtoFieldExternal[AnyField]
+	*ProtoField[AnyField]
 }
 
 func Any(name string) *AnyField {
@@ -9,7 +9,7 @@ func Any(name string) *AnyField {
 	rules := make(map[string]any)
 
 	gf := &AnyField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[AnyField]{&protoFieldInternal{name: name, protoType: "google.protobuf.Any", goType: "any", options: options, isNonScalar: true, rules: rules, imports: []string{"google/protobuf/any.proto"}}, gf}
+	gf.ProtoField = &ProtoField[AnyField]{&protoFieldInternal{name: name, protoType: "google.protobuf.Any", goType: "any", options: options, isNonScalar: true, rules: rules, imports: []string{"google/protobuf/any.proto"}}, gf}
 
 	return gf
 }

@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-type ProtoDurationField struct {
-	*ProtoFieldExternal[ProtoDurationField]
+type DurationField struct {
+	*ProtoField[DurationField]
 
 	hasLtOrLte bool
 	hasGtOrGte bool
@@ -21,18 +21,18 @@ type ProtoDurationField struct {
 	lte *time.Duration
 }
 
-func Duration(name string) *ProtoDurationField {
+func Duration(name string) *DurationField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
 
-	gf := &ProtoDurationField{}
-	gf.ProtoFieldExternal = &ProtoFieldExternal[ProtoDurationField]{
+	gf := &DurationField{}
+	gf.ProtoField = &ProtoField[DurationField]{
 		&protoFieldInternal{name: name, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
 	}
 	return gf
 }
 
-func (tf *ProtoDurationField) Lt(d string) *ProtoDurationField {
+func (tf *DurationField) Lt(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))
 	}
@@ -55,7 +55,7 @@ func (tf *ProtoDurationField) Lt(d string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) Lte(d string) *ProtoDurationField {
+func (tf *DurationField) Lte(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))
 	}
@@ -79,7 +79,7 @@ func (tf *ProtoDurationField) Lte(d string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) Gt(d string) *ProtoDurationField {
+func (tf *DurationField) Gt(d string) *DurationField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'gt' and 'gte'."))
 	}
@@ -103,7 +103,7 @@ func (tf *ProtoDurationField) Gt(d string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) Gte(d string) *ProtoDurationField {
+func (tf *DurationField) Gte(d string) *DurationField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'gt' and 'gte'."))
 	}
@@ -127,7 +127,7 @@ func (tf *ProtoDurationField) Gte(d string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) In(values ...string) *ProtoDurationField {
+func (tf *DurationField) In(values ...string) *DurationField {
 	for _, v := range values {
 		err := validateDurationString(v)
 		if err != nil {
@@ -143,7 +143,7 @@ func (tf *ProtoDurationField) In(values ...string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) NotIn(values ...string) *ProtoDurationField {
+func (tf *DurationField) NotIn(values ...string) *DurationField {
 	for _, v := range values {
 		err := validateDurationString(v)
 		if err != nil {
@@ -159,7 +159,7 @@ func (tf *ProtoDurationField) NotIn(values ...string) *ProtoDurationField {
 	return tf.self
 }
 
-func (tf *ProtoDurationField) Const(d string) *ProtoDurationField {
+func (tf *DurationField) Const(d string) *DurationField {
 	err := validateDurationString(d)
 	if err != nil {
 		tf.errors = errors.Join(tf.errors, err)

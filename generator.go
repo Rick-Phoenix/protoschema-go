@@ -14,7 +14,7 @@ import (
 
 type protoFileData struct {
 	PackageName string
-	ProtoService
+	ServiceData
 }
 
 type ProtoGenerator struct {
@@ -94,10 +94,10 @@ func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {
 	}
 }
 
-func (g *ProtoGenerator) Generate(s ProtoService) error {
+func (g *ProtoGenerator) Generate(s ServiceData) error {
 	templateData := protoFileData{
-		PackageName:  g.PackageName,
-		ProtoService: s,
+		PackageName: g.PackageName,
+		ServiceData: s,
 	}
 
 	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")

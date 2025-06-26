@@ -17,16 +17,12 @@ type UserWithPosts struct {
 
 var UserSchema = MessageSchema{
 	Name: "User",
-	Fields: ProtoFieldsMap{
+	Fields: FieldsMap{
 		1: String("name"),
 		2: Int64("id"),
 		3: Timestamp("created_at"),
 		5: Repeated("posts", MsgField("post", &PostSchema)).CelOption("myexpr", "x must not be y", "x != y"),
 	},
-	Oneofs: []OneofBuilder{OneOf("myoneof", OneofChoices{
-		9:  String("example"),
-		10: Int32("another"),
-	}, []ProtoOption{{"myopt1", "myval1"}, {"myopt", "myval"}}...)},
 	Enums: []ProtoEnumGroup{
 		EnumGroup("myenum", ProtoEnumMap{
 			0: "VAL_1",
@@ -41,21 +37,21 @@ var UserSchema = MessageSchema{
 
 var GetUserSchema = MessageSchema{
 	Name: "GetUserRequest",
-	Fields: ProtoFieldsMap{
+	Fields: FieldsMap{
 		1: UserSchema.GetField("name"),
 	},
 }
 
 var GetPostSchema = MessageSchema{
 	Name: "GetPostRequest",
-	Fields: ProtoFieldsMap{
+	Fields: FieldsMap{
 		1: PostSchema.GetField("id"),
 	},
 }
 
 var SubRedditSchema = MessageSchema{
 	Name: "Subreddit",
-	Fields: ProtoFieldsMap{
+	Fields: FieldsMap{
 		1: Int32("id").Optional(),
 		2: String("name").MinLen(1).MaxLen(48),
 		3: String("description").MaxLen(255),
@@ -67,7 +63,7 @@ var SubRedditSchema = MessageSchema{
 
 var PostSchema = MessageSchema{
 	Name: "Post",
-	Fields: ProtoFieldsMap{
+	Fields: FieldsMap{
 		1: Int64("id").Optional(),
 		2: Timestamp("created_at"),
 		3: Int64("author_id"),
@@ -85,11 +81,11 @@ var UserService = ServiceSchema{
 	Handlers: HandlersMap{
 		"GetUser": {GetUserSchema, MessageSchema{
 			Name: "GetUserResponse",
-			Fields: ProtoFieldsMap{
+			Fields: FieldsMap{
 				1: MsgField("user", &UserSchema),
 			},
 		}},
-		"UpdateUser": {MessageSchema{Name: "UpdateUserRequest", Fields: ProtoFieldsMap{
+		"UpdateUser": {MessageSchema{Name: "UpdateUserRequest", Fields: FieldsMap{
 			1: FieldMask("field_mask"),
 			2: MsgField("user", &UserSchema),
 		}}, Empty()},
@@ -106,11 +102,11 @@ var PostService = ServiceSchema{
 	Handlers: HandlersMap{
 		"GetPost": {GetPostSchema, MessageSchema{
 			Name: "GetPostResponse",
-			Fields: ProtoFieldsMap{
+			Fields: FieldsMap{
 				1: MsgField("post", &PostSchema),
 			},
 		}},
-		"UpdatePost": {MessageSchema{Name: "UpdatePostRequest", Fields: ProtoFieldsMap{
+		"UpdatePost": {MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
 			1: MsgField("post", &PostSchema),
 			2: FieldMask("field_mask"),
 		}}, Empty()},

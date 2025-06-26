@@ -9,14 +9,14 @@ import (
 	"slices"
 )
 
-type ProtoFieldsMap map[uint32]ProtoFieldBuilder
+type FieldsMap map[uint32]FieldBuilder
 
 type Range [2]int32
 
 type MessageSchema struct {
 	Name            string
-	Fields          ProtoFieldsMap
-	Oneofs          []OneofBuilder
+	Fields          FieldsMap
+	Oneofs          []OneofGroup
 	Enums           []ProtoEnumGroup
 	Options         []ProtoOption
 	Messages        []MessageSchema
@@ -30,11 +30,11 @@ type MessageSchema struct {
 	SkipValidation  bool
 }
 
-type ProtoMessageData struct {
+type MessageData struct {
 	Name            string
-	Fields          []ProtoFieldData
-	Oneofs          []ProtoOneofData
-	Messages        []ProtoMessageData
+	Fields          []FieldData
+	Oneofs          []OneofData
+	Messages        []MessageData
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
@@ -42,8 +42,8 @@ type ProtoMessageData struct {
 	Enums           []ProtoEnumGroup
 }
 
-func (s *MessageSchema) GetFields() map[string]ProtoFieldBuilder {
-	out := make(map[string]ProtoFieldBuilder)
+func (s *MessageSchema) GetFields() map[string]FieldBuilder {
+	out := make(map[string]FieldBuilder)
 
 	keys := slices.Sorted(maps.Keys(s.Fields))
 
@@ -57,7 +57,7 @@ func (s *MessageSchema) GetFields() map[string]ProtoFieldBuilder {
 	return out
 }
 
-func (s *MessageSchema) GetField(n string) ProtoFieldBuilder {
+func (s *MessageSchema) GetField(n string) FieldBuilder {
 	for _, f := range s.Fields {
 		data := f.GetData()
 		if data.Name == n {
@@ -113,14 +113,14 @@ func (s *MessageSchema) CheckModel() error {
 	return err
 }
 
-func NewProtoMessage(s MessageSchema, imports Set) (ProtoMessageData, error) {
-	var protoFields []ProtoFieldData
+func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
+	var protoFields []FieldData
 	var fieldsErrors error
 
 	if s.Model != nil && !s.SkipValidation {
 		err := s.CheckModel()
 		if err != nil {
-			return ProtoMessageData{}, err
+			return MessageData{}, err
 		}
 	}
 
@@ -136,7 +136,7 @@ func NewProtoMessage(s MessageSchema, imports Set) (ProtoMessageData, error) {
 		}
 	}
 
-	oneOfs := []ProtoOneofData{}
+	oneOfs := []OneofData{}
 	var oneOfErrors error
 
 	for _, oneof := range s.Oneofs {
@@ -148,7 +148,7 @@ func NewProtoMessage(s MessageSchema, imports Set) (ProtoMessageData, error) {
 		oneOfs = append(oneOfs, data)
 	}
 
-	subMessages := []ProtoMessageData{}
+	subMessages := []MessageData{}
 	var subMessagesErrors error
 
 	for _, m := range s.Messages {
@@ -161,10 +161,10 @@ func NewProtoMessage(s MessageSchema, imports Set) (ProtoMessageData, error) {
 	}
 
 	if fieldsErrors != nil || oneOfErrors != nil || subMessagesErrors != nil {
-		return ProtoMessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
+		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return ProtoMessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
+	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
 }
 
 func MessageRef(s MessageSchema) MessageSchema {

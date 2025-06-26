@@ -5,27 +5,27 @@ import (
 	"fmt"
 )
 
-type ProtoConstField[BuilderT, ValueT any, SingleValT comparable] struct {
+type ConstField[BuilderT, ValueT any, SingleValT comparable] struct {
 	constInternal *protoFieldInternal
 	self          *BuilderT
 	in            []SingleValT
 	notIn         []SingleValT
 }
 
-func (b *ProtoConstField[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
+func (b *ConstField[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	b.constInternal.rules["const"] = val
 	b.constInternal.isConst = true
 	return b.self
 }
 
-func (b *ProtoConstField[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
+func (b *ConstField[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
 	opt, err := getProtoOption("example", val)
 	b.constInternal.errors = errors.Join(b.constInternal.errors, err)
 	b.constInternal.repeatedOptions = append(b.constInternal.repeatedOptions, opt)
 	return b.self
 }
 
-func (b *ProtoConstField[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *BuilderT {
+func (b *ConstField[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *BuilderT {
 	if len(b.notIn) > 0 {
 		overlaps := sliceIntersects(vals, b.notIn)
 		if overlaps {
@@ -39,7 +39,7 @@ func (b *ProtoConstField[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *
 	return b.self
 }
 
-func (b *ProtoConstField[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT) *BuilderT {
+func (b *ConstField[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT) *BuilderT {
 	if len(b.in) > 0 {
 		overlaps := sliceIntersects(vals, b.in)
 
