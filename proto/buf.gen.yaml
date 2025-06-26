@@ -2,20 +2,20 @@ version: v2
 
 plugins:
   - local: protoc-gen-go
-    out: ../gen
+    out: ../gen/myappv1
     opt:
-      - module=github.com/Rick-Phoenix/gofirst/gen
+      - module=github.com/Rick-Phoenix/gofirst/gen/myappv1
   - local: protoc-gen-connect-go
-    out: ../gen
+    out: ../gen/myappv1
     opt:
-      - module=github.com/Rick-Phoenix/gofirst/gen
+      - module=github.com/Rick-Phoenix/gofirst/gen/myappv1
 managed:
   enabled: true
 
   override:
+    # Unlike go_package_prefix, this does not replicate the dir structure of the proto project
     - file_option: go_package
-      value: github.com/Rick-Phoenix/gofirst/gen
-      path: gen/myappv1
+      value: github.com/Rick-Phoenix/gofirst/gen/myappv1
   disable:
     # Must stay like this
     - file_option: go_package
