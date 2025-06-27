@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"log"
 
-	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
+	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
 	_ "modernc.org/sqlite"
 )
 
 type UserWithPosts struct {
-	gofirst.User
-	Posts []gofirst.Post
+	sqlgen.User
+	Posts []sqlgen.Post
 }
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 
 	defer database.Close()
 
-	queries := gofirst.New(database)
+	queries := sqlgen.New(database)
 	ctx := context.Background()
 
 	user, err := queries.GetUser(ctx, 1)

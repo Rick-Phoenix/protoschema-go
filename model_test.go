@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
-	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
+	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
 	"github.com/stretchr/testify/assert"
 )
 
 type UserWithPostsConst struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt time.Time      `dbignore:"true" json:"created_at"`
-	Posts     []gofirst.Post `json:"posts"`
+	ID        int64         `json:"id"`
+	Name      string        `json:"name"`
+	CreatedAt time.Time     `dbignore:"true" json:"created_at"`
+	Posts     []sqlgen.Post `json:"posts"`
 }
 
 var ValidUserSchema = MessageSchema{

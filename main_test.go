@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gofirst "github.com/Rick-Phoenix/gofirst/db/queries/gen"
+	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +32,7 @@ var PostSchema = MessageSchema{
 	},
 	ImportPath:  "myapp/v1/post.proto",
 	ModelIgnore: []string{"content"},
-	Model:       &gofirst.Post{},
+	Model:       &sqlgen.Post{},
 }
 
 var GetPostRequest = MessageSchema{
@@ -69,10 +69,10 @@ var PostService = ServiceSchema{
 }
 
 type UserWithPosts struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	CreatedAt time.Time      `dbignore:"true" json:"created_at"`
-	Posts     []gofirst.Post `json:"posts"`
+	ID        int64         `json:"id"`
+	Name      string        `json:"name"`
+	CreatedAt time.Time     `dbignore:"true" json:"created_at"`
+	Posts     []sqlgen.Post `json:"posts"`
 }
 
 var UserSchema = MessageSchema{
@@ -101,11 +101,20 @@ var GetUserResponse = MessageSchema{
 	},
 }
 
+var UpdateUserRequest = MessageSchema{Name: "UpdateUserRequest", Fields: FieldsMap{
+	1: MsgField("user", &UserSchema),
+	2: FieldMask("field_mask"),
+}}
+
 var UserService = ServiceSchema{
 	Resource: UserSchema,
 	Handlers: HandlersMap{
 		"GetUser": {
 			GetUserRequest, GetUserResponse,
+		},
+		"UpdateUser": {
+			UpdateUserRequest,
+			Empty(),
 		},
 	},
 }
