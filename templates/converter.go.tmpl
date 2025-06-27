@@ -1,36 +1,37 @@
 package {{ .Package }}
 
 import (
-  {{ range $import, $_ := .Imports }}
+  {{ range $import, $_ := .Imports -}}
   "{{ $import }}"
-  {{ end }}
+  {{ end -}}
 )
 
-{{ $repeated := .RepeatedConverters }}
-{{ range .Converters }}
-{{ $resname := .Resource }}
-{{ $tfields := .TimestampFields }}
+{{ $repeated := .RepeatedConverters -}}
+{{ range .Converters -}}
+
+{{- $resname := .Resource -}}
+{{- $tfields := .TimestampFields -}}
 func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .DstType }} {
 	if {{ .Resource }} == nil {
 		return nil
 	}
-  {{ range $name, $_ := .TimestampFields }}
+  {{ range $name, $_ := .TimestampFields -}}
   {{ $name }} := timestamppb.New({{ $resname }}.{{ $name }})
-  {{ end }}
+  {{ end -}}
 	return &{{ .DstType }}{
-    {{ range .Fields }}
-    {{ if index $tfields .Name }}
+    {{ range .Fields -}}
+    {{ if setContains $tfields .Name -}}
     {{ .Name }}: {{ .Name }},
-    {{ else if .IsInternal }}
+    {{ else if .IsInternal -}}
     {{ .Name }}: {{ .Name }}To{{ .Name }}Msg({{ $resname }}.{{ .Name }}),
-    {{ else }}
+    {{ else -}}
     {{ .Name }}: {{ $resname }}.{{ .Name }},
-    {{ end }}
-    {{ end }}
+    {{ end -}}
+    {{- end }}
 	}
 }
 
-{{ if index $repeated .Resource }}
+{{ if setContains $repeated .Resource -}}
 func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ .DstType }} {
 	out := make([]*{{ .DstType }}, len({{ .Resource }}))
 
@@ -40,6 +41,7 @@ func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []
 
 	return out
 }
-{{ end }}
-{{ end }}
+{{ end -}}
+
+{{ end -}}
 

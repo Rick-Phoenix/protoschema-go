@@ -20,18 +20,20 @@ type protoFileData struct {
 	ServiceData
 }
 
-type ConvertersData struct {
+type convertersData struct {
 	Package            string
 	Imports            Set
-	Converters         []MessageConverter
+	Converters         []messageConverter
 	RepeatedConverters Set
 }
 
 type ProtoGenerator struct {
-	packageName string
-	outputDir   string
-	packageRoot string
-	services    []ServiceSchema
+	goModule           string
+	converterOutputDir string
+	protoPackageName   string
+	protoOutputDir     string
+	protoPackagePrefix string
+	services           []ServiceSchema
 }
 
 //go:embed templates/*
@@ -41,7 +43,7 @@ func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {
 	packageRoot := strings.ReplaceAll(packageName, ".", "/")
 	outputDir := filepath.Join(protoRoot, packageRoot)
 	return &ProtoGenerator{
-		packageName: packageName, outputDir: outputDir, packageRoot: packageRoot,
+		protoPackageName: packageName, protoOutputDir: outputDir, protoPackagePrefix: packageRoot,
 	}
 }
 
@@ -70,7 +72,7 @@ func (g *ProtoGenerator) buildServices() []ServiceData {
 
 func (g *ProtoGenerator) Generate() error {
 	servicesData := g.buildServices()
-	converters := ConvertersData{
+	converters := convertersData{
 		Imports: make(Set), RepeatedConverters: make(Set), Package: "gen",
 	}
 
@@ -81,13 +83,13 @@ func (g *ProtoGenerator) Generate() error {
 
 	for _, s := range servicesData {
 		templateData := protoFileData{
-			PackageName: g.packageName,
+			PackageName: g.protoPackageName,
 			ServiceData: s,
 		}
 
 		outputFile := strings.ToLower(s.ResourceName) + ".proto"
-		outputPath := filepath.Join(g.outputDir, outputFile)
-		delete(s.Imports, filepath.Join(g.packageRoot, outputFile))
+		outputPath := filepath.Join(g.protoOutputDir, outputFile)
+		delete(s.Imports, filepath.Join(g.protoPackagePrefix, outputFile))
 
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
@@ -121,7 +123,6 @@ func (g *ProtoGenerator) Generate() error {
 
 	if len(converters.Converters) > 0 {
 		var outputBuffer bytes.Buffer
-		fmt.Printf("DEBUG: %+v\n", converters)
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {
 			fmt.Printf("Failed to execute template: %s", err.Error())
 		}

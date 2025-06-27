@@ -29,7 +29,7 @@ type MessageSchema struct {
 	ModelIgnore     []string
 	SkipValidation  bool
 	TargetType      any
-	converter       *MessageConverter
+	converter       *messageConverter
 }
 
 type MessageData struct {
@@ -42,23 +42,22 @@ type MessageData struct {
 	ReservedNames   []string
 	Options         []ProtoOption
 	Enums           []EnumGroup
-	Converter       *MessageConverter
+	Converter       *messageConverter
 }
 
-type Field struct {
-	Name        string
-	IsInternal  bool
-	IsTimestamp bool
+type modelField struct {
+	Name       string
+	IsInternal bool
 }
 
-type MessageConverter struct {
-	TimestampFields  map[string]bool
+type messageConverter struct {
+	TimestampFields  Set
 	InternalRepeated []string
 	Imports          []string
 	Resource         string
 	SrcType          string
 	DstType          string
-	Fields           []Field
+	Fields           []modelField
 }
 
 func (s *MessageSchema) GetFields() map[string]FieldBuilder {
@@ -101,9 +100,9 @@ func (s *MessageSchema) CheckModel() error {
 	modelName := model.String()
 	msgFields := s.GetFields()
 	withConv := s.TargetType != nil
-	conv := &MessageConverter{}
+	conv := &messageConverter{}
 	if withConv {
-		conv = &MessageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(map[string]bool)}
+		conv = &messageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(Set)}
 		strDstType, isString := s.TargetType.(string)
 		if isString {
 			if strDstType == "" {
@@ -152,17 +151,16 @@ func (s *MessageSchema) CheckModel() error {
 				fieldName := pfield.GetName()
 
 				if withConv {
-					fieldConvData := Field{Name: field.Name}
+					fieldConvData := modelField{Name: field.Name}
 					if field.Type.String() == "time.Time" {
-						fieldConvData.IsTimestamp = true
-						conv.TimestampFields[field.Name] = true
+						conv.TimestampFields[field.Name] = present
 					}
 					isInternal := pfield.GetMessageRef() != nil && pfield.GetMessageRef().Model != nil
 					if isInternal {
 						fieldConvData.IsInternal = true
 						conv.Imports = append(conv.Imports, getPkgPath(field.Type))
 						if pfield.IsRepeated() {
-							conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetName())
+							conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetMessageRef().Name)
 						}
 					}
 					conv.Fields = append(conv.Fields, fieldConvData)

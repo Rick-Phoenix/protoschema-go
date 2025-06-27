@@ -31,7 +31,7 @@ type ServiceData struct {
 	ServiceOptions []ProtoOption
 	FileOptions    []ProtoOption
 	Handlers       []HandlerData
-	Converters     *ConvertersData
+	Converters     *convertersData
 }
 
 type ServiceSchema struct {
@@ -63,7 +63,7 @@ func newProtoService(s ServiceSchema) (ServiceData, error) {
 		processedMessages[m.Name] = present
 		if message.Converter != nil {
 			if out.Converters == nil {
-				out.Converters = &ConvertersData{
+				out.Converters = &convertersData{
 					RepeatedConverters: make(Set), Imports: make(Set),
 				}
 			}

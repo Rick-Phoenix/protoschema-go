@@ -88,7 +88,7 @@ var UserSchema = MessageSchema{
 	},
 	Model:      &db.UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
-	TargetType: "*myappv1.User",
+	TargetType: "myappv1.User",
 }
 
 var GetUserRequest = MessageSchema{
