@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Rick-Phoenix/gofirst/db"
 	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ var SubRedditSchema = MessageSchema{
 var PostSchema = MessageSchema{
 	Name: "Post",
 	Fields: FieldsMap{
-		1: Int64("id").Optional(),
+		1: Int64("id"),
 		2: Timestamp("created_at"),
 		3: Int64("author_id"),
 		4: String("title").MinLen(5).MaxLen(64).Required(),
@@ -83,14 +84,14 @@ var UserSchema = MessageSchema{
 		3: Timestamp("created_at"),
 		4: Repeated("posts", MsgField("post", &PostSchema)),
 	},
-	Model:      &UserWithPosts{},
+	Model:      &db.UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
 }
 
 var GetUserRequest = MessageSchema{
 	Name: "GetUserRequest",
 	Fields: FieldsMap{
-		1: UserSchema.GetField("name"),
+		1: UserSchema.GetField("id"),
 	},
 }
 

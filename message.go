@@ -28,6 +28,7 @@ type MessageSchema struct {
 	Model           any
 	ModelIgnore     []string
 	SkipValidation  bool
+	TargetType      any
 }
 
 type MessageData struct {
@@ -71,32 +72,48 @@ func (s *MessageSchema) GetField(n string) FieldBuilder {
 
 func (s *MessageSchema) CheckModel() error {
 	model := reflect.TypeOf(s.Model).Elem()
-	modelName := model.Name()
+	modelName := model.String()
 	msgFields := s.GetFields()
 	var err error
 
-	for i := range model.NumField() {
-		field := model.Field(i)
-		modelFieldName := field.Tag.Get("json")
-		ignore := slices.Contains(s.ModelIgnore, modelFieldName)
-		fieldType := field.Type.String()
-
-		if ignore {
-			continue
-		}
-
-		if pfield, exists := msgFields[modelFieldName]; exists {
-			delete(msgFields, modelFieldName)
-			goType := pfield.GetGoType()
-			fieldName := pfield.GetName()
-
-			if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
-				err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
+	var checkFields func(t reflect.Type)
+	checkFields = func(t reflect.Type) {
+		for i := range t.NumField() {
+			field := t.Field(i)
+			if field.Anonymous {
+				embeddedType := field.Type
+				if embeddedType.Kind() == reflect.Struct {
+					checkFields(embeddedType)
+					continue
+				}
 			}
-		} else {
-			err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", modelFieldName, model))
+			modelFieldName := field.Tag.Get("json")
+			if modelFieldName == "" {
+				modelFieldName = toSnakeCase(field.Name)
+			}
+			ignore := slices.Contains(s.ModelIgnore, modelFieldName)
+			fieldType := field.Type.String()
+
+			if ignore {
+				continue
+			}
+
+			if pfield, exists := msgFields[modelFieldName]; exists {
+				delete(msgFields, modelFieldName)
+				goType := pfield.GetGoType()
+				fieldName := pfield.GetName()
+
+				if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
+					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
+				}
+			} else {
+				err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", modelFieldName, t))
+			}
+
 		}
 	}
+
+	checkFields(model)
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {

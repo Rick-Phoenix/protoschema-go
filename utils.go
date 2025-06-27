@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -242,4 +243,34 @@ func sortString(a, b string) int {
 	}
 
 	return 0
+}
+
+func toSnakeCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	var chunks []string
+	var currentChunk []rune
+	for i, letter := range s {
+		if i == 0 || !unicode.IsUpper(letter) {
+			currentChunk = append(currentChunk, unicode.ToLower(letter))
+		} else {
+			prevIsLower := unicode.IsLower(rune(s[i-1]))
+			nextIsLower := true
+			if i != len(s)-1 {
+				nextIsLower = unicode.IsLower(rune(s[i+1]))
+			}
+			if prevIsLower || nextIsLower {
+				chunks = append(chunks, string(currentChunk))
+				currentChunk = currentChunk[:0]
+			}
+			currentChunk = append(currentChunk, unicode.ToLower(letter))
+		}
+	}
+
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, string(currentChunk))
+	}
+
+	return strings.Join(chunks, "_")
 }
