@@ -1,11 +1,13 @@
 package {{ .Package }}
 
 import (
-  {{ range .Imports }}
-  "{{ . }}"
+  {{ range $import, $_ := .Imports }}
+  "{{ $import }}"
   {{ end }}
 )
 
+{{ $repeated := .RepeatedConverters }}
+{{ range .Converters }}
 {{ $resname := .Resource }}
 {{ $tfields := .TimestampFields }}
 func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .DstType }} {
@@ -28,6 +30,7 @@ func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .D
 	}
 }
 
+{{ if index $repeated .Resource }}
 func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ .DstType }} {
 	out := make([]*{{ .DstType }}, len({{ .Resource }}))
 
@@ -37,4 +40,6 @@ func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []
 
 	return out
 }
+{{ end }}
+{{ end }}
 

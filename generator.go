@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,13 @@ import (
 type protoFileData struct {
 	PackageName string
 	ServiceData
+}
+
+type ConvertersData struct {
+	Package            string
+	Imports            Set
+	Converters         []MessageConverter
+	RepeatedConverters Set
 }
 
 type ProtoGenerator struct {
@@ -62,16 +70,19 @@ func (g *ProtoGenerator) buildServices() []ServiceData {
 
 func (g *ProtoGenerator) Generate() error {
 	servicesData := g.buildServices()
+	converters := ConvertersData{
+		Imports: make(Set), RepeatedConverters: make(Set), Package: "gen",
+	}
+
+	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
+	if err != nil {
+		return fmt.Errorf("Failed to parse template: %w", err)
+	}
 
 	for _, s := range servicesData {
 		templateData := protoFileData{
 			PackageName: g.packageName,
 			ServiceData: s,
-		}
-
-		tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
-		if err != nil {
-			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
 		outputFile := strings.ToLower(s.ResourceName) + ".proto"
@@ -98,6 +109,24 @@ func (g *ProtoGenerator) Generate() error {
 		err = cmd.Run()
 		if err != nil {
 			fmt.Printf("Error while attempting to format the file %q: %s\n", outputPath, err.Error())
+		}
+
+		if s.Converters != nil {
+			converters.Converters = append(converters.Converters, s.Converters.Converters...)
+			maps.Copy(converters.Imports, s.Converters.Imports)
+			maps.Copy(converters.RepeatedConverters, s.Converters.RepeatedConverters)
+
+		}
+	}
+
+	if len(converters.Converters) > 0 {
+		var outputBuffer bytes.Buffer
+		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {
+			fmt.Printf("Failed to execute template: %s", err.Error())
+		}
+
+		if err := os.WriteFile("gen/converter.go", outputBuffer.Bytes(), 0644); err != nil {
+			fmt.Print(err)
 		}
 	}
 

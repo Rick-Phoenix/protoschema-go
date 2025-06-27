@@ -31,6 +31,7 @@ type ServiceData struct {
 	ServiceOptions []ProtoOption
 	FileOptions    []ProtoOption
 	Handlers       []HandlerData
+	Converters     *ConvertersData
 }
 
 type ServiceSchema struct {
@@ -49,7 +50,6 @@ func newProtoService(s ServiceSchema) (ServiceData, error) {
 
 	messages := make([]MessageSchema, len(s.Messages))
 	copy(messages, s.Messages)
-
 	out := &ServiceData{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, Extensions: s.OptionExtensions, Enums: s.Enums}
 
 	var messageErrors error
@@ -61,6 +61,21 @@ func newProtoService(s ServiceSchema) (ServiceData, error) {
 		errAgg = errors.Join(errAgg, err)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present
+		if message.Converter != nil {
+			if out.Converters == nil {
+				out.Converters = &ConvertersData{
+					RepeatedConverters: make(Set), Imports: make(Set),
+				}
+			}
+			for _, v := range message.Converter.InternalRepeated {
+				out.Converters.RepeatedConverters[v] = present
+			}
+			for _, v := range message.Converter.Imports {
+				out.Converters.Imports[v] = present
+			}
+
+			out.Converters.Converters = append(out.Converters.Converters, *message.Converter)
+		}
 
 		if errAgg != nil {
 			messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))

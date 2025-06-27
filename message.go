@@ -1,15 +1,12 @@
 package schemabuilder
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"maps"
-	"os"
 	"reflect"
 	"slices"
-	"text/template"
 )
 
 type FieldsMap map[uint32]FieldBuilder
@@ -55,7 +52,6 @@ type Field struct {
 }
 
 type MessageConverter struct {
-	Package          string
 	TimestampFields  map[string]bool
 	InternalRepeated []string
 	Imports          []string
@@ -107,7 +103,7 @@ func (s *MessageSchema) CheckModel() error {
 	withConv := s.TargetType != nil
 	conv := &MessageConverter{}
 	if withConv {
-		conv = &MessageConverter{Package: "gen", Resource: s.Name, SrcType: modelName, TimestampFields: make(map[string]bool)}
+		conv = &MessageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(map[string]bool)}
 		strDstType, isString := s.TargetType.(string)
 		if isString {
 			if strDstType == "" {
@@ -165,8 +161,6 @@ func (s *MessageSchema) CheckModel() error {
 					if isInternal {
 						fieldConvData.IsInternal = true
 						conv.Imports = append(conv.Imports, getPkgPath(field.Type))
-						fmt.Printf("DEBUG: %+v\n", fieldName)
-						fmt.Printf("DEBUG: %+v\n", pfield.IsRepeated())
 						if pfield.IsRepeated() {
 							conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetName())
 						}
@@ -191,20 +185,7 @@ func (s *MessageSchema) CheckModel() error {
 			conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
 		}
 		fmt.Printf("DEBUG: %+v\n", conv)
-	}
-
-	tmpl, err := template.New("converter").Funcs(funcMap).ParseFS(templateFS, "templates/*")
-	if err != nil {
-		fmt.Printf("Failed to parse template: %s", err.Error())
-	}
-
-	var outputBuffer bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", conv); err != nil {
-		fmt.Printf("Failed to execute template: %s", err.Error())
-	}
-
-	if err := os.WriteFile("gen/converter-"+modelName+".go", outputBuffer.Bytes(), 0644); err != nil {
-		fmt.Print(err)
+		s.converter = conv
 	}
 
 	if len(msgFields) > 0 {
@@ -273,7 +254,7 @@ func newProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages}, nil
+	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.converter}, nil
 }
 
 func MessageRef(s MessageSchema) MessageSchema {
