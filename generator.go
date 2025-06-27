@@ -121,6 +121,7 @@ func (g *ProtoGenerator) Generate() error {
 
 	if len(converters.Converters) > 0 {
 		var outputBuffer bytes.Buffer
+		fmt.Printf("DEBUG: %+v\n", converters)
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {
 			fmt.Printf("Failed to execute template: %s", err.Error())
 		}
@@ -191,4 +192,8 @@ var funcMap = template.FuncMap{
 		return ""
 	},
 	"serviceSuffix": addServiceSuffix,
+	"setContains": func(set Set, key string) bool {
+		_, present := set[key]
+		return present
+	},
 }

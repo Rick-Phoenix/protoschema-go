@@ -184,7 +184,6 @@ func (s *MessageSchema) CheckModel() error {
 		if len(conv.TimestampFields) > 0 {
 			conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
 		}
-		fmt.Printf("DEBUG: %+v\n", conv)
 		s.converter = conv
 	}
 
