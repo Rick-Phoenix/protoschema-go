@@ -9,21 +9,21 @@ import (
 )
 
 type Comment struct {
-	ID              int64     `json:"id"`
+	Id              int64     `json:"id"`
 	TextContent     string    `json:"text_content"`
 	CreatedAt       time.Time `json:"created_at"`
-	AuthorID        int64     `json:"author_id"`
-	PostID          int64     `json:"post_id"`
-	ParentCommentID *int64    `json:"parent_comment_id"`
+	AuthorId        int64     `json:"author_id"`
+	PostId          int64     `json:"post_id"`
+	ParentCommentId *int64    `json:"parent_comment_id"`
 }
 
 type Post struct {
-	ID          int64     `json:"id"`
+	Id          int64     `json:"id"`
 	Title       string    `json:"title"`
 	Content     *string   `json:"content"`
 	CreatedAt   time.Time `json:"created_at"`
-	AuthorID    int64     `json:"author_id"`
-	SubredditID int64     `json:"subreddit_id"`
+	AuthorId    int64     `json:"author_id"`
+	SubredditId int64     `json:"subreddit_id"`
 }
 
 type SchemaMigration struct {
@@ -31,21 +31,21 @@ type SchemaMigration struct {
 }
 
 type Subreddit struct {
-	ID          int64     `json:"id"`
+	Id          int64     `json:"id"`
 	Name        string    `json:"name"`
 	Description *string   `json:"description"`
 	CreatedAt   time.Time `json:"created_at"`
-	CreatorID   *int64    `json:"creator_id"`
+	CreatorId   *int64    `json:"creator_id"`
 }
 
 type User struct {
-	ID        int64     `json:"id"`
+	Id        int64     `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type UserSubscription struct {
-	UserID      int64     `json:"user_id"`
-	SubredditID int64     `json:"subreddit_id"`
+	UserId      int64     `json:"user_id"`
+	SubredditId int64     `json:"subreddit_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }

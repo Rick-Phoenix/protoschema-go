@@ -22,7 +22,16 @@ func NewStore(db *sql.DB) *Store {
 
 type UserWithPosts struct {
 	sqlgen.User
-	Posts []sqlgen.Post
+	Posts []*sqlgen.Post
+}
+
+func ToPointer[T any](s []T) []*T {
+	out := make([]*T, len(s))
+	for _, v := range s {
+		out = append(out, &v)
+	}
+
+	return out
 }
 
 func (s *Store) GetUserWithPosts(ctx context.Context, userID int64) (*UserWithPosts, error) {
@@ -37,6 +46,6 @@ func (s *Store) GetUserWithPosts(ctx context.Context, userID int64) (*UserWithPo
 	}
 
 	return &UserWithPosts{
-		User: user, Posts: posts,
+		User: user, Posts: ToPointer(posts),
 	}, nil
 }

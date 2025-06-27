@@ -1,12 +1,15 @@
 package schemabuilder
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"maps"
+	"os"
 	"reflect"
 	"slices"
+	"text/template"
 )
 
 type FieldsMap map[uint32]FieldBuilder
@@ -29,6 +32,7 @@ type MessageSchema struct {
 	ModelIgnore     []string
 	SkipValidation  bool
 	TargetType      any
+	converter       *MessageConverter
 }
 
 type MessageData struct {
@@ -41,6 +45,24 @@ type MessageData struct {
 	ReservedNames   []string
 	Options         []ProtoOption
 	Enums           []EnumGroup
+	Converter       *MessageConverter
+}
+
+type Field struct {
+	Name        string
+	IsInternal  bool
+	IsTimestamp bool
+}
+
+type MessageConverter struct {
+	Package          string
+	TimestampFields  map[string]bool
+	InternalRepeated []string
+	Imports          []string
+	Resource         string
+	SrcType          string
+	DstType          string
+	Fields           []Field
 }
 
 func (s *MessageSchema) GetFields() map[string]FieldBuilder {
@@ -70,20 +92,50 @@ func (s *MessageSchema) GetField(n string) FieldBuilder {
 	return nil
 }
 
+func getPkgPath(t reflect.Type) string {
+	if t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
+		return getPkgPath(t.Elem())
+	}
+
+	return t.PkgPath()
+}
+
 func (s *MessageSchema) CheckModel() error {
 	model := reflect.TypeOf(s.Model).Elem()
 	modelName := model.String()
 	msgFields := s.GetFields()
+	withConv := s.TargetType != nil
+	conv := &MessageConverter{}
+	if withConv {
+		conv = &MessageConverter{Package: "gen", Resource: s.Name, SrcType: modelName, TimestampFields: make(map[string]bool)}
+		strDstType, isString := s.TargetType.(string)
+		if isString {
+			if strDstType == "" {
+				log.Fatalf("Missing target type for message schema %q", s.Name)
+			}
+			conv.DstType = strDstType
+		} else {
+			destStructType := reflect.TypeOf(s.TargetType)
+			if destStructType.Kind() == reflect.Pointer {
+				conv.DstType = destStructType.Elem().String()
+			} else {
+				conv.DstType = destStructType.String()
+			}
+			conv.Imports = append(conv.Imports, getPkgPath(destStructType))
+		}
+	}
+	conv.Imports = append(conv.Imports, getPkgPath(model))
+
 	var err error
 
-	var checkFields func(t reflect.Type)
-	checkFields = func(t reflect.Type) {
+	var processFields func(t reflect.Type)
+	processFields = func(t reflect.Type) {
 		for i := range t.NumField() {
 			field := t.Field(i)
 			if field.Anonymous {
 				embeddedType := field.Type
 				if embeddedType.Kind() == reflect.Struct {
-					checkFields(embeddedType)
+					processFields(embeddedType)
 					continue
 				}
 			}
@@ -103,6 +155,25 @@ func (s *MessageSchema) CheckModel() error {
 				goType := pfield.GetGoType()
 				fieldName := pfield.GetName()
 
+				if withConv {
+					fieldConvData := Field{Name: field.Name}
+					if field.Type.String() == "time.Time" {
+						fieldConvData.IsTimestamp = true
+						conv.TimestampFields[field.Name] = true
+					}
+					isInternal := pfield.GetMessageRef() != nil && pfield.GetMessageRef().Model != nil
+					if isInternal {
+						fieldConvData.IsInternal = true
+						conv.Imports = append(conv.Imports, getPkgPath(field.Type))
+						fmt.Printf("DEBUG: %+v\n", fieldName)
+						fmt.Printf("DEBUG: %+v\n", pfield.IsRepeated())
+						if pfield.IsRepeated() {
+							conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetName())
+						}
+					}
+					conv.Fields = append(conv.Fields, fieldConvData)
+				}
+
 				if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
 					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
 				}
@@ -113,7 +184,28 @@ func (s *MessageSchema) CheckModel() error {
 		}
 	}
 
-	checkFields(model)
+	processFields(model)
+
+	if withConv {
+		if len(conv.TimestampFields) > 0 {
+			conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
+		}
+		fmt.Printf("DEBUG: %+v\n", conv)
+	}
+
+	tmpl, err := template.New("converter").Funcs(funcMap).ParseFS(templateFS, "templates/*")
+	if err != nil {
+		fmt.Printf("Failed to parse template: %s", err.Error())
+	}
+
+	var outputBuffer bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", conv); err != nil {
+		fmt.Printf("Failed to execute template: %s", err.Error())
+	}
+
+	if err := os.WriteFile("gen/converter-"+modelName+".go", outputBuffer.Bytes(), 0644); err != nil {
+		fmt.Print(err)
+	}
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {

@@ -1,0 +1,40 @@
+package {{ .Package }}
+
+import (
+  {{ range .Imports }}
+  "{{ . }}"
+  {{ end }}
+)
+
+{{ $resname := .Resource }}
+{{ $tfields := .TimestampFields }}
+func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .DstType }} {
+	if {{ .Resource }} == nil {
+		return nil
+	}
+  {{ range $name, $_ := .TimestampFields }}
+  {{ $name }} := timestamppb.New({{ $resname }}.{{ $name }})
+  {{ end }}
+	return &{{ .DstType }}{
+    {{ range .Fields }}
+    {{ if index $tfields .Name }}
+    {{ .Name }}: {{ .Name }},
+    {{ else if .IsInternal }}
+    {{ .Name }}: {{ .Name }}To{{ .Name }}Msg({{ $resname }}.{{ .Name }}),
+    {{ else }}
+    {{ .Name }}: {{ $resname }}.{{ .Name }},
+    {{ end }}
+    {{ end }}
+	}
+}
+
+func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ .DstType }} {
+	out := make([]*{{ .DstType }}, len({{ .Resource }}))
+
+	for _, v := range {{ .Resource }} {
+		out = append(out, {{ .Resource }}To{{ .Resource }}Msg(v))
+	}
+
+	return out
+}
+

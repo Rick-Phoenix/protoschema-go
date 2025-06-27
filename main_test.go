@@ -6,6 +6,7 @@ import (
 
 	"github.com/Rick-Phoenix/gofirst/db"
 	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
+	"github.com/Rick-Phoenix/gofirst/gen/myappv1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,6 +35,7 @@ var PostSchema = MessageSchema{
 	ImportPath:  "myapp/v1/post.proto",
 	ModelIgnore: []string{"content"},
 	Model:       &sqlgen.Post{},
+	TargetType:  &myappv1.Post{},
 }
 
 var GetPostRequest = MessageSchema{
@@ -86,6 +88,7 @@ var UserSchema = MessageSchema{
 	},
 	Model:      &db.UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
+	TargetType: "*myappv1.User",
 }
 
 var GetUserRequest = MessageSchema{

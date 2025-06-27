@@ -39,6 +39,7 @@ type protoFieldInternal struct {
 	repeated        bool
 	isMap           bool
 	isConst         bool
+	messageRef      *MessageSchema
 }
 
 type FieldBuilder interface {
@@ -48,6 +49,11 @@ type FieldBuilder interface {
 	IsRepeated() bool
 	GetGoType() string
 	GetName() string
+	GetMessageRef() *MessageSchema
+}
+
+func (b *protoFieldInternal) GetMessageRef() *MessageSchema {
+	return b.messageRef
 }
 
 func (b *protoFieldInternal) IsMap() bool {

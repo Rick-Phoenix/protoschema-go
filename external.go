@@ -19,7 +19,7 @@ func MsgField(name string, s *MessageSchema) *GenericField {
 		fmt.Printf("Message schema %q referenced in field %q has no model to extract the go type from. Using 'any' as a fallback...\n", s.Name, name)
 		goType = "any"
 	} else {
-		goType = reflect.TypeOf(s.Model).Elem().String()
+		goType = reflect.TypeOf(s.Model).String()
 	}
 
 	if s.Name == "" {
@@ -39,6 +39,7 @@ func MsgField(name string, s *MessageSchema) *GenericField {
 		isNonScalar: true,
 		rules:       rules,
 		imports:     imports,
+		messageRef:  s,
 	}
 
 	gf := &GenericField{}
