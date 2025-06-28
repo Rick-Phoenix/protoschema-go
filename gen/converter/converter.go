@@ -7,6 +7,8 @@ import (
   "github.com/Rick-Phoenix/gofirst/gen/myappv1"
   "google.golang.org/protobuf/types/known/timestamppb"
   )
+
+
 func UserToUserMsg(User *db.UserWithPosts) *myappv1.User {
 	if User == nil {
 		return nil

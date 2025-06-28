@@ -34,6 +34,7 @@ type ProtoGenerator struct {
 	converterPackage     string
 	protoPackage         string
 	protoOutputDir       string
+	handlersOutputDir    string
 	protoPackageBasePath string
 	protoGenPath         string
 	services             []ServiceSchema
@@ -45,6 +46,14 @@ type ProtoGeneratorConfig struct {
 	ProtoPackage       string
 	ProtoRoot          string
 	ProtoGenPath       string
+	HandlersOutputDir  string
+}
+
+type ServiceHandler struct {
+	ResourceName string
+	Handlers     []HandlerData
+	Imports      Set
+	GenPkg       string
 }
 
 //go:embed templates/*
@@ -54,7 +63,7 @@ func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
 	out := &ProtoGenerator{
 		protoPackage: c.ProtoPackage,
 		goModule:     c.GoModule, converterOutputDir: c.ConverterOutputDir,
-		protoGenPath: c.ProtoGenPath,
+		protoGenPath: c.ProtoGenPath, handlersOutputDir: c.HandlersOutputDir,
 	}
 	if c.ProtoPackage == "" {
 		log.Fatalf("Missing proto package definition.")
@@ -65,6 +74,10 @@ func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
 
 	if out.converterOutputDir == "" {
 		out.converterOutputDir = "gen/converter"
+	}
+
+	if out.handlersOutputDir == "" {
+		out.handlersOutputDir = "gen/handlers"
 	}
 
 	out.converterPackage = filepath.Base(out.converterOutputDir)
@@ -125,6 +138,22 @@ func (g *ProtoGenerator) Generate() error {
 			return err
 		}
 		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
+			return err
+		}
+
+		var handlerBuffer bytes.Buffer
+		handlerData := ServiceHandler{GenPkg: filepath.Base(g.protoGenPath), ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{path.Join(g.goModule, g.protoGenPath): present}}
+		if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
+			return fmt.Errorf("Failed to execute template: %w", err)
+		}
+
+		handlerOut := filepath.Join(g.handlersOutputDir, strings.ToLower(s.ResourceName)+"_handler.go")
+
+		if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(handlerOut, handlerBuffer.Bytes(), 0644); err != nil {
 			return err
 		}
 

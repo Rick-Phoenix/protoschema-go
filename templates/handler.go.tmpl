@@ -2,6 +2,7 @@ package handlers
 
 {{ template "imports" .Imports }}
 
+
 type {{ .ResourceName }}Service struct {
 	Store *db.Store
 }
@@ -10,19 +11,22 @@ func New{{ .ResourceName }}Service(s *db.Store) *{{ .ResourceName }}Service {
 	return &{{ .ResourceName }}Service{Store: s}
 }
 
-{{ range .Methods }}
+{{ $resName := .ResourceName }}
+{{ $genPkg := .GenPkg }}
 
-func (s *{{ .ResourceName }}Service) {{ .Name }}(
+{{ range .Handlers }}
+
+func (s *{{ $resName }}Service) {{ .Name }}(
 	ctx context.Context,
-  req *connect.Request[{{ .GenPkg }}.{{ .Request.Name }}],
-) (*connect.Response[{{ .GenPkg }}.{{ .Response.Name }}], error) {
+  req *connect.Request[{{ $genPkg }}.{{ .Request }}],
+) (*connect.Response[{{ $genPkg }}.{{ .Response }}], error) {
 
 	, err := s.Store.(ctx, )
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
-  return connect.NewResponse(&{{ .GenPkg }}.{{ .Response.Name }}{
+  return connect.NewResponse(&{{ $genPkg }}.{{ .Response }}{
 
 	}), nil
 }
