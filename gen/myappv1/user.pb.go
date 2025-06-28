@@ -243,9 +243,9 @@ const file_myapp_v1_user_proto_rawDesc = "" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\x129\n" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12$\n" +
-	"\x05posts\x18\x04 \x03(\v2\x0e.myapp.v1.PostR\x05posts\"^\n" +
-	"\x11UpdateUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x129\n" +
+	"\x05posts\x18\x04 \x03(\v2\x0e.myapp.v1.PostR\x05posts\"f\n" +
+	"\x11UpdateUserRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\x03B\x06\xbaH\x03\xc8\x01\x01R\x02id\x129\n" +
 	"\n" +
 	"field_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\tfieldMask\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
