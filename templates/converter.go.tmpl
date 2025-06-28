@@ -1,10 +1,6 @@
 package {{ .Package }}
 
-import (
-  {{ range $import, $_ := .Imports -}}
-  "{{ $import }}"
-  {{ end -}}
-)
+{{ template "imports" .Imports }}
 
 {{ $repeated := .RepeatedConverters -}}
 {{ range .Converters -}}

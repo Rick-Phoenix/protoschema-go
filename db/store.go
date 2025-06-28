@@ -35,14 +35,25 @@ func ToPointer[T any](s []T) []*T {
 }
 
 func (s *Store) GetUserWithPosts(ctx context.Context, userID int64) (*UserWithPosts, error) {
-	user, err := s.Queries.GetUser(ctx, userID)
+	tx, err := s.db.(*sql.DB).BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	qtx := s.Queries.WithTx(tx)
+	user, err := qtx.GetUser(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	posts, err := s.Queries.GetPostsFromUserId(ctx, userID)
+	posts, err := qtx.GetPostsFromUserId(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get post: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
 	}
 
 	return &UserWithPosts{

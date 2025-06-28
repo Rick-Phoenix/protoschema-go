@@ -7,6 +7,8 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type FieldsMap map[uint32]FieldBuilder
@@ -259,7 +261,7 @@ func MessageRef(s MessageSchema) MessageSchema {
 }
 
 func Empty() MessageSchema {
-	return MessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto"}
+	return MessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}}
 }
 
 var (

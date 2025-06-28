@@ -1,0 +1,30 @@
+package handlers
+
+{{ template "imports" .Imports }}
+
+type {{ .ResourceName }}Service struct {
+	Store *db.Store
+}
+
+func New{{ .ResourceName }}Service(s *db.Store) *{{ .ResourceName }}Service {
+	return &{{ .ResourceName }}Service{Store: s}
+}
+
+{{ range .Methods }}
+
+func (s *{{ .ResourceName }}Service) {{ .Name }}(
+	ctx context.Context,
+  req *connect.Request[{{ .GenPkg }}.{{ .Request.Name }}],
+) (*connect.Response[{{ .GenPkg }}.{{ .Response.Name }}], error) {
+
+	, err := s.Store.(ctx, )
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+  return connect.NewResponse(&{{ .GenPkg }}.{{ .Response.Name }}{
+
+	}), nil
+}
+
+{{ end }}

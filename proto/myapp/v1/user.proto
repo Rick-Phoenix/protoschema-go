@@ -19,20 +19,20 @@ message User {
   repeated Post posts = 4;
 }
 
-message UpdateUserRequest {
-  int64 id = 1 [(buf.validate.field).required = true];
-  google.protobuf.FieldMask field_mask = 2;
-}
-
 message GetUserRequest {
-  int64 id = 1;
+  int64 id = 1 [(buf.validate.field).required = true];
 }
 
 message GetUserResponse {
   User user = 1;
 }
 
+message UpdateUserRequest {
+  int64 id = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
 service UserService {
-  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
 }
