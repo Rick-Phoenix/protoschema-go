@@ -38,7 +38,11 @@ type ProtoGenerator struct {
 	protoPackageBasePath string
 	protoGenPath         string
 	services             []ServiceSchema
+	generatorFuncs       []GeneratorFunc
+	tmpl                 *template.Template
 }
+
+type GeneratorFunc func(s ServiceData) error
 
 type ProtoGeneratorConfig struct {
 	GoModule           string
@@ -47,6 +51,7 @@ type ProtoGeneratorConfig struct {
 	ProtoRoot          string
 	ProtoGenPath       string
 	HandlersOutputDir  string
+	GeneratorFuncs     []GeneratorFunc
 }
 
 type ServiceHandler struct {
@@ -64,6 +69,7 @@ func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
 		protoPackage: c.ProtoPackage,
 		goModule:     c.GoModule, converterOutputDir: c.ConverterOutputDir,
 		protoGenPath: c.ProtoGenPath, handlersOutputDir: c.HandlersOutputDir,
+		generatorFuncs: c.GeneratorFuncs,
 	}
 	if c.ProtoPackage == "" {
 		log.Fatalf("Missing proto package definition.")
@@ -80,6 +86,13 @@ func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
 		out.handlersOutputDir = "gen/handlers"
 	}
 
+	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
+	if err != nil {
+		fmt.Print(fmt.Errorf("Failed to initiate tmpl instance for the generator: %w", err))
+		os.Exit(1)
+	}
+	out.tmpl = tmpl
+
 	out.converterPackage = filepath.Base(out.converterOutputDir)
 
 	return out
@@ -90,7 +103,7 @@ func (g *ProtoGenerator) Services(services ...ServiceSchema) *ProtoGenerator {
 	return g
 }
 
-func (g *ProtoGenerator) buildServices() []ServiceData {
+func (g *ProtoGenerator) BuildServices() []ServiceData {
 	out := []ServiceData{}
 	var serviceErrors error
 
@@ -108,18 +121,39 @@ func (g *ProtoGenerator) buildServices() []ServiceData {
 	return out
 }
 
+func (g *ProtoGenerator) GenHandler(s ServiceData) error {
+	tmpl := g.tmpl
+	var handlerBuffer bytes.Buffer
+	handlerData := ServiceHandler{GenPkg: filepath.Base(g.protoGenPath), ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{path.Join(g.goModule, g.protoGenPath): present}}
+	if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
+		return fmt.Errorf("Failed to execute template: %w", err)
+	}
+
+	handlerOut := filepath.Join(g.handlersOutputDir, strings.ToLower(s.ResourceName)+"_handler.go")
+
+	if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(handlerOut, handlerBuffer.Bytes(), 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Generated handler in %s\n", handlerOut)
+
+	return nil
+}
+
 func (g *ProtoGenerator) Generate() error {
-	servicesData := g.buildServices()
+	servicesData := g.BuildServices()
 	converters := convertersData{
 		Imports: make(Set), RepeatedConverters: make(Set), Package: g.converterPackage,
 	}
 
-	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
-	if err != nil {
-		return fmt.Errorf("Failed to parse template: %w", err)
-	}
+	tmpl := g.tmpl
 
 	for _, s := range servicesData {
+		g.GenHandler(s)
 		templateData := protoFileData{
 			PackageName: g.protoPackage,
 			ServiceData: s,
@@ -138,22 +172,6 @@ func (g *ProtoGenerator) Generate() error {
 			return err
 		}
 		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
-			return err
-		}
-
-		var handlerBuffer bytes.Buffer
-		handlerData := ServiceHandler{GenPkg: filepath.Base(g.protoGenPath), ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{path.Join(g.goModule, g.protoGenPath): present}}
-		if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
-			return fmt.Errorf("Failed to execute template: %w", err)
-		}
-
-		handlerOut := filepath.Join(g.handlersOutputDir, strings.ToLower(s.ResourceName)+"_handler.go")
-
-		if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(handlerOut, handlerBuffer.Bytes(), 0644); err != nil {
 			return err
 		}
 
@@ -176,6 +194,13 @@ func (g *ProtoGenerator) Generate() error {
 			converters.Converters = append(converters.Converters, s.Converters.Converters...)
 			maps.Copy(converters.Imports, s.Converters.Imports)
 			maps.Copy(converters.RepeatedConverters, s.Converters.RepeatedConverters)
+		}
+
+		for _, f := range g.generatorFuncs {
+			err := f(s)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

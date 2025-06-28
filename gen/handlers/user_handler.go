@@ -25,10 +25,18 @@ func (s *UserService) GetUser(
   req *connect.Request[myappv1.GetUserRequest],
 ) (*connect.Response[myappv1.GetUserResponse], error) {
 
-	// , err := s.Store.(ctx, )
-	// if err != nil {
-	// 	return nil, connect.NewError(connect.CodeNotFound, err)
-	// }
+  resource, err := s.Store.method(ctx, params)
+  if errors.Is(err, sql.ErrNoRows) {
+    return nil, connect.NewError(connect.CodeNotFound, err)
+  } else {
+    var sqliteErr *sqlite.Error
+    if errors.As(err, &sqliteErr) {
+      switch sqliteErr.Code() {
+      case sqlite3.SQLITE_CONSTRAINT:
+        //
+      }
+    }
+  }
 
   return connect.NewResponse(&myappv1.GetUserResponse{
 
@@ -42,10 +50,18 @@ func (s *UserService) UpdateUser(
   req *connect.Request[myappv1.UpdateUserRequest],
 ) (*connect.Response[myappv1.google.protobuf.Empty], error) {
 
-	// , err := s.Store.(ctx, )
-	// if err != nil {
-	// 	return nil, connect.NewError(connect.CodeNotFound, err)
-	// }
+  resource, err := s.Store.method(ctx, params)
+  if errors.Is(err, sql.ErrNoRows) {
+    return nil, connect.NewError(connect.CodeNotFound, err)
+  } else {
+    var sqliteErr *sqlite.Error
+    if errors.As(err, &sqliteErr) {
+      switch sqliteErr.Code() {
+      case sqlite3.SQLITE_CONSTRAINT:
+        //
+      }
+    }
+  }
 
   return connect.NewResponse(&myappv1.google.protobuf.Empty{
 
