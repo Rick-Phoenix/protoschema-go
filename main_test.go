@@ -106,7 +106,7 @@ var GetUserResponse = MessageSchema{
 }
 
 var UpdateUserRequest = MessageSchema{Name: "UpdateUserRequest", Fields: FieldsMap{
-	1: MsgField("user", &UserSchema),
+	1: UserSchema.GetField("id"),
 	2: FieldMask("field_mask"),
 }}
 

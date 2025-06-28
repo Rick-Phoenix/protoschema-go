@@ -118,3 +118,22 @@ func (q *Queries) PostWithUser(ctx context.Context, id int64) (PostWithUserRow, 
 	)
 	return i, err
 }
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE
+    users
+SET
+    name = ?
+WHERE
+    id = ?
+`
+
+type UpdateUserParams struct {
+	Name string `json:"name"`
+	Id   int64  `json:"id"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.ExecContext(ctx, updateUser, arg.Name, arg.Id)
+	return err
+}

@@ -6,6 +6,14 @@ FROM
 WHERE
     id = ?;
 
+-- name: UpdateUser :exec
+UPDATE
+    users
+SET
+    name = ?
+WHERE
+    id = ?;
+
 -- name: GetPostsFromUserId :many
 SELECT
     *
