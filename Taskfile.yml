@@ -1,0 +1,16 @@
+version: "3"
+
+dotenv:
+  - .env
+
+tasks:
+  test-main:
+    cmds:
+      - go test -v . -run TestMain
+    silent: true
+  bufgen:
+    dir: proto
+    cmd: buf generate
+  bufdeps:
+    dir: proto
+    cmd: buf dep update
