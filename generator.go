@@ -121,6 +121,10 @@ func (g *ProtoGenerator) BuildServices() []ServiceData {
 	return out
 }
 
+func (g *ProtoGenerator) GetTmpl() *template.Template {
+	return g.tmpl
+}
+
 func (g *ProtoGenerator) GenHandler(s ServiceData) error {
 	tmpl := g.tmpl
 	var handlerBuffer bytes.Buffer

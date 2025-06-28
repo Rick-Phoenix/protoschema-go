@@ -1,0 +1,23 @@
+func (s *Store) Get{{ .Resource }}(ctx context.Context, {{ template "params" .Params }}, error) {
+	tx, err := s.db.(*sql.DB).BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	qtx := s.Queries.WithTx(tx)
+  {{ range .Subqueries }}
+  {{ .Item }}, err := qtx.(ctx, {{ template "params" .Params }}) 
+	if err != nil {
+		return nil, fmt.Errorf("failed to get {{ .Item }}: %w", err)
+	}
+  {{ end }}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
+	}
+
+	return &{{ .OutputType }}{
+		User: user, Posts: ToPointer(posts),
+	}, nil
+}
