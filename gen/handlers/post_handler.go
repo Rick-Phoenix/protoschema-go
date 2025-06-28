@@ -25,10 +25,10 @@ func (s *PostService) UpdatePost(
   req *connect.Request[myappv1.UpdatePostRequest],
 ) (*connect.Response[myappv1.google.protobuf.Empty], error) {
 
-	, err := s.Store.(ctx, )
-	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	}
+	// , err := s.Store.(ctx, )
+	// if err != nil {
+	// 	return nil, connect.NewError(connect.CodeNotFound, err)
+	// }
 
   return connect.NewResponse(&myappv1.google.protobuf.Empty{
 
@@ -42,10 +42,10 @@ func (s *PostService) GetPost(
   req *connect.Request[myappv1.GetPostRequest],
 ) (*connect.Response[myappv1.GetPostResponse], error) {
 
-	, err := s.Store.(ctx, )
-	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	}
+	// , err := s.Store.(ctx, )
+	// if err != nil {
+	// 	return nil, connect.NewError(connect.CodeNotFound, err)
+	// }
 
   return connect.NewResponse(&myappv1.GetPostResponse{
 

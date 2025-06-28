@@ -25,10 +25,10 @@ func (s *UserService) GetUser(
   req *connect.Request[myappv1.GetUserRequest],
 ) (*connect.Response[myappv1.GetUserResponse], error) {
 
-	, err := s.Store.(ctx, )
-	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	}
+	// , err := s.Store.(ctx, )
+	// if err != nil {
+	// 	return nil, connect.NewError(connect.CodeNotFound, err)
+	// }
 
   return connect.NewResponse(&myappv1.GetUserResponse{
 
@@ -42,10 +42,10 @@ func (s *UserService) UpdateUser(
   req *connect.Request[myappv1.UpdateUserRequest],
 ) (*connect.Response[myappv1.google.protobuf.Empty], error) {
 
-	, err := s.Store.(ctx, )
-	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	}
+	// , err := s.Store.(ctx, )
+	// if err != nil {
+	// 	return nil, connect.NewError(connect.CodeNotFound, err)
+	// }
 
   return connect.NewResponse(&myappv1.google.protobuf.Empty{
 

@@ -21,10 +21,18 @@ func (s *{{ $resName }}Service) {{ .Name }}(
   req *connect.Request[{{ $genPkg }}.{{ .Request }}],
 ) (*connect.Response[{{ $genPkg }}.{{ .Response }}], error) {
 
-	, err := s.Store.(ctx, )
-	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	}
+  resource, err := s.Store.method(ctx, params)
+  if errors.Is(err, sql.ErrNoRows) {
+    return nil, connect.NewError(connect.CodeNotFound, err)
+  } else {
+    var sqliteErr *sqlite.Error
+    if errors.As(err, &sqliteErr) {
+      switch sqliteErr.Code() {
+      case sqlite3.SQLITE_CONSTRAINT:
+        //
+      }
+    }
+  }
 
   return connect.NewResponse(&{{ $genPkg }}.{{ .Response }}{
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 
@@ -17,7 +18,9 @@ import (
 	"github.com/Rick-Phoenix/gofirst/gen/myappv1/myappv1connect"
 	"github.com/labstack/echo/v4"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"modernc.org/sqlite"
 	_ "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 type ctxKey int
@@ -61,10 +64,21 @@ func (s *UserService) GetUser(
 
 	user, err := s.Store.GetUserWithPosts(ctx, userID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		} else {
+			var sqliteErr *sqlite.Error
+			if errors.As(err, &sqliteErr) {
+				switch sqliteErr.Code() {
+				case sqlite3.SQLITE_CONSTRAINT:
+					//
+				}
+			}
+		}
 	}
 
 	convUser := converter.UserToUserMsg(user)
+
 	return connect.NewResponse(&myappv1.GetUserResponse{
 		User: convUser,
 	}), nil
