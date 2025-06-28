@@ -1,7 +1,6 @@
 package schemabuilder
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 )
@@ -16,7 +15,6 @@ func MsgField(name string, s *MessageSchema) *GenericField {
 	var goType string
 
 	if s.Model == nil {
-		fmt.Printf("Message schema %q referenced in field %q has no model to extract the go type from. Using 'any' as a fallback...\n", s.Name, name)
 		goType = "any"
 	} else {
 		goType = reflect.TypeOf(s.Model).String()

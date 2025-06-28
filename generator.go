@@ -130,19 +130,23 @@ func (g *ProtoGenerator) Generate() error {
 
 		fmt.Printf("✅ Successfully generated proto file at: %s\n", outputPath)
 
-		cmd := exec.Command("buf", "format", "-w", outputPath)
-
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+		_, err := exec.LookPath("buf")
 		if err != nil {
-			fmt.Printf("Error while attempting to format the file %q: %s\n", outputPath, err.Error())
+			fmt.Println("Could not format the generated proto file. Is the buf cli in PATH?")
+		} else {
+			cmd := exec.Command("buf", "format", "-w", outputPath)
+
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Printf("Error while attempting to format the file %q: %s\n", outputPath, err.Error())
+			}
 		}
 
 		if s.Converters != nil {
 			converters.Converters = append(converters.Converters, s.Converters.Converters...)
 			maps.Copy(converters.Imports, s.Converters.Imports)
 			maps.Copy(converters.RepeatedConverters, s.Converters.RepeatedConverters)
-
 		}
 	}
 
@@ -156,7 +160,7 @@ func (g *ProtoGenerator) Generate() error {
 			fmt.Printf("Failed to execute template: %s", err.Error())
 		}
 
-		outputPath := filepath.Join(g.converterOutputDir, g.protoPackage+".go")
+		outputPath := filepath.Join(g.converterOutputDir, g.converterPackage+".go")
 
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 			return err
@@ -165,6 +169,8 @@ func (g *ProtoGenerator) Generate() error {
 		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
 			fmt.Print(err)
 		}
+
+		fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)
 	}
 
 	return nil
