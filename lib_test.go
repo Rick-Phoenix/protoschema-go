@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -92,52 +93,11 @@ type ExtensionData struct {
 	Fields   map[string]FieldData
 }
 
-var (
-	timePast   = timestamppb.Timestamp{Seconds: time.Date(2025, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
-	timeFuture = timestamppb.Timestamp{Seconds: time.Date(3000, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
-)
-
 type UserWithPosts struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `dbignore:"true" json:"created_at"`
 	Posts     []Post    `json:"posts"`
-}
-
-var UserSchema = sb.MessageSchema{
-	Name: "User",
-	Fields: sb.FieldsMap{
-		1: sb.String("name").Required().MinLen(2).MaxLen(32),
-		2: sb.Int64("id"),
-		3: sb.Timestamp("created_at"),
-		4: sb.Repeated("posts", sb.MsgField("post", &PostSchema)),
-		5: sb.String("fav_cat").
-			Optional().
-			CelOption("cel", "msg", "expr").
-			CelOption("cel", "msg", "expr").
-			Options([]sb.ProtoOption{{Name: "myopt", Value: true}, {Name: "myopt", Value: false}}...).
-			RepeatedOptions([]sb.ProtoOption{{Name: "repopt", Value: true}, {Name: "repopt", Value: true}}...).
-			Example("tabby").
-			Example("calico"),
-		6: sb.Map("mymap", sb.String("").MinLen(1), sb.Int64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
-		7: sb.Repeated("reptest", sb.Int32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
-		8: sb.Timestamp("timetest").Lt(&timePast),
-		9: sb.Timestamp("timetest2").Const(&timePast),
-	},
-	Oneofs: []sb.OneofGroup{
-		{
-			Name: "myoneof",
-			Choices: sb.OneofChoices{
-				9:  sb.String("example"),
-				10: sb.Int32("another"),
-			},
-		},
-	},
-	ReservedNames:   []string{"name1", "name2"},
-	ReservedNumbers: []uint{20, 21},
-	ReservedRanges:  []sb.Range{{22, 25}},
-	Enums:           TestEnum,
-	ImportPath:      "myapp/v1/user.proto",
 }
 
 type Post struct {
@@ -149,73 +109,116 @@ type Post struct {
 	SubredditID int64     `json:"subreddit_id"`
 }
 
-var PostSchema = sb.MessageSchema{
-	Name: "Post",
-	Fields: sb.FieldsMap{
-		1: sb.Int64("id").Optional(),
-		2: sb.Timestamp("created_at"),
-		3: sb.Int64("author_id"),
-		4: sb.String("title").MinLen(5).MaxLen(64).Required(),
-		5: sb.String("content").Optional(),
-		6: sb.Int64("subreddit_id"),
-	},
-	Model:      &Post{},
-	ImportPath: "myapp/v1/post.proto",
-}
-
-var MyOptions = []sb.ExtensionField{{
-	Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
-}}
-
-var TestEnum = []sb.EnumGroup{
-	{
-		Name: "myenum",
-		Members: sb.EnumMembers{
-			0: "VAL_1",
-			1: "VAL_2",
-		},
-		Options:         []sb.ProtoOption{sb.AllowAlias},
-		ReservedNames:   []string{"name1", "name2"},
-		ReservedNumbers: []int32{10, 11},
-		ReservedRanges:  []sb.Range{{20, 23}},
-	},
-}
-
-var UserService = sb.ServiceSchema{
-	Resource: UserSchema,
-	OptionExtensions: sb.Extensions{
-		Message: MyOptions,
-		File:    MyOptions,
-		OneOf:   MyOptions,
-		Service: MyOptions,
-		Field:   MyOptions,
-	},
-	Enums: TestEnum,
-	Handlers: sb.HandlersMap{
-		"GetUser": {
-			sb.MessageSchema{
-				Name: "GetUserRequest", Fields: sb.FieldsMap{
-					1: sb.Int64("id"),
-				},
-			},
-			sb.MessageSchema{
-				Name: "GetUserResponse",
-				Fields: sb.FieldsMap{
-					1: sb.MsgField("user", &UserSchema),
-				},
-			},
-		},
-		"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.FieldsMap{
-			1: sb.FieldMask("field_mask"),
-			2: sb.MsgField("user", &UserSchema),
-		}}, sb.Empty()},
-	},
-}
-
 func TestGeneration(t *testing.T) {
-	// tmpDir := t.TempDir()
-	tmpDir := "gen/temp"
-	gen := sb.NewProtoGenerator(tmpDir, "myapp.v1").Services(UserService)
+	var (
+		timePast   = timestamppb.Timestamp{Seconds: time.Date(2025, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+		timeFuture = timestamppb.Timestamp{Seconds: time.Date(3000, time.January, 1, 1, 1, 1, 1, time.Local).Unix()}
+	)
+	MyOptions := []sb.ExtensionField{{
+		Name: "testopt", Type: "string", FieldNr: 1, Optional: true,
+	}}
+
+	TestEnum := []sb.EnumGroup{
+		{
+			Name: "myenum",
+			Members: sb.EnumMembers{
+				0: "VAL_1",
+				1: "VAL_2",
+			},
+			Options:         []sb.ProtoOption{sb.AllowAlias},
+			ReservedNames:   []string{"name1", "name2"},
+			ReservedNumbers: []int32{10, 11},
+			ReservedRanges:  []sb.Range{{20, 23}},
+		},
+	}
+	PostSchema := sb.MessageSchema{
+		Name: "Post",
+		Fields: sb.FieldsMap{
+			1: sb.Int64("id").Optional(),
+			2: sb.Timestamp("created_at"),
+			3: sb.Int64("author_id"),
+			4: sb.String("title").MinLen(5).MaxLen(64).Required(),
+			5: sb.String("content").Optional(),
+			6: sb.Int64("subreddit_id"),
+		},
+		Model:      &Post{},
+		ImportPath: "myapp/v1/post.proto",
+	}
+	UserSchema := sb.MessageSchema{
+		Name: "User",
+		Fields: sb.FieldsMap{
+			1: sb.String("name").Required().MinLen(2).MaxLen(32),
+			2: sb.Int64("id"),
+			3: sb.Timestamp("created_at"),
+			4: sb.Repeated("posts", sb.MsgField("post", &PostSchema)),
+			5: sb.String("fav_cat").
+				Optional().
+				CelOption("cel", "msg", "expr").
+				CelOption("cel", "msg", "expr").
+				Options([]sb.ProtoOption{{Name: "myopt", Value: true}, {Name: "myopt", Value: false}}...).
+				RepeatedOptions([]sb.ProtoOption{{Name: "repopt", Value: true}, {Name: "repopt", Value: true}}...).
+				Example("tabby").
+				Example("calico"),
+			6: sb.Map("mymap", sb.String("").MinLen(1), sb.Int64("").Gt(1).In(1, 2)).MinPairs(2).MaxPairs(4),
+			7: sb.Repeated("reptest", sb.Int32("").Gt(1).In(1, 2)).Unique().MinItems(1).MaxItems(4),
+			8: sb.Timestamp("timetest").Lt(&timePast),
+			9: sb.Timestamp("timetest2").Const(&timePast),
+		},
+		Oneofs: []sb.OneofGroup{
+			{
+				Name: "myoneof",
+				Choices: sb.OneofChoices{
+					9:  sb.String("example"),
+					10: sb.Int32("another"),
+				},
+			},
+		},
+		ReservedNames:   []string{"name1", "name2"},
+		ReservedNumbers: []uint{20, 21},
+		ReservedRanges:  []sb.Range{{22, 25}},
+		Enums:           TestEnum,
+		ImportPath:      "myapp/v1/user.proto",
+	}
+
+	UserService := sb.ServiceSchema{
+		Resource: UserSchema,
+		OptionExtensions: sb.Extensions{
+			Message: MyOptions,
+			File:    MyOptions,
+			OneOf:   MyOptions,
+			Service: MyOptions,
+			Field:   MyOptions,
+		},
+		Enums: TestEnum,
+		Handlers: sb.HandlersMap{
+			"GetUser": {
+				sb.MessageSchema{
+					Name: "GetUserRequest", Fields: sb.FieldsMap{
+						1: sb.Int64("id"),
+					},
+				},
+				sb.MessageSchema{
+					Name: "GetUserResponse",
+					Fields: sb.FieldsMap{
+						1: sb.MsgField("user", &UserSchema),
+					},
+				},
+			},
+			"UpdateUserService": {sb.MessageSchema{Name: "UpdateUserRequest", Fields: sb.FieldsMap{
+				1: sb.FieldMask("field_mask"),
+				2: sb.MsgField("user", &UserSchema),
+			}}, sb.Empty()},
+		},
+	}
+	tmpDir := t.TempDir()
+	// tmpDir := "gen/temp"
+	config := sb.ProtoGeneratorConfig{
+		ProtoPackage:       "myapp.v1",
+		GoModule:           "github.com/Rick-Phoenix/gofirst",
+		ProtoRoot:          tmpDir,
+		ConverterOutputDir: filepath.Join(tmpDir, "converter"),
+	}
+	gen := sb.NewProtoGenerator(config).Services(UserService)
 	err := gen.Generate()
 	if err != nil {
 		log.Fatal(err)

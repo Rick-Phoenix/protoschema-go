@@ -72,9 +72,9 @@ var PostService = ServiceSchema{
 }
 
 type UserWithPosts struct {
-	ID        int64         `json:"id"`
+	Id        int64         `json:"id"`
 	Name      string        `json:"name"`
-	CreatedAt time.Time     `dbignore:"true" json:"created_at"`
+	CreatedAt time.Time     `json:"created_at"`
 	Posts     []sqlgen.Post `json:"posts"`
 }
 
@@ -124,7 +124,13 @@ var UserService = ServiceSchema{
 }
 
 func TestMain(t *testing.T) {
-	generator := NewProtoGenerator("proto", "myapp.v1").Services(UserService, PostService)
+	config := ProtoGeneratorConfig{
+		ProtoPackage: "myapp.v1",
+		ProtoRoot:    "proto",
+		ProtoGenPath: "gen/myappv1",
+		GoModule:     "github.com/Rick-Phoenix/gofirst",
+	}
+	generator := NewProtoGenerator(config).Services(UserService, PostService)
 	err := generator.Generate()
 	assert.NoError(t, err, "Main Test")
 }

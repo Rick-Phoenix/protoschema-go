@@ -10,6 +10,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -28,23 +29,47 @@ type convertersData struct {
 }
 
 type ProtoGenerator struct {
-	goModule           string
-	converterOutputDir string
-	protoPackageName   string
-	protoOutputDir     string
-	protoPackagePrefix string
-	services           []ServiceSchema
+	goModule             string
+	converterOutputDir   string
+	converterPackage     string
+	protoPackage         string
+	protoOutputDir       string
+	protoPackageBasePath string
+	protoGenPath         string
+	services             []ServiceSchema
+}
+
+type ProtoGeneratorConfig struct {
+	GoModule           string
+	ConverterOutputDir string
+	ProtoPackage       string
+	ProtoRoot          string
+	ProtoGenPath       string
 }
 
 //go:embed templates/*
 var templateFS embed.FS
 
-func NewProtoGenerator(protoRoot, packageName string) *ProtoGenerator {
-	packageRoot := strings.ReplaceAll(packageName, ".", "/")
-	outputDir := filepath.Join(protoRoot, packageRoot)
-	return &ProtoGenerator{
-		protoPackageName: packageName, protoOutputDir: outputDir, protoPackagePrefix: packageRoot,
+func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
+	out := &ProtoGenerator{
+		protoPackage: c.ProtoPackage,
+		goModule:     c.GoModule, converterOutputDir: c.ConverterOutputDir,
+		protoGenPath: c.ProtoGenPath,
 	}
+	if c.ProtoPackage == "" {
+		log.Fatalf("Missing proto package definition.")
+	}
+	protoPackageBasePath := strings.ReplaceAll(c.ProtoPackage, ".", "/")
+	out.protoPackageBasePath = protoPackageBasePath
+	out.protoOutputDir = filepath.Join(c.ProtoRoot, protoPackageBasePath)
+
+	if out.converterOutputDir == "" {
+		out.converterOutputDir = "gen/converter"
+	}
+
+	out.converterPackage = filepath.Base(out.converterOutputDir)
+
+	return out
 }
 
 func (g *ProtoGenerator) Services(services ...ServiceSchema) *ProtoGenerator {
@@ -73,7 +98,7 @@ func (g *ProtoGenerator) buildServices() []ServiceData {
 func (g *ProtoGenerator) Generate() error {
 	servicesData := g.buildServices()
 	converters := convertersData{
-		Imports: make(Set), RepeatedConverters: make(Set), Package: "gen",
+		Imports: make(Set), RepeatedConverters: make(Set), Package: g.converterPackage,
 	}
 
 	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
@@ -83,13 +108,13 @@ func (g *ProtoGenerator) Generate() error {
 
 	for _, s := range servicesData {
 		templateData := protoFileData{
-			PackageName: g.protoPackageName,
+			PackageName: g.protoPackage,
 			ServiceData: s,
 		}
 
 		outputFile := strings.ToLower(s.ResourceName) + ".proto"
 		outputPath := filepath.Join(g.protoOutputDir, outputFile)
-		delete(s.Imports, filepath.Join(g.protoPackagePrefix, outputFile))
+		delete(s.Imports, filepath.Join(g.protoPackageBasePath, outputFile))
 
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
@@ -122,12 +147,22 @@ func (g *ProtoGenerator) Generate() error {
 	}
 
 	if len(converters.Converters) > 0 {
+		if g.protoGenPath != "" {
+			converters.Imports[path.Join(g.goModule, g.protoGenPath)] = present
+		}
+
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {
 			fmt.Printf("Failed to execute template: %s", err.Error())
 		}
 
-		if err := os.WriteFile("gen/converter.go", outputBuffer.Bytes(), 0644); err != nil {
+		outputPath := filepath.Join(g.converterOutputDir, g.protoPackage+".go")
+
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
 			fmt.Print(err)
 		}
 	}
