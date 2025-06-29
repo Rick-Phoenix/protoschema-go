@@ -12,7 +12,6 @@ func New{{ .ResourceName }}Service(s *db.Store) *{{ .ResourceName }}Service {
 }
 
 {{ $resName := .ResourceName }}
-{{ $genPkg := .GenPkg }}
 
 {{ range .Handlers }}
 
@@ -34,7 +33,7 @@ func (s *{{ $resName }}Service) {{ .Name }}(
     }
   }
 
-  return connect.NewResponse(&{{ $genPkg }}.{{ .Response.Name }}{
+  return connect.NewResponse(&{{ .Response.GoPackageName }}.{{ .Response.Name }}{
 
 	}), nil
 }

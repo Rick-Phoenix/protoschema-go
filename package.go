@@ -14,10 +14,8 @@ type ProtoPackageConfig struct {
 	Name               string
 	ProtoRoot          string
 	GoPackage          string
-	GoPackageName      string
 	GoModule           string
 	ConverterOutputDir string
-	ProtoGenPath       string
 	HandlersOutputDir  string
 	GeneratorFuncs     []GeneratorFunc
 }
@@ -30,11 +28,9 @@ type ProtoPackage struct {
 	goModule           string
 	converterOutputDir string
 	converterPackage   string
-	protoPackage       string
 	protoOutputDir     string
 	handlersOutputDir  string
 	protoPackagePath   string
-	protoGenPath       string
 	services           []ServiceSchema
 	generatorFuncs     []GeneratorFunc
 	tmpl               *template.Template
@@ -44,25 +40,26 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p := &ProtoPackage{
 		name:               conf.Name,
 		protoRoot:          conf.ProtoRoot,
-		goPackageName:      conf.GoPackageName,
 		goPackagePath:      conf.GoPackage,
 		goModule:           conf.GoModule,
 		converterOutputDir: conf.ConverterOutputDir,
-		protoGenPath:       conf.ProtoGenPath, handlersOutputDir: conf.HandlersOutputDir,
-		generatorFuncs: conf.GeneratorFuncs,
+		handlersOutputDir:  conf.HandlersOutputDir,
+		generatorFuncs:     conf.GeneratorFuncs,
 	}
 
 	if conf.Name == "" {
 		log.Fatalf("Missing proto package definition.")
 	}
 
-	if p.goPackageName == "" {
-		p.goPackageName = path.Base(p.goPackagePath)
+	if conf.GoPackage == "" {
+		log.Fatalf("Missing go package definition.")
 	}
 
-	protoPackageBasePath := strings.ReplaceAll(conf.Name, ".", "/")
-	p.protoPackagePath = protoPackageBasePath
-	p.protoOutputDir = filepath.Join(conf.ProtoRoot, protoPackageBasePath)
+	p.goPackageName = path.Base(conf.GoPackage)
+
+	protoPackagePath := strings.ReplaceAll(conf.Name, ".", "/")
+	p.protoPackagePath = protoPackagePath
+	p.protoOutputDir = filepath.Join(conf.ProtoRoot, protoPackagePath)
 
 	if p.converterOutputDir == "" {
 		p.converterOutputDir = "gen/converter"

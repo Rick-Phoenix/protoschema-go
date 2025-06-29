@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+package myapp.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
@@ -7,77 +8,31 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "myapp/v1/post.proto";
 
-package ;
-
-
-
-
-
-
-
-
-
-
-
 message User {
-
-  
-
-
-
   string name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.max_len = 32,
-    (buf.validate.field).string.min_len = 2 
+    (buf.validate.field).string.min_len = 2
   ];
   int64 id = 2;
   google.protobuf.Timestamp created_at = 3;
   repeated Post posts = 4;
-
 }
 
 message GetUserRequest {
-
-  
-
-
-
-  int64 id = 1 [
-    (buf.validate.field).required = true 
-  ];
-
+  int64 id = 1 [(buf.validate.field).required = true];
 }
 
 message GetUserResponse {
-
-  
-
-
-
   User user = 1;
-
 }
 
 message UpdateUserRequest {
-
-  
-
-
-
-  int64 id = 1 [
-    (buf.validate.field).required = true 
-  ];
+  int64 id = 1 [(buf.validate.field).required = true];
   .google.protobuf.FieldMask field_mask = 2;
-
 }
-
-
-
 
 service UserService {
-
-  rpc GetUser(myapp.v1.GetUserRequest) returns(myapp.v1.GetUserResponse);
-  rpc UpdateUser(myapp.v1.UpdateUserRequest) returns(google.protobuf.Empty);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
 }
-
-

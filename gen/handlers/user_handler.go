@@ -2,7 +2,7 @@ package handlers
 
 
 import (
-  "github.com/Rick-Phoenix/gofirst"
+  "github.com/Rick-Phoenix/gofirst/gen/myappv1"
   )
 
 
@@ -14,7 +14,6 @@ type UserService struct {
 func NewUserService(s *db.Store) *UserService {
 	return &UserService{Store: s}
 }
-
 
 
 
@@ -38,7 +37,7 @@ func (s *UserService) GetUser(
     }
   }
 
-  return connect.NewResponse(&..GetUserResponse{
+  return connect.NewResponse(&myappv1.GetUserResponse{
 
 	}), nil
 }
@@ -63,7 +62,7 @@ func (s *UserService) UpdateUser(
     }
   }
 
-  return connect.NewResponse(&..Empty{
+  return connect.NewResponse(&emptypb.Empty{
 
 	}), nil
 }
