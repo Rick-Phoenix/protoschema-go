@@ -1,6 +1,8 @@
 package schemabuilder
 
-import "path"
+import (
+	"path"
+)
 
 type FileSchema struct {
 	Package    *ProtoPackage
@@ -29,6 +31,7 @@ func (f *FileSchema) NewMessage(s *MessageSchema) *MessageSchema {
 	s.File = f
 	s.ImportPath = path.Join(f.Package.protoPackagePath, f.Name)
 	f.Messages = append(f.Messages, s)
+
 	return s
 }
 

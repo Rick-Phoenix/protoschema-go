@@ -55,7 +55,7 @@ type modelField struct {
 type messageConverter struct {
 	TimestampFields  Set
 	InternalRepeated []string
-	Imports          []string
+	Imports          Set
 	Resource         string
 	SrcType          string
 	Fields           []modelField
@@ -89,17 +89,40 @@ func (s *MessageSchema) GetField(n string) FieldBuilder {
 	return nil
 }
 
+func (s *MessageSchema) CreateConverter(field reflect.StructField, pfield FieldBuilder) {
+	fieldConvData := modelField{Name: field.Name}
+	if field.Type.String() == "time.Time" {
+		s.Converter.TimestampFields[field.Name] = present
+		s.Converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
+	}
+	if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
+		isInternal := msgRef.Package == s.Package
+		if isInternal {
+			fieldConvData.IsInternal = true
+			s.Converter.Imports[getPkgPath(field.Type)] = present
+			if pfield.IsRepeated() {
+				s.Converter.InternalRepeated = append(s.Converter.InternalRepeated, pfield.GetMessageRef().Name)
+			}
+		}
+
+	}
+	s.Converter.Fields = append(s.Converter.Fields, fieldConvData)
+}
+
 func (s *MessageSchema) CheckModel() error {
 	model := reflect.TypeOf(s.Model).Elem()
 	modelName := model.String()
 	msgFields := s.GetFields()
-	conv := &messageConverter{}
-	conv = &messageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(Set)}
-	conv.Imports = append(conv.Imports, getPkgPath(model))
+
+	s.Converter = &messageConverter{
+		Resource:        s.Name,
+		SrcType:         modelName,
+		TimestampFields: make(Set),
+		Imports:         []string{getPkgPath(model)},
+	}
 
 	var err error
 
-	// Separate converter logic
 	var processFields func(t reflect.Type)
 	processFields = func(t reflect.Type) {
 		for i := range t.NumField() {
@@ -107,6 +130,7 @@ func (s *MessageSchema) CheckModel() error {
 			if field.Anonymous {
 				embeddedType := field.Type
 				if embeddedType.Kind() == reflect.Struct {
+					// Recursive
 					processFields(embeddedType)
 					continue
 				}
@@ -118,33 +142,21 @@ func (s *MessageSchema) CheckModel() error {
 			ignore := slices.Contains(s.ModelIgnore, modelFieldName)
 			fieldType := field.Type.String()
 
-			if ignore {
-				continue
-			}
-
 			if pfield, exists := msgFields[modelFieldName]; exists {
+				s.CreateConverter(field, pfield)
+
+				if ignore {
+					continue
+				}
+
 				delete(msgFields, modelFieldName)
 				goType := pfield.GetGoType()
 				fieldName := pfield.GetName()
 
-				fieldConvData := modelField{Name: field.Name}
-				if field.Type.String() == "time.Time" {
-					conv.TimestampFields[field.Name] = present
-				}
-				isInternal := pfield.GetMessageRef() != nil && pfield.GetMessageRef().Model != nil
-				if isInternal {
-					fieldConvData.IsInternal = true
-					conv.Imports = append(conv.Imports, getPkgPath(field.Type))
-					if pfield.IsRepeated() {
-						conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetMessageRef().Name)
-					}
-				}
-				conv.Fields = append(conv.Fields, fieldConvData)
-
 				if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
 					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
 				}
-			} else {
+			} else if !ignore {
 				err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", modelFieldName, t))
 			}
 
@@ -152,11 +164,6 @@ func (s *MessageSchema) CheckModel() error {
 	}
 
 	processFields(model)
-
-	if len(conv.TimestampFields) > 0 {
-		conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
-	}
-	s.Converter = conv
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
