@@ -21,6 +21,7 @@ type FieldData struct {
 	IsMap         bool
 	Required      bool
 	IsNonScalar   bool
+	MessageRef    *MessageSchema
 }
 
 type protoFieldInternal struct {
@@ -85,6 +86,7 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (FieldData, erro
 	data := FieldData{
 		Name: b.name, ProtoType: b.protoType, GoType: b.goType, FieldNr: fieldNr,
 		Rules: b.rules, IsNonScalar: b.isNonScalar, Optional: b.optional, ProtoBaseType: b.protoBaseType, IsMap: b.isMap,
+		MessageRef: b.messageRef,
 	}
 
 	if data.ProtoBaseType == "" {

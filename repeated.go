@@ -94,7 +94,7 @@ func (b *RepeatedField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 		return FieldData{}, err
 	}
 
-	return FieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true}, nil
+	return FieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true, MessageRef: fieldData.MessageRef}, nil
 }
 
 func (b *RepeatedField) Unique() *RepeatedField {

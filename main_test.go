@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"path"
 	"testing"
 	"time"
 
@@ -10,7 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var SubRedditSchema = MessageSchema{
+var (
+	goMod        = "github.com/Rick-Phoenix/gofirst"
+	protoPackage = NewProtoPackage(ProtoPackageConfig{
+		Name:      "myapp.v1",
+		ProtoRoot: "proto",
+		GoPackage: path.Join(goMod, "gen/myappv1"),
+		GoModule:  goMod,
+	})
+)
+
+var SubRedditSchema = protoPackage.NewMessage(MessageSchema{
 	Name: "Subreddit",
 	Fields: FieldsMap{
 		1: Int32("id").Optional(),
@@ -20,9 +31,9 @@ var SubRedditSchema = MessageSchema{
 		5: Repeated("posts", MsgField("post", &PostSchema)),
 		6: Timestamp("created_at"),
 	},
-}
+})
 
-var PostSchema = MessageSchema{
+var PostSchema = protoPackage.NewMessage(MessageSchema{
 	Name: "Post",
 	Fields: FieldsMap{
 		1: Int64("id"),
@@ -36,26 +47,26 @@ var PostSchema = MessageSchema{
 	ModelIgnore: []string{"content"},
 	Model:       &sqlgen.Post{},
 	TargetType:  &myappv1.Post{},
-}
+})
 
-var GetPostRequest = MessageSchema{
+var GetPostRequest = protoPackage.NewMessage(MessageSchema{
 	Name: "GetPostRequest",
 	Fields: FieldsMap{
 		1: PostSchema.GetField("id"),
 	},
-}
+})
 
-var GetPostResponse = MessageSchema{
+var GetPostResponse = protoPackage.NewMessage(MessageSchema{
 	Name: "GetPostResponse",
 	Fields: FieldsMap{
 		1: MsgField("post", &PostSchema),
 	},
-}
+})
 
-var UpdatePostRequest = MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
+var UpdatePostRequest = protoPackage.NewMessage(MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
 	1: MsgField("post", &PostSchema),
 	2: FieldMask("field_mask"),
-}}
+}})
 
 var PostService = ServiceSchema{
 	Resource: PostSchema,
@@ -78,7 +89,7 @@ type UserWithPosts struct {
 	Posts     []sqlgen.Post `json:"posts"`
 }
 
-var UserSchema = MessageSchema{
+var UserSchema = protoPackage.NewMessage(MessageSchema{
 	Name: "User",
 	Fields: FieldsMap{
 		1: String("name").Required().MinLen(2).MaxLen(32),
@@ -89,29 +100,29 @@ var UserSchema = MessageSchema{
 	Model:      &db.UserWithPosts{},
 	ImportPath: "myapp/v1/user.proto",
 	TargetType: "myappv1.User",
-}
+})
 
-var GetUserRequest = MessageSchema{
+var GetUserRequest = protoPackage.NewMessage(MessageSchema{
 	Name: "GetUserRequest",
 	Fields: FieldsMap{
 		1: Int64("id").Required(),
 	},
-}
+})
 
-var GetUserResponse = MessageSchema{
+var GetUserResponse = protoPackage.NewMessage(MessageSchema{
 	Name: "GetUserResponse",
 	Fields: FieldsMap{
 		1: MsgField("user", &UserSchema),
 	},
-}
+})
 
-var UpdateUserRequest = MessageSchema{
+var UpdateUserRequest = protoPackage.NewMessage(MessageSchema{
 	Name: "UpdateUserRequest",
 	Fields: FieldsMap{
 		1: Int64("id").Required(),
 		2: FieldMask("field_mask"),
 	},
-}
+})
 
 var UserService = ServiceSchema{
 	Resource: UserSchema,

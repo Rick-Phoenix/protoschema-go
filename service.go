@@ -11,8 +11,8 @@ import (
 
 type HandlerData struct {
 	Name     string
-	Request  string
-	Response string
+	Request  MessageSchema
+	Response MessageSchema
 }
 
 type HandlersMap map[string]Handler
@@ -121,7 +121,7 @@ func NewProtoService(s ServiceSchema) (ServiceData, error) {
 	for _, name := range handlerKeys {
 		h := s.Handlers[name]
 
-		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request.Name, Response: h.Response.Name})
+		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request, Response: h.Response})
 		if _, seen := processedMessages[h.Request.Name]; !seen {
 			if h.Request.ReferenceOnly {
 				processedMessages[h.Request.Name] = present

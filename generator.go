@@ -46,9 +46,9 @@ type GeneratorFunc func(s ServiceData) error
 
 type ProtoGeneratorConfig struct {
 	GoModule           string
-	ConverterOutputDir string
 	ProtoPackage       string
 	ProtoRoot          string
+	ConverterOutputDir string
 	ProtoGenPath       string
 	HandlersOutputDir  string
 	GeneratorFuncs     []GeneratorFunc
@@ -296,4 +296,20 @@ var funcMap = template.FuncMap{
 		_, present := set[key]
 		return present
 	},
+	"getProtoType": func(f FieldData, protoPackage string) string {
+		if f.MessageRef == nil {
+			return f.ProtoType
+		}
+
+		return getMsgName(*f.MessageRef, protoPackage)
+	},
+	"getMsgName": getMsgName,
+}
+
+func getMsgName(m MessageSchema, protoPackage string) string {
+	if m.ProtoPackage == protoPackage {
+		return m.Name
+	}
+
+	return m.ProtoPackage + "." + m.Name
 }

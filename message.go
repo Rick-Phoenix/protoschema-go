@@ -32,6 +32,9 @@ type MessageSchema struct {
 	SkipValidation  bool
 	TargetType      any
 	converter       *messageConverter
+	GoPackageName   string
+	GoPackagePath   string
+	ProtoPackage    string
 }
 
 type MessageData struct {
@@ -45,6 +48,7 @@ type MessageData struct {
 	Options         []ProtoOption
 	Enums           []EnumGroup
 	Converter       *messageConverter
+	ProtoPackage    string
 }
 
 type modelField struct {
@@ -253,7 +257,7 @@ func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.converter}, nil
+	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.converter, ProtoPackage: s.ProtoPackage}, nil
 }
 
 func MessageRef(s MessageSchema) MessageSchema {
@@ -261,7 +265,7 @@ func MessageRef(s MessageSchema) MessageSchema {
 }
 
 func Empty() MessageSchema {
-	return MessageSchema{Name: "google.protobuf.Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}}
+	return MessageSchema{Name: "Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}, GoPackageName: "emptypb", ProtoPackage: "google.protobuf"}
 }
 
 var (

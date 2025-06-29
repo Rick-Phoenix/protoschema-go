@@ -1,4 +1,5 @@
 {{- define "message" -}}
+{{ range .Messages }}
 message {{ .Name }} {
 {{- if .ReservedRanges }}
   reserved {{ joinRange .ReservedRanges }};
@@ -31,25 +32,16 @@ message {{ .Name }} {
   {{- end }}
   }
 {{ end }}
-{{ range .Messages }}
   {{ template "message" . }}
-{{ end }}
 {{ range .Oneofs }}
   {{ range .Options -}}
     {{ fmtOpt . }};
   {{ end }}
   oneof {{ .Name }} {
-    {{ range $idx, $field := .Choices -}}
-      {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
-    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{- end -}} 
-  ]{{- end -}};
-  {{ end -}}
+    {{- template "field" . }}
   }
 {{ end }}
-{{- range $_, $field := .Fields}}
-  {{ keyword .Optional .Repeated }}{{.ProtoType}} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
-    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{ end }} 
-  ]{{- end -}};
-  {{- end }}
+{{- template "field" . }}
 }
+{{ end }}
 {{ end }}

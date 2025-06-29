@@ -16,16 +16,15 @@ package {{ .PackageName }};
 {{ template "enum" . }}
 {{ end }}
 
-{{ range .Messages }}
 {{ template "message" . }}
-{{ end }}
 
+{{ $protoPkg := .PackageName }}
 service {{ serviceSuffix .ResourceName }} {
 {{ range .ServiceOptions -}}
   {{ fmtOpt . }};
 {{ end }}
   {{- range .Handlers}}
-  rpc {{ .Name }}({{ .Request }}) returns({{ .Response }});
+  rpc {{ .Name }}({{ getMsgName .Request $protoPkg }}) returns({{ getMsgName .Response $protoPkg }});
   {{- end}}
 }
 

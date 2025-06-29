@@ -48,7 +48,7 @@ func (s *UserService) GetUser(
 func (s *UserService) UpdateUser(
 	ctx context.Context,
   req *connect.Request[myappv1.UpdateUserRequest],
-) (*connect.Response[myappv1.google.protobuf.Empty], error) {
+) (*connect.Response[emptypb.Empty], error) {
 
   resource, err := s.Store.method(ctx, params)
   if errors.Is(err, sql.ErrNoRows) {
@@ -63,7 +63,7 @@ func (s *UserService) UpdateUser(
     }
   }
 
-  return connect.NewResponse(&myappv1.google.protobuf.Empty{
+  return connect.NewResponse(&myappv1.Empty{
 
 	}), nil
 }
