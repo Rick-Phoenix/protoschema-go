@@ -21,12 +21,16 @@ type Handler struct {
 
 type ServiceData struct {
 	Resource string
+	File     *FileSchema
+	Package  *ProtoPackage
 	Options  []ProtoOption
 	Handlers []HandlerData
 }
 
 type ServiceSchema struct {
 	Resource string
+	File     *FileSchema
+	Package  *ProtoPackage
 	Handlers HandlersMap
 	Options  []ProtoOption
 }

@@ -274,3 +274,11 @@ func toSnakeCase(s string) string {
 
 	return strings.Join(chunks, "_")
 }
+
+func getPkgPath(t reflect.Type) string {
+	if t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
+		return getPkgPath(t.Elem())
+	}
+
+	return t.PkgPath()
+}

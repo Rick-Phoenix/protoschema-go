@@ -63,7 +63,7 @@ func (p *ProtoPackage) Generate() error {
 	for _, f := range filesData {
 		// p.genConnectHandler(f)
 
-		outputFile := strings.ToLower(f.FileName) + ".proto"
+		outputFile := strings.ToLower(f.Name) + ".proto"
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
 		delete(f.Imports, filepath.Join(p.protoPackagePath, outputFile))
 

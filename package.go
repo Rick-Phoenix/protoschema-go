@@ -1,6 +1,7 @@
 package schemabuilder
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -33,7 +34,7 @@ type ProtoPackage struct {
 	protoPackagePath   string
 	generatorFuncs     []GeneratorFunc
 	tmpl               *template.Template
-	files              []FileSchema
+	files              []*FileSchema
 	converters         convertersData
 }
 
@@ -88,9 +89,77 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	return p
 }
 
-func (p *ProtoPackage) NewMessage(s MessageSchema) MessageSchema {
-	s.GoPackageName = p.goPackageName
-	s.GoPackagePath = p.goPackagePath
-	s.ProtoPackage = p.name
-	return s
+func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
+	newFile := &FileSchema{
+		Name:       s.Name + ".proto",
+		Package:    p,
+		Imports:    make(Set),
+		Options:    s.Options,
+		Extensions: s.Extensions,
+		Enums:      s.Enums,
+		Messages:   s.Messages,
+		Services:   s.Services,
+	}
+	p.files = append(p.files, newFile)
+	return newFile
+}
+
+func (p *ProtoPackage) BuildFiles() []FileData {
+	out := make([]FileData, len(p.files))
+	var fileErrors error
+
+	for _, f := range p.files {
+		imports := make(Set)
+
+		file := FileData{
+			Package:    f.Package,
+			Imports:    imports,
+			Extensions: f.Extensions,
+			Options:    f.Options,
+			Enums:      f.Enums,
+		}
+
+		if len(f.Extensions.File)+len(f.Extensions.Service)+len(f.Extensions.Message)+len(f.Extensions.Field)+len(f.Extensions.OneOf) > 0 {
+			imports["google/protobuf/descriptor.proto"] = present
+		}
+
+		var messageErrors error
+
+		for _, m := range f.Messages {
+			var errAgg error
+
+			message, err := m.Build(imports)
+			errAgg = errors.Join(errAgg, err)
+			file.Messages = append(file.Messages, message)
+			if message.Converter != nil {
+				for _, v := range message.Converter.InternalRepeated {
+					p.converters.RepeatedConverters[v] = present
+				}
+				for _, v := range message.Converter.Imports {
+					p.converters.Imports[v] = present
+				}
+
+				p.converters.Converters = append(p.converters.Converters, *message.Converter)
+			}
+
+			if errAgg != nil {
+				messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
+			}
+		}
+
+		if messageErrors != nil {
+			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %s", f.Name), messageErrors))
+		}
+
+		out = append(out, file)
+
+	}
+
+	if fileErrors != nil {
+		fmt.Printf("  ❌ The following errors occurred:\n")
+		fmt.Print(fileErrors.Error())
+		os.Exit(1)
+	}
+
+	return out
 }

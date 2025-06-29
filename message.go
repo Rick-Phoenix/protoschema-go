@@ -7,8 +7,6 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type FieldsMap map[uint32]FieldBuilder
@@ -28,9 +26,9 @@ type MessageSchema struct {
 	Model           any
 	ModelIgnore     []string
 	SkipValidation  bool
-	converter       *messageConverter
-	GoPackageName   string
-	ProtoPackage    string
+	Converter       *messageConverter
+	File            *FileSchema
+	Package         *ProtoPackage
 	ImportPath      string
 }
 
@@ -45,7 +43,8 @@ type MessageData struct {
 	Options         []ProtoOption
 	Enums           []EnumGroup
 	Converter       *messageConverter
-	ProtoPackage    string
+	File            *FileSchema
+	Package         *ProtoPackage
 }
 
 type modelField struct {
@@ -79,6 +78,7 @@ func (s *MessageSchema) GetFields() map[string]FieldBuilder {
 
 func (s *MessageSchema) GetField(n string) FieldBuilder {
 	for _, f := range s.Fields {
+		// Make sure to clone
 		data := f.GetData()
 		if data.Name == n {
 			return f
@@ -87,14 +87,6 @@ func (s *MessageSchema) GetField(n string) FieldBuilder {
 
 	log.Fatalf("Could not find field %q in schema %q", n, s.Name)
 	return nil
-}
-
-func getPkgPath(t reflect.Type) string {
-	if t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
-		return getPkgPath(t.Elem())
-	}
-
-	return t.PkgPath()
 }
 
 func (s *MessageSchema) CheckModel() error {
@@ -107,6 +99,7 @@ func (s *MessageSchema) CheckModel() error {
 
 	var err error
 
+	// Separate converter logic
 	var processFields func(t reflect.Type)
 	processFields = func(t reflect.Type) {
 		for i := range t.NumField() {
@@ -163,7 +156,7 @@ func (s *MessageSchema) CheckModel() error {
 	if len(conv.TimestampFields) > 0 {
 		conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
 	}
-	s.converter = conv
+	s.Converter = conv
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
@@ -180,7 +173,7 @@ func (s *MessageSchema) CheckModel() error {
 	return err
 }
 
-func (s MessageSchema) Build(imports Set) (MessageData, error) {
+func (s *MessageSchema) Build(imports Set) (MessageData, error) {
 	var protoFields []FieldData
 	var fieldsErrors error
 
@@ -231,15 +224,11 @@ func (s MessageSchema) Build(imports Set) (MessageData, error) {
 		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.converter, ProtoPackage: s.ProtoPackage}, nil
-}
-
-func (s MessageSchema) Ref() MessageSchema {
-	return MessageSchema{Name: s.Name, ImportPath: s.ImportPath}
+	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.Converter, File: s.File, Package: s.Package}, nil
 }
 
 func Empty() MessageSchema {
-	return MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}, GoPackageName: "emptypb", ProtoPackage: "google.protobuf"}
+	return MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
 }
 
 var (
