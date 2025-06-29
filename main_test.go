@@ -105,10 +105,13 @@ var GetUserResponse = MessageSchema{
 	},
 }
 
-var UpdateUserRequest = MessageSchema{Name: "UpdateUserRequest", Fields: FieldsMap{
-	1: Int64("id").Required(),
-	2: FieldMask("field_mask"),
-}}
+var UpdateUserRequest = MessageSchema{
+	Name: "UpdateUserRequest",
+	Fields: FieldsMap{
+		1: Int64("id").Required(),
+		2: FieldMask("field_mask"),
+	},
+}
 
 var UserService = ServiceSchema{
 	Resource: UserSchema,

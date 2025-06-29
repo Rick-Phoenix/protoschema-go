@@ -44,7 +44,7 @@ type ServiceSchema struct {
 	Enums            []EnumGroup
 }
 
-func newProtoService(s ServiceSchema) (ServiceData, error) {
+func NewProtoService(s ServiceSchema) (ServiceData, error) {
 	imports := make(Set)
 	processedMessages := make(Set)
 
@@ -57,7 +57,7 @@ func newProtoService(s ServiceSchema) (ServiceData, error) {
 	processMessage := func(m MessageSchema) {
 		var errAgg error
 
-		message, err := newProtoMessage(m, imports)
+		message, err := NewProtoMessage(m, imports)
 		errAgg = errors.Join(errAgg, err)
 		out.Messages = append(out.Messages, message)
 		processedMessages[m.Name] = present

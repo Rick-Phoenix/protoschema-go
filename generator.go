@@ -108,7 +108,7 @@ func (g *ProtoGenerator) BuildServices() []ServiceData {
 	var serviceErrors error
 
 	for _, s := range g.services {
-		serviceData, err := newProtoService(s)
+		serviceData, err := NewProtoService(s)
 		serviceErrors = errors.Join(serviceErrors, indentErrors(fmt.Sprintf("Errors for the service schema %q", s.Resource.Name), err))
 		out = append(out, serviceData)
 	}
@@ -121,11 +121,11 @@ func (g *ProtoGenerator) BuildServices() []ServiceData {
 	return out
 }
 
-func (g *ProtoGenerator) GetTmpl() *template.Template {
+func (g *ProtoGenerator) getTmpl() *template.Template {
 	return g.tmpl
 }
 
-func (g *ProtoGenerator) GenHandler(s ServiceData) error {
+func (g *ProtoGenerator) genConnectHandler(s ServiceData) error {
 	tmpl := g.tmpl
 	var handlerBuffer bytes.Buffer
 	handlerData := ServiceHandler{GenPkg: filepath.Base(g.protoGenPath), ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{path.Join(g.goModule, g.protoGenPath): present}}
@@ -157,7 +157,7 @@ func (g *ProtoGenerator) Generate() error {
 	tmpl := g.tmpl
 
 	for _, s := range servicesData {
-		g.GenHandler(s)
+		g.genConnectHandler(s)
 		templateData := protoFileData{
 			PackageName: g.protoPackage,
 			ServiceData: s,

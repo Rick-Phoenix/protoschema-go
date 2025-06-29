@@ -28,7 +28,7 @@ var ValidUserSchema = MessageSchema{
 }
 
 func TestModelValidation(t *testing.T) {
-	_, err := newProtoMessage(ValidUserSchema, Set{})
+	_, err := NewProtoMessage(ValidUserSchema, Set{})
 
 	assert.NoError(t, err, "Testing model validation")
 }
