@@ -3,18 +3,20 @@ package {{ .Package }}
 {{ template "imports" .Imports }}
 
 {{ $repeated := .RepeatedConverters -}}
+{{ $goPkg := .GoPackage }}
+
 {{ range .Converters -}}
 
 {{- $resname := .Resource -}}
 {{- $tfields := .TimestampFields -}}
-func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .DstType }} {
+func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ $goPkg }}.{{ .Resource }} {
 	if {{ .Resource }} == nil {
 		return nil
 	}
   {{ range $name, $_ := .TimestampFields -}}
   {{ $name }} := timestamppb.New({{ $resname }}.{{ $name }})
   {{ end -}}
-	return &{{ .DstType }}{
+	return &{{ $goPkg }}.{{ .Resource }}{
     {{ range .Fields -}}
     {{ if setContains $tfields .Name -}}
     {{ .Name }}: {{ .Name }},
@@ -28,8 +30,8 @@ func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ .D
 }
 
 {{ if setContains $repeated .Resource -}}
-func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ .DstType }} {
-	out := make([]*{{ .DstType }}, len({{ .Resource }}))
+func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ $goPkg }}.{{ .Resource }} {
+	out := make([]*{{ $goPkg }}.{{ .Resource }}, len({{ .Resource }}))
 
 	for _, v := range {{ .Resource }} {
 		out = append(out, {{ .Resource }}To{{ .Resource }}Msg(v))

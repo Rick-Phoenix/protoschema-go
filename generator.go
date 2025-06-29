@@ -22,6 +22,7 @@ type protoFileData struct {
 
 type convertersData struct {
 	Package            string
+	GoPackage          string
 	Imports            Set
 	Converters         []messageConverter
 	RepeatedConverters Set
@@ -88,7 +89,9 @@ func (p *ProtoPackage) genConnectHandler(s ServiceData) error {
 func (p *ProtoPackage) Generate() error {
 	servicesData := p.BuildServices()
 	converters := convertersData{
-		Imports: make(Set), RepeatedConverters: make(Set), Package: p.converterPackage,
+		Package:   p.converterPackage,
+		GoPackage: p.goPackageName,
+		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
 	}
 
 	tmpl := p.tmpl
@@ -146,7 +149,6 @@ func (p *ProtoPackage) Generate() error {
 	}
 
 	if len(converters.Converters) > 0 {
-		converters.Imports[p.goPackagePath] = present
 
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {

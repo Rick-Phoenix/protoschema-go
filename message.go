@@ -30,7 +30,6 @@ type MessageSchema struct {
 	Model           any
 	ModelIgnore     []string
 	SkipValidation  bool
-	TargetType      any
 	converter       *messageConverter
 	GoPackageName   string
 	GoPackagePath   string
@@ -62,7 +61,6 @@ type messageConverter struct {
 	Imports          []string
 	Resource         string
 	SrcType          string
-	DstType          string
 	Fields           []modelField
 }
 
@@ -105,26 +103,8 @@ func (s *MessageSchema) CheckModel() error {
 	model := reflect.TypeOf(s.Model).Elem()
 	modelName := model.String()
 	msgFields := s.GetFields()
-	withConv := s.TargetType != nil
 	conv := &messageConverter{}
-	if withConv {
-		conv = &messageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(Set)}
-		strDstType, isString := s.TargetType.(string)
-		if isString {
-			if strDstType == "" {
-				log.Fatalf("Missing target type for message schema %q", s.Name)
-			}
-			conv.DstType = strDstType
-		} else {
-			destStructType := reflect.TypeOf(s.TargetType)
-			if destStructType.Kind() == reflect.Pointer {
-				conv.DstType = destStructType.Elem().String()
-			} else {
-				conv.DstType = destStructType.String()
-			}
-			conv.Imports = append(conv.Imports, getPkgPath(destStructType))
-		}
-	}
+	conv = &messageConverter{Resource: s.Name, SrcType: modelName, TimestampFields: make(Set)}
 	conv.Imports = append(conv.Imports, getPkgPath(model))
 
 	var err error
@@ -156,21 +136,19 @@ func (s *MessageSchema) CheckModel() error {
 				goType := pfield.GetGoType()
 				fieldName := pfield.GetName()
 
-				if withConv {
-					fieldConvData := modelField{Name: field.Name}
-					if field.Type.String() == "time.Time" {
-						conv.TimestampFields[field.Name] = present
-					}
-					isInternal := pfield.GetMessageRef() != nil && pfield.GetMessageRef().Model != nil
-					if isInternal {
-						fieldConvData.IsInternal = true
-						conv.Imports = append(conv.Imports, getPkgPath(field.Type))
-						if pfield.IsRepeated() {
-							conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetMessageRef().Name)
-						}
-					}
-					conv.Fields = append(conv.Fields, fieldConvData)
+				fieldConvData := modelField{Name: field.Name}
+				if field.Type.String() == "time.Time" {
+					conv.TimestampFields[field.Name] = present
 				}
+				isInternal := pfield.GetMessageRef() != nil && pfield.GetMessageRef().Model != nil
+				if isInternal {
+					fieldConvData.IsInternal = true
+					conv.Imports = append(conv.Imports, getPkgPath(field.Type))
+					if pfield.IsRepeated() {
+						conv.InternalRepeated = append(conv.InternalRepeated, pfield.GetMessageRef().Name)
+					}
+				}
+				conv.Fields = append(conv.Fields, fieldConvData)
 
 				if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
 					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
@@ -184,12 +162,10 @@ func (s *MessageSchema) CheckModel() error {
 
 	processFields(model)
 
-	if withConv {
-		if len(conv.TimestampFields) > 0 {
-			conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
-		}
-		s.converter = conv
+	if len(conv.TimestampFields) > 0 {
+		conv.Imports = append(conv.Imports, "google.golang.org/protobuf/types/known/timestamppb")
 	}
+	s.converter = conv
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
