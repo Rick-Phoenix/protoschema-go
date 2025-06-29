@@ -138,13 +138,7 @@ var UserService = ServiceSchema{
 }
 
 func TestMain(t *testing.T) {
-	config := ProtoGeneratorConfig{
-		ProtoPackage: "myapp.v1",
-		ProtoRoot:    "proto",
-		ProtoGenPath: "gen/myappv1",
-		GoModule:     "github.com/Rick-Phoenix/gofirst",
-	}
-	generator := NewProtoGenerator(config).Services(UserService, PostService)
+	generator := protoPackage.Services(UserService, PostService)
 	err := generator.Generate()
 	assert.NoError(t, err, "Main Test")
 }

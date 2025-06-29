@@ -212,13 +212,13 @@ func TestGeneration(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	// tmpDir := "gen/temp"
-	config := sb.ProtoGeneratorConfig{
-		ProtoPackage:       "myapp.v1",
+	config := sb.ProtoPackageConfig{
+		Name:               "myapp.v1",
 		GoModule:           "github.com/Rick-Phoenix/gofirst",
 		ProtoRoot:          tmpDir,
 		ConverterOutputDir: filepath.Join(tmpDir, "converter"),
 	}
-	gen := sb.NewProtoGenerator(config).Services(UserService)
+	gen := sb.NewProtoPackage(config).Services(UserService)
 	err := gen.Generate()
 	if err != nil {
 		log.Fatal(err)

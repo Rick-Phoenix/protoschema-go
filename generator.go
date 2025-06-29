@@ -28,31 +28,7 @@ type convertersData struct {
 	RepeatedConverters Set
 }
 
-type ProtoGenerator struct {
-	goModule             string
-	converterOutputDir   string
-	converterPackage     string
-	protoPackage         string
-	protoOutputDir       string
-	handlersOutputDir    string
-	protoPackageBasePath string
-	protoGenPath         string
-	services             []ServiceSchema
-	generatorFuncs       []GeneratorFunc
-	tmpl                 *template.Template
-}
-
 type GeneratorFunc func(s ServiceData) error
-
-type ProtoGeneratorConfig struct {
-	GoModule           string
-	ProtoPackage       string
-	ProtoRoot          string
-	ConverterOutputDir string
-	ProtoGenPath       string
-	HandlersOutputDir  string
-	GeneratorFuncs     []GeneratorFunc
-}
 
 type ServiceHandler struct {
 	ResourceName string
@@ -64,46 +40,12 @@ type ServiceHandler struct {
 //go:embed templates/*
 var templateFS embed.FS
 
-func NewProtoGenerator(c ProtoGeneratorConfig) *ProtoGenerator {
-	out := &ProtoGenerator{
-		protoPackage: c.ProtoPackage,
-		goModule:     c.GoModule, converterOutputDir: c.ConverterOutputDir,
-		protoGenPath: c.ProtoGenPath, handlersOutputDir: c.HandlersOutputDir,
-		generatorFuncs: c.GeneratorFuncs,
-	}
-	if c.ProtoPackage == "" {
-		log.Fatalf("Missing proto package definition.")
-	}
-	protoPackageBasePath := strings.ReplaceAll(c.ProtoPackage, ".", "/")
-	out.protoPackageBasePath = protoPackageBasePath
-	out.protoOutputDir = filepath.Join(c.ProtoRoot, protoPackageBasePath)
-
-	if out.converterOutputDir == "" {
-		out.converterOutputDir = "gen/converter"
-	}
-
-	if out.handlersOutputDir == "" {
-		out.handlersOutputDir = "gen/handlers"
-	}
-
-	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
-	if err != nil {
-		fmt.Print(fmt.Errorf("Failed to initiate tmpl instance for the generator: %w", err))
-		os.Exit(1)
-	}
-	out.tmpl = tmpl
-
-	out.converterPackage = filepath.Base(out.converterOutputDir)
-
-	return out
-}
-
-func (g *ProtoGenerator) Services(services ...ServiceSchema) *ProtoGenerator {
+func (g *ProtoPackage) Services(services ...ServiceSchema) *ProtoPackage {
 	g.services = services
 	return g
 }
 
-func (g *ProtoGenerator) BuildServices() []ServiceData {
+func (g *ProtoPackage) BuildServices() []ServiceData {
 	out := []ServiceData{}
 	var serviceErrors error
 
@@ -121,11 +63,7 @@ func (g *ProtoGenerator) BuildServices() []ServiceData {
 	return out
 }
 
-func (g *ProtoGenerator) getTmpl() *template.Template {
-	return g.tmpl
-}
-
-func (g *ProtoGenerator) genConnectHandler(s ServiceData) error {
+func (g *ProtoPackage) genConnectHandler(s ServiceData) error {
 	tmpl := g.tmpl
 	var handlerBuffer bytes.Buffer
 	handlerData := ServiceHandler{GenPkg: filepath.Base(g.protoGenPath), ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{path.Join(g.goModule, g.protoGenPath): present}}
@@ -148,7 +86,7 @@ func (g *ProtoGenerator) genConnectHandler(s ServiceData) error {
 	return nil
 }
 
-func (g *ProtoGenerator) Generate() error {
+func (g *ProtoPackage) Generate() error {
 	servicesData := g.BuildServices()
 	converters := convertersData{
 		Imports: make(Set), RepeatedConverters: make(Set), Package: g.converterPackage,
@@ -165,7 +103,7 @@ func (g *ProtoGenerator) Generate() error {
 
 		outputFile := strings.ToLower(s.ResourceName) + ".proto"
 		outputPath := filepath.Join(g.protoOutputDir, outputFile)
-		delete(s.Imports, filepath.Join(g.protoPackageBasePath, outputFile))
+		delete(s.Imports, filepath.Join(g.protoPackagePath, outputFile))
 
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {

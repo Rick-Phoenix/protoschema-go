@@ -2,7 +2,7 @@ package handlers
 
 
 import (
-  "github.com/Rick-Phoenix/gofirst/gen/myappv1"
+  "github.com/Rick-Phoenix/gofirst"
   )
 
 
@@ -38,7 +38,7 @@ func (s *UserService) GetUser(
     }
   }
 
-  return connect.NewResponse(&myappv1.GetUserResponse{
+  return connect.NewResponse(&..GetUserResponse{
 
 	}), nil
 }
@@ -63,7 +63,7 @@ func (s *UserService) UpdateUser(
     }
   }
 
-  return connect.NewResponse(&myappv1.Empty{
+  return connect.NewResponse(&..Empty{
 
 	}), nil
 }
