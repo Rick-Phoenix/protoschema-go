@@ -49,25 +49,25 @@ func formatProtoValue[T any](value T) (string, error) {
 		return fmt.Sprintf("{\nid: %q \nmessage: %q\nexpression: %q\n}",
 			v.Id, v.Message, v.Expression), nil
 	default:
-		// If it's not one of the direct cases, use reflect to determine its kind.
 		val := reflect.ValueOf(value)
 		if val.Kind() == reflect.Ptr {
 			val = val.Elem()
 		}
 		kind := val.Kind()
 
-		if kind == reflect.Slice || kind == reflect.Array { // Handle both slices and arrays identically
+		switch kind {
+		case reflect.Slice, reflect.Array:
 			var formattedElements []string
 			for i := range val.Len() {
-				elem := val.Index(i).Interface()       // Get the element's underlying value as an interface{}
-				elemStr, err := formatProtoValue(elem) // Recursively format each element
+				elem := val.Index(i).Interface()
+				elemStr, err := formatProtoValue(elem)
 				if err != nil {
 					return "", err
 				}
 				formattedElements = append(formattedElements, elemStr)
 			}
 			return fmt.Sprintf("[%s]", strings.Join(formattedElements, ", ")), nil
-		} else if kind == reflect.Map {
+		case reflect.Map:
 			var formattedEntries []string
 			keys := val.MapKeys()
 
@@ -90,7 +90,7 @@ func formatProtoValue[T any](value T) (string, error) {
 				formattedEntries = append(formattedEntries, fmt.Sprintf("%s: %s", cleanedKey, valStr))
 			}
 			return fmt.Sprintf("{%s}", strings.Join(formattedEntries, ", ")), nil
-		} else if kind == reflect.Struct {
+		case reflect.Struct:
 			fields := make(map[string]any)
 			typ := val.Type()
 			for i := range val.NumField() {

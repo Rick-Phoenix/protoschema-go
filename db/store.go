@@ -41,6 +41,12 @@ func (s *Store) GetUserWithPosts(ctx context.Context, userID int64) (*UserWithPo
 	}
 	defer tx.Rollback()
 
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
 	qtx := s.Queries.WithTx(tx)
 	user, err := qtx.GetUser(ctx, userID)
 	if err != nil {
