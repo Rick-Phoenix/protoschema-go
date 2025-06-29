@@ -8,7 +8,8 @@ package {{ .Package }}
 {{ range .Converters -}}
 
 {{- $resname := .Resource -}}
-{{- $tfields := .TimestampFields -}}
+{{- $timestampFields := .TimestampFields -}}
+
 func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ $goPkg }}.{{ .Resource }} {
 	if {{ .Resource }} == nil {
 		return nil
@@ -18,7 +19,7 @@ func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ $g
   {{ end -}}
 	return &{{ $goPkg }}.{{ .Resource }}{
     {{ range .Fields -}}
-    {{ if setContains $tfields .Name -}}
+    {{ if setContains $timestampFields .Name -}}
     {{ .Name }}: {{ .Name }},
     {{ else if .IsInternal -}}
     {{ .Name }}: {{ .Name }}To{{ .Name }}Msg({{ $resname }}.{{ .Name }}),
