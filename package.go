@@ -31,9 +31,10 @@ type ProtoPackage struct {
 	protoOutputDir     string
 	handlersOutputDir  string
 	protoPackagePath   string
-	services           []ServiceSchema
 	generatorFuncs     []GeneratorFunc
 	tmpl               *template.Template
+	files              []FileSchema
+	converters         *convertersData
 }
 
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
@@ -77,6 +78,12 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p.tmpl = tmpl
 
 	p.converterPackage = filepath.Base(p.converterOutputDir)
+	converters := convertersData{
+		Package:   p.converterPackage,
+		GoPackage: p.goPackageName,
+		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
+	}
+	p.converters = &converters
 
 	return p
 }

@@ -4,9 +4,7 @@ package schemabuilder
 import (
 	"bytes"
 	"embed"
-	"errors"
 	"fmt"
-	"log"
 	"maps"
 	"os"
 	"os/exec"
@@ -14,11 +12,6 @@ import (
 	"strings"
 	"text/template"
 )
-
-type protoFileData struct {
-	PackageName string
-	ServiceData
-}
 
 type convertersData struct {
 	Package            string
@@ -28,7 +21,7 @@ type convertersData struct {
 	RepeatedConverters Set
 }
 
-type GeneratorFunc func(s ServiceData) error
+type GeneratorFunc func(d FileData) error
 
 type ServiceHandler struct {
 	ResourceName string
@@ -40,38 +33,15 @@ type ServiceHandler struct {
 //go:embed templates/*
 var templateFS embed.FS
 
-func (p *ProtoPackage) Services(services ...ServiceSchema) *ProtoPackage {
-	p.services = services
-	return p
-}
-
-func (p *ProtoPackage) BuildServices() []ServiceData {
-	out := []ServiceData{}
-	var serviceErrors error
-
-	for _, s := range p.services {
-		serviceData, err := NewProtoService(s)
-		serviceErrors = errors.Join(serviceErrors, indentErrors(fmt.Sprintf("Errors for the service schema %q", s.Resource.Name), err))
-		out = append(out, serviceData)
-	}
-
-	if serviceErrors != nil {
-		fmt.Printf("The following errors occurred:\n\n")
-		log.Fatal(serviceErrors)
-	}
-
-	return out
-}
-
 func (p *ProtoPackage) genConnectHandler(s ServiceData) error {
 	tmpl := p.tmpl
 	var handlerBuffer bytes.Buffer
-	handlerData := ServiceHandler{GenPkg: p.goPackagePath, ResourceName: s.ResourceName, Handlers: s.Handlers, Imports: Set{p.goPackagePath: present}}
+	handlerData := ServiceHandler{GenPkg: p.goPackagePath, ResourceName: s.Resource, Handlers: s.Handlers, Imports: Set{p.goPackagePath: present}}
 	if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
 		return fmt.Errorf("Failed to execute template: %w", err)
 	}
 
-	handlerOut := filepath.Join(p.handlersOutputDir, strings.ToLower(s.ResourceName)+"_handler.go")
+	handlerOut := filepath.Join(p.handlersOutputDir, strings.ToLower(s.Resource)+"_handler.go")
 
 	if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
 		return err
@@ -87,25 +57,16 @@ func (p *ProtoPackage) genConnectHandler(s ServiceData) error {
 }
 
 func (p *ProtoPackage) Generate() error {
-	servicesData := p.BuildServices()
-	converters := convertersData{
-		Package:   p.converterPackage,
-		GoPackage: p.goPackageName,
-		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
-	}
+	filesData := p.BuildFiles()
 
 	tmpl := p.tmpl
 
-	for _, s := range servicesData {
-		p.genConnectHandler(s)
-		templateData := protoFileData{
-			PackageName: p.name,
-			ServiceData: s,
-		}
+	for _, f := range filesData {
+		// p.genConnectHandler(f)
 
-		outputFile := strings.ToLower(s.ResourceName) + ".proto"
+		outputFile := strings.ToLower(f.Resource) + ".proto"
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
-		delete(s.Imports, filepath.Join(p.protoPackagePath, outputFile))
+		delete(f.Imports, filepath.Join(p.protoPackagePath, outputFile))
 
 		var outputBuffer bytes.Buffer
 		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
@@ -134,14 +95,14 @@ func (p *ProtoPackage) Generate() error {
 			}
 		}
 
-		if s.Converters != nil {
-			converters.Converters = append(converters.Converters, s.Converters.Converters...)
-			maps.Copy(converters.Imports, s.Converters.Imports)
-			maps.Copy(converters.RepeatedConverters, s.Converters.RepeatedConverters)
+		if f.Converters != nil {
+			converters.Converters = append(converters.Converters, f.Converters.Converters...)
+			maps.Copy(converters.Imports, f.Converters.Imports)
+			maps.Copy(converters.RepeatedConverters, f.Converters.RepeatedConverters)
 		}
 
 		for _, f := range p.generatorFuncs {
-			err := f(s)
+			err := f(f)
 			if err != nil {
 				return err
 			}

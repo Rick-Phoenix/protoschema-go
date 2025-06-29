@@ -1,9 +1,6 @@
 package schemabuilder
 
 import (
-	"errors"
-	"fmt"
-	"log"
 	"maps"
 	"slices"
 	"strings"
@@ -23,69 +20,20 @@ type Handler struct {
 }
 
 type ServiceData struct {
-	ResourceName   string
-	Imports        Set
-	Extensions     Extensions
-	Messages       []MessageData
-	Enums          []EnumGroup
-	ServiceOptions []ProtoOption
-	FileOptions    []ProtoOption
-	Handlers       []HandlerData
-	Converters     *convertersData
+	Resource string
+	Options  []ProtoOption
+	Handlers []HandlerData
 }
 
 type ServiceSchema struct {
-	Resource         MessageSchema
-	Handlers         HandlersMap
-	Messages         []MessageSchema
-	ServiceOptions   []ProtoOption
-	FileOptions      []ProtoOption
-	OptionExtensions Extensions
-	Enums            []EnumGroup
+	Resource string
+	Handlers HandlersMap
+	Options  []ProtoOption
 }
 
-func NewProtoService(s ServiceSchema) (ServiceData, error) {
-	imports := make(Set)
-	processedMessages := make(Set)
-
-	messages := make([]MessageSchema, len(s.Messages))
-	copy(messages, s.Messages)
-	out := &ServiceData{ResourceName: s.Resource.Name, FileOptions: s.FileOptions, ServiceOptions: s.ServiceOptions, Imports: imports, Extensions: s.OptionExtensions, Enums: s.Enums}
-
-	var messageErrors error
-
-	processMessage := func(m MessageSchema) {
-		var errAgg error
-
-		message, err := NewProtoMessage(m, imports)
-		errAgg = errors.Join(errAgg, err)
-		out.Messages = append(out.Messages, message)
-		processedMessages[m.Name] = present
-		if message.Converter != nil {
-			if out.Converters == nil {
-				out.Converters = &convertersData{
-					RepeatedConverters: make(Set), Imports: make(Set),
-				}
-			}
-			for _, v := range message.Converter.InternalRepeated {
-				out.Converters.RepeatedConverters[v] = present
-			}
-			for _, v := range message.Converter.Imports {
-				out.Converters.Imports[v] = present
-			}
-
-			out.Converters.Converters = append(out.Converters.Converters, *message.Converter)
-		}
-
-		if errAgg != nil {
-			messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
-		}
-	}
-
-	processMessage(s.Resource)
-
-	for _, m := range messages {
-		processMessage(m)
+func (s ServiceSchema) Build() ServiceData {
+	out := &ServiceData{
+		Resource: s.Resource,
 	}
 
 	handlerKeys := slices.SortedFunc(maps.Keys(s.Handlers), func(a, b string) int {
@@ -122,36 +70,7 @@ func NewProtoService(s ServiceSchema) (ServiceData, error) {
 		h := s.Handlers[name]
 
 		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request, Response: h.Response})
-		if _, seen := processedMessages[h.Request.Name]; !seen {
-			if h.Request.ReferenceOnly {
-				processedMessages[h.Request.Name] = present
-				if h.Request.ImportPath != "" {
-					imports[h.Request.ImportPath] = present
-				}
-			} else {
-				processMessage(h.Request)
-			}
-		}
-
-		if _, seen := processedMessages[h.Response.Name]; !seen {
-			if h.Response.ReferenceOnly {
-				processedMessages[h.Response.Name] = present
-				if h.Response.ImportPath != "" {
-					imports[h.Response.ImportPath] = present
-				}
-			} else {
-				processMessage(h.Response)
-			}
-		}
 	}
 
-	if messageErrors != nil {
-		log.Fatal(messageErrors)
-	}
-
-	if len(s.OptionExtensions.File)+len(s.OptionExtensions.Service)+len(s.OptionExtensions.Message)+len(s.OptionExtensions.Field)+len(s.OptionExtensions.OneOf) > 0 {
-		imports["google/protobuf/descriptor.proto"] = present
-	}
-
-	return *out, nil
+	return *out
 }
