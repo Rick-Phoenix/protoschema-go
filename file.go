@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/labstack/gommon/log"
 )
 
 type FileSchema struct {
@@ -26,6 +28,15 @@ type FileData struct {
 	Enums       []EnumGroup
 	Messages    []MessageData
 	Services    []ServiceData
+}
+
+func (f FileSchema) GetMessage(name string) MessageSchema {
+	msg, found := f.Messages[name]
+	if !found {
+		log.Printf("Could not find message %q in file schema %q", name, f.FileName)
+	}
+	msg.ImportPath = f.FileName
+	return msg
 }
 
 func (p *ProtoPackage) AddFile(s FileSchema) {

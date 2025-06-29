@@ -32,8 +32,8 @@ type ServiceSchema struct {
 }
 
 func (s ServiceSchema) Build() ServiceData {
-	out := &ServiceData{
-		Resource: s.Resource,
+	out := ServiceData{
+		Resource: s.Resource, Options: s.Options,
 	}
 
 	handlerKeys := slices.SortedFunc(maps.Keys(s.Handlers), func(a, b string) int {
@@ -72,5 +72,5 @@ func (s ServiceSchema) Build() ServiceData {
 		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request, Response: h.Response})
 	}
 
-	return *out
+	return out
 }

@@ -34,7 +34,7 @@ type ProtoPackage struct {
 	generatorFuncs     []GeneratorFunc
 	tmpl               *template.Template
 	files              []FileSchema
-	converters         *convertersData
+	converters         convertersData
 }
 
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
@@ -83,7 +83,7 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		GoPackage: p.goPackageName,
 		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
 	}
-	p.converters = &converters
+	p.converters = converters
 
 	return p
 }

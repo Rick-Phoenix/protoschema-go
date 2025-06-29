@@ -25,15 +25,13 @@ type MessageSchema struct {
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
-	ReferenceOnly   bool
-	ImportPath      string
 	Model           any
 	ModelIgnore     []string
 	SkipValidation  bool
 	converter       *messageConverter
 	GoPackageName   string
-	GoPackagePath   string
 	ProtoPackage    string
+	ImportPath      string
 }
 
 type MessageData struct {
@@ -182,7 +180,7 @@ func (s *MessageSchema) CheckModel() error {
 	return err
 }
 
-func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
+func (s MessageSchema) Build(imports Set) (MessageData, error) {
 	var protoFields []FieldData
 	var fieldsErrors error
 
@@ -221,7 +219,7 @@ func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 	var subMessagesErrors error
 
 	for _, m := range s.Messages {
-		data, err := NewProtoMessage(m, imports)
+		data, err := s.Build(imports)
 		if err != nil {
 			subMessagesErrors = errors.Join(subMessagesErrors, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
@@ -236,12 +234,12 @@ func NewProtoMessage(s MessageSchema, imports Set) (MessageData, error) {
 	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.converter, ProtoPackage: s.ProtoPackage}, nil
 }
 
-func MessageRef(s MessageSchema) MessageSchema {
-	return MessageSchema{Name: s.Name, ReferenceOnly: true, ImportPath: s.ImportPath}
+func (s MessageSchema) Ref() MessageSchema {
+	return MessageSchema{Name: s.Name, ImportPath: s.ImportPath}
 }
 
 func Empty() MessageSchema {
-	return MessageSchema{Name: "Empty", ReferenceOnly: true, ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}, GoPackageName: "emptypb", ProtoPackage: "google.protobuf"}
+	return MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Model: &emptypb.Empty{}, GoPackageName: "emptypb", ProtoPackage: "google.protobuf"}
 }
 
 var (

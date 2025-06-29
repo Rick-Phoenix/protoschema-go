@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,12 +63,12 @@ func (p *ProtoPackage) Generate() error {
 	for _, f := range filesData {
 		// p.genConnectHandler(f)
 
-		outputFile := strings.ToLower(f.Resource) + ".proto"
+		outputFile := strings.ToLower(f.FileName) + ".proto"
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
 		delete(f.Imports, filepath.Join(p.protoPackagePath, outputFile))
 
 		var outputBuffer bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", templateData); err != nil {
+		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", f); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 
@@ -95,39 +94,30 @@ func (p *ProtoPackage) Generate() error {
 			}
 		}
 
-		if f.Converters != nil {
-			converters.Converters = append(converters.Converters, f.Converters.Converters...)
-			maps.Copy(converters.Imports, f.Converters.Imports)
-			maps.Copy(converters.RepeatedConverters, f.Converters.RepeatedConverters)
-		}
-
-		for _, f := range p.generatorFuncs {
-			err := f(f)
+		for _, fun := range p.generatorFuncs {
+			err := fun(f)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	if len(converters.Converters) > 0 {
-
-		var outputBuffer bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", converters); err != nil {
-			fmt.Printf("Failed to execute template: %s", err.Error())
-		}
-
-		outputPath := filepath.Join(p.converterOutputDir, p.converterPackage+".go")
-
-		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
-			fmt.Print(err)
-		}
-
-		fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)
+	var outputBuffer bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", p.converters); err != nil {
+		fmt.Printf("Failed to execute template: %s", err.Error())
 	}
+
+	outputPath := filepath.Join(p.converterOutputDir, p.converterPackage+".go")
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
+		fmt.Print(err)
+	}
+
+	fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)
 
 	return nil
 }
