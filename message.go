@@ -34,6 +34,7 @@ type MessageSchema struct {
 	Package         *ProtoPackage
 	ImportPath      string
 	Hook            MessageHook
+	Metadata        map[string]any
 }
 
 type MessageData struct {
@@ -48,6 +49,7 @@ type MessageData struct {
 	Enums           []EnumGroup
 	File            *FileSchema
 	Package         *ProtoPackage
+	Metadata        map[string]any
 }
 
 type modelField struct {
@@ -282,7 +284,7 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 		subMessages = append(subMessages, data)
 	}
 
-	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package}
+	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package, Metadata: m.Metadata}
 
 	if m.Hook != nil {
 		err := m.Hook(out)
@@ -324,6 +326,9 @@ func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
 	of.File = m.File
 	of.Package = m.Package
 	m.Oneofs = append(m.Oneofs, of)
+	if of.Hook == nil {
+		of.Hook = m.Package.oneofHook
+	}
 	return &of
 }
 

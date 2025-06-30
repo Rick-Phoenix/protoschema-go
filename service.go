@@ -27,6 +27,7 @@ type ServiceData struct {
 	Package  *ProtoPackage
 	Options  []ProtoOption
 	Handlers []HandlerData
+	Metadata map[string]any
 }
 
 type ServiceSchema struct {
@@ -36,11 +37,12 @@ type ServiceSchema struct {
 	Handlers HandlersMap
 	Options  []ProtoOption
 	Hook     ServiceHook
+	Metadata map[string]any
 }
 
 func (s ServiceSchema) Build(imports Set) ServiceData {
 	out := ServiceData{
-		Resource: s.Resource, Options: s.Options,
+		Resource: s.Resource, Options: s.Options, Metadata: s.Metadata,
 	}
 
 	handlerKeys := slices.SortedFunc(maps.Keys(s.Handlers), func(a, b string) int {

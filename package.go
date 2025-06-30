@@ -21,6 +21,7 @@ type ProtoPackageConfig struct {
 	FileHook           FileHook
 	ServiceHook        ServiceHook
 	MessageHook        MessageHook
+	OneofHook          OneofHook
 	ConverterFunc      ConverterFunc
 }
 
@@ -38,6 +39,7 @@ type ProtoPackage struct {
 	fileHook           FileHook
 	serviceHook        ServiceHook
 	messageHook        MessageHook
+	oneofHook          OneofHook
 	tmpl               *template.Template
 	fileSchemas        []*FileSchema
 	Converter          ConverterData
@@ -55,6 +57,7 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		fileHook:           conf.FileHook,
 		serviceHook:        conf.ServiceHook,
 		messageHook:        conf.MessageHook,
+		oneofHook:          conf.OneofHook,
 		converterFunc:      conf.ConverterFunc,
 	}
 

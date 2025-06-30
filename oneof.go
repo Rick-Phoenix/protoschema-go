@@ -9,10 +9,14 @@ import (
 
 type OneofChoices map[uint32]FieldBuilder
 
+type OneofHook func(OneofData) error
+
 type OneofData struct {
-	Name    string
-	Choices []FieldData
-	Options []ProtoOption
+	Name     string
+	Choices  []FieldData
+	Options  []ProtoOption
+	Metadata map[string]any
+	Hook     OneofHook
 }
 
 type OneofGroup struct {
@@ -23,6 +27,8 @@ type OneofGroup struct {
 	Package  *ProtoPackage
 	File     *FileSchema
 	Message  *MessageSchema
+	Metadata map[string]any
+	Hook     OneofHook
 }
 
 func (of OneofGroup) GetFields() []FieldData {
@@ -78,7 +84,14 @@ func (of OneofGroup) Build(imports Set) (OneofData, error) {
 		return OneofData{}, fieldErr
 	}
 
-	return OneofData{
+	out := OneofData{
 		Name: of.Name, Options: options, Choices: choicesData,
-	}, nil
+	}
+
+	if of.Hook != nil {
+		err := of.Hook(out)
+		return out, err
+	}
+
+	return out, nil
 }

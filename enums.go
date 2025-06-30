@@ -17,6 +17,7 @@ type EnumGroup struct {
 	Package         *ProtoPackage
 	File            *FileSchema
 	Message         *MessageSchema
+	Metadata        map[string]any
 }
 
 type EnumField struct {

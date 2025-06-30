@@ -16,6 +16,7 @@ type FileSchema struct {
 	messages   []*MessageSchema
 	services   []*ServiceSchema
 	Hook       FileHook
+	Metadata   map[string]any
 }
 
 type FileData struct {
@@ -28,6 +29,7 @@ type FileData struct {
 	Messages   []MessageData
 	Services   []ServiceData
 	Hook       FileHook
+	Metadata   map[string]any
 }
 
 func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
@@ -68,6 +70,7 @@ func (f *FileSchema) Build() (FileData, error) {
 		Options:    f.Options,
 		Name:       f.Name,
 		Hook:       f.Hook,
+		Metadata:   f.Metadata,
 	}
 
 	if len(f.Extensions.File)+len(f.Extensions.Service)+len(f.Extensions.Message)+len(f.Extensions.Field)+len(f.Extensions.OneOf) > 0 {
