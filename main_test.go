@@ -82,6 +82,7 @@ type UserWithPosts struct {
 var UserFile = protoPackage.NewFile(FileSchema{
 	Name:    "user",
 	Package: protoPackage,
+	Hook:    protoPackage.genConnectHandler,
 })
 
 var UserSchema = UserFile.NewMessage(MessageSchema{

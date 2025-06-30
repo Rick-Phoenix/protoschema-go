@@ -294,8 +294,11 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 	return out, errAgg
 }
 
-func Empty() *MessageSchema {
-	return &MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{Name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
+func (m MessageSchema) GetGoPackageName() string {
+	if m.Package == nil {
+		return ""
+	}
+	return m.Package.goPackageName
 }
 
 func ProtoVOneof(required bool, fields ...string) ProtoOption {

@@ -15,7 +15,7 @@ import (
 type FileHook func(d FileData) error
 
 type ConnectHandler struct {
-	Service ServiceData
+	ServiceData
 	Imports Set
 }
 
@@ -27,7 +27,7 @@ func (p *ProtoPackage) genConnectHandler(f FileData) error {
 
 	for _, s := range f.Services {
 		var handlerBuffer bytes.Buffer
-		handlerData := ConnectHandler{Imports: Set{p.goPackagePath: present}, Service: s}
+		handlerData := ConnectHandler{Imports: Set{p.goPackagePath: present}, ServiceData: s}
 		if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
@@ -55,7 +55,6 @@ func (p *ProtoPackage) Generate() error {
 	tmpl := p.tmpl
 
 	for _, fileData := range filesData {
-		p.genConnectHandler(fileData)
 
 		outputFile := strings.ToLower(fileData.Name)
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)

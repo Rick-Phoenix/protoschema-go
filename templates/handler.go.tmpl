@@ -17,8 +17,8 @@ func New{{ .Resource }}Service(s *db.Store) *{{ .Resource }}Service {
 
 func (s *{{ $res }}Service) {{ .Name }}(
 	ctx context.Context,
-  req *connect.Request[{{ .Request.GoPackageName }}.{{ .Request.Name }}],
-) (*connect.Response[{{ .Response.GoPackageName }}.{{ .Response.Name }}], error) {
+  req *connect.Request[{{ .Request.GetGoPackageName }}.{{ .Request.Name }}],
+) (*connect.Response[{{ .Response.GetGoPackageName }}.{{ .Response.Name }}], error) {
 
   resource, err := s.Store.method(ctx, params)
   if errors.Is(err, sql.ErrNoRows) {
@@ -33,7 +33,7 @@ func (s *{{ $res }}Service) {{ .Name }}(
     }
   }
 
-  return connect.NewResponse(&{{ .Response.GoPackageName }}.{{ .Response.Name }}{
+  return connect.NewResponse(&{{ .Response.GetGoPackageName }}.{{ .Response.Name }}{
 
 	}), nil
 }

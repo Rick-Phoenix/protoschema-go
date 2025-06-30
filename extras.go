@@ -8,3 +8,7 @@ func FieldMask(name string) *GenericField {
 		Package: &ProtoPackage{Name: "google.protobuf"},
 	})
 }
+
+func Empty() *MessageSchema {
+	return &MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{Name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
+}

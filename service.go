@@ -82,9 +82,6 @@ func (s ServiceSchema) Build(imports Set) ServiceData {
 			Response: h.Response,
 		}
 
-		handlerData.Request.Name = handlerData.Request.GetFullName(s.Package)
-		handlerData.Response.Name = handlerData.Response.GetFullName(s.Package)
-
 		for _, v := range []*MessageSchema{h.Request, h.Response} {
 			if v != nil && v.File != s.File && v.ImportPath != "" {
 				imports[v.ImportPath] = present
