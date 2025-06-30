@@ -29,7 +29,7 @@ message GetUserResponse {
 
 message UpdateUserRequest {
   int64 id = 1 [(buf.validate.field).required = true];
-  .google.protobuf.FieldMask field_mask = 2;
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 service UserService {

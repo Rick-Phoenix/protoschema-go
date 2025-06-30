@@ -1,3 +1,5 @@
+{{ define "converter" }}
+
 package {{ .Package }}
 
 {{ template "imports" .Imports }}
@@ -44,3 +46,4 @@ func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []
 
 {{ end -}}
 
+{{ end }}

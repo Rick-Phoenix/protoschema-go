@@ -55,7 +55,7 @@ func (p *ProtoPackage) Generate() error {
 	for _, fileData := range filesData {
 		// p.genConnectHandler(f)
 
-		outputFile := strings.ToLower(fileData.Name) + ".proto"
+		outputFile := strings.ToLower(fileData.Name)
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
 		delete(fileData.Imports, filepath.Join(p.protoPackagePath, outputFile))
 
@@ -95,7 +95,7 @@ func (p *ProtoPackage) Generate() error {
 	}
 
 	var outputBuffer bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", p.Converters); err != nil {
+	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter", p.Converters); err != nil {
 		fmt.Printf("Failed to execute template: %s", err.Error())
 	}
 
@@ -176,24 +176,11 @@ var funcMap = template.FuncMap{
 		_, present := set[key]
 		return present
 	},
-	"getProtoType": func(f FieldData, protoPackage string) string {
+	"getProtoType": func(f FieldData, protoPackage *ProtoPackage) string {
 		if f.MessageRef == nil {
 			return f.ProtoType
 		}
 
-		return getMsgName(*f.MessageRef, protoPackage)
+		return f.MessageRef.GetFullName(protoPackage)
 	},
-	"getMsgName": getMsgName,
-}
-
-func getMsgName(m MessageSchema, protoPackage string) string {
-	if m.Package == nil {
-		return m.Name
-	}
-
-	if m.Package.Name == protoPackage {
-		return m.Name
-	}
-
-	return m.Package.Name + "." + m.Name
 }

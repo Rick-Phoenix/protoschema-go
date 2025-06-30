@@ -8,8 +8,8 @@ import (
 
 type HandlerData struct {
 	Name     string
-	Request  *MessageSchema
-	Response *MessageSchema
+	Request  string
+	Response string
 }
 
 type HandlersMap map[string]Handler
@@ -35,7 +35,7 @@ type ServiceSchema struct {
 	Options  []ProtoOption
 }
 
-func (s ServiceSchema) Build() ServiceData {
+func (s ServiceSchema) Build(imports Set) ServiceData {
 	out := ServiceData{
 		Resource: s.Resource, Options: s.Options,
 	}
@@ -73,7 +73,18 @@ func (s ServiceSchema) Build() ServiceData {
 	for _, name := range handlerKeys {
 		h := s.Handlers[name]
 
-		out.Handlers = append(out.Handlers, HandlerData{Name: name, Request: h.Request, Response: h.Response})
+		handlerData := HandlerData{
+			Name:     name,
+			Request:  h.Request.GetFullName(s.Package),
+			Response: h.Response.GetFullName(s.Package),
+		}
+
+		for _, v := range []*MessageSchema{h.Request, h.Response} {
+			if v != nil && v.File != s.File && v.ImportPath != "" {
+				imports[v.ImportPath] = present
+			}
+		}
+		out.Handlers = append(out.Handlers, handlerData)
 	}
 
 	return out

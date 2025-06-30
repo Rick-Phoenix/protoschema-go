@@ -36,6 +36,8 @@ func (b *RepeatedField) GetMessageRef() *MessageSchema {
 func (b *RepeatedField) GetData() FieldData {
 	data := b.protoFieldInternal.GetData()
 	data.Name = b.name
+	data.IsNonScalar = true
+	data.Repeated = true
 
 	return data
 }

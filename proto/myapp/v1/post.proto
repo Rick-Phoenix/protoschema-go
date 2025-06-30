@@ -30,7 +30,7 @@ message GetPostResponse {
 
 message UpdatePostRequest {
   Post post = 1;
-  .google.protobuf.FieldMask field_mask = 2;
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 service PostService {

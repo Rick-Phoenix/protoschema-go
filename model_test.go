@@ -23,8 +23,7 @@ var ValidUserSchema = MessageSchema{
 		3: Timestamp("created_at"),
 		4: Repeated("posts", MsgField("post", PostSchema)),
 	},
-	Model:      &UserWithPostsConst{},
-	ImportPath: "myapp/v1/user.proto",
+	Model: &UserWithPostsConst{},
 }
 
 func TestModelValidation(t *testing.T) {

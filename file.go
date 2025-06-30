@@ -75,7 +75,7 @@ func (f *FileSchema) Build() (FileData, error) {
 	}
 
 	for _, serv := range f.services {
-		file.Services = append(file.Services, serv.Build())
+		file.Services = append(file.Services, serv.Build(imports))
 	}
 
 	return file, messageErrors

@@ -1,14 +1,12 @@
 {{ define "service" }}
 
-{{ $protoPkg := .Package.Name }}
-
 {{ range .Services }}
 service {{ serviceSuffix .Resource }} {
 {{ range .Options -}}
   {{ fmtOpt . }};
 {{ end }}
   {{- range .Handlers}}
-  rpc {{ .Name }}({{ getMsgName .Request $protoPkg }}) returns({{ getMsgName .Response $protoPkg }});
+  rpc {{ .Name }}({{ .Request }}) returns({{  .Response  }});
   {{- end}}
 }
 {{ end }}

@@ -82,9 +82,28 @@ func (m *MessageSchema) GetFields() map[string]FieldBuilder {
 	return out
 }
 
+func (m MessageSchema) GetFullName(pkg *ProtoPackage) string {
+	if m.Package == nil {
+		return ""
+	}
+
+	if m.Package == pkg {
+		return m.Name
+	}
+
+	return m.Package.Name + "." + m.Name
+}
+
+func (m *MessageSchema) IsInternal(p *ProtoPackage) bool {
+	if m == nil || p == nil {
+		return false
+	}
+
+	return m.Package == p
+}
+
 func (m *MessageSchema) GetField(n string) FieldBuilder {
 	for _, f := range m.Fields {
-		// Make sure to clone
 		data := f.GetData()
 		if data.Name == n {
 			return f
@@ -97,20 +116,26 @@ func (m *MessageSchema) GetField(n string) FieldBuilder {
 
 func (m *MessageSchema) CreateConverter(converter *messageConverter, field reflect.StructField, pfield FieldBuilder) {
 	fieldConvData := modelField{Name: field.Name}
-	if field.Type.String() == "time.Time" {
+	isTime := field.Type.String() == "time.Time"
+
+	if isTime {
 		converter.TimestampFields[field.Name] = present
 		m.Package.Converters.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
 	}
-	if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
-		isInternal := msgRef.Package == m.Package
-		if isInternal {
-			fieldConvData.IsInternal = true
-			m.Package.Converters.Imports[getPkgPath(field.Type)] = present
-			if pfield.IsRepeated() {
-				m.Package.Converters.RepeatedConverters[msgRef.Name] = present
+
+	if pfield.GetData().IsNonScalar && !isTime {
+		m.Package.Converters.Imports[getPkgPath(field.Type)] = present
+
+		if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
+			if msgRef.IsInternal(m.Package) {
+				fieldConvData.IsInternal = true
+				if pfield.IsRepeated() {
+					m.Package.Converters.RepeatedConverters[msgRef.Name] = present
+				}
 			}
 		}
 	}
+
 	converter.Fields = append(converter.Fields, fieldConvData)
 }
 
@@ -126,6 +151,7 @@ func (m MessageSchema) CheckModel() error {
 		TimestampFields: make(Set),
 	}
 	m.Package.Converters.Converters = append(m.Package.Converters.Converters, conv)
+	m.Package.Converters.Imports[getPkgPath(model)] = present
 
 	var err error
 
