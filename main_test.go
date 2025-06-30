@@ -20,54 +20,13 @@ var (
 	})
 )
 
-var SubRedditSchema = protoPackage.NewMessage(MessageSchema{
-	Name: "Subreddit",
-	Fields: FieldsMap{
-		1: Int32("id").Optional(),
-		2: String("name").MinLen(1).MaxLen(48),
-		3: String("description").MaxLen(255),
-		4: Int32("creator_id"),
-		5: Repeated("posts", MsgField("post", &PostSchema)),
-		6: Timestamp("created_at"),
-	},
+var PostFile = protoPackage.NewFile(FileSchema{
+	Package: protoPackage,
+	Name:    "post",
 })
 
-var PostSchema = protoPackage.NewMessage(MessageSchema{
-	Name: "Post",
-	Fields: FieldsMap{
-		1: Int64("id"),
-		2: Timestamp("created_at"),
-		3: Int64("author_id"),
-		4: String("title").MinLen(5).MaxLen(64).Required(),
-		5: String("content").Optional(),
-		6: Int64("subreddit_id"),
-	},
-	ImportPath:  "myapp/v1/post.proto",
-	ModelIgnore: []string{"content"},
-	Model:       &sqlgen.Post{},
-})
-
-var GetPostRequest = protoPackage.NewMessage(MessageSchema{
-	Name: "GetPostRequest",
-	Fields: FieldsMap{
-		1: PostSchema.GetField("id"),
-	},
-})
-
-var GetPostResponse = protoPackage.NewMessage(MessageSchema{
-	Name: "GetPostResponse",
-	Fields: FieldsMap{
-		1: MsgField("post", &PostSchema),
-	},
-})
-
-var UpdatePostRequest = protoPackage.NewMessage(MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
-	1: MsgField("post", &PostSchema),
-	2: FieldMask("field_mask"),
-}})
-
-var PostService = ServiceSchema{
-	Resource: PostSchema,
+var PostService = PostFile.NewService(ServiceSchema{
+	Resource: "Post",
 	Handlers: HandlersMap{
 		"GetPost": {
 			GetPostRequest,
@@ -78,7 +37,40 @@ var PostService = ServiceSchema{
 			Empty(),
 		},
 	},
-}
+})
+
+var PostSchema = PostFile.NewMessage(MessageSchema{
+	Name: "Post",
+	Fields: FieldsMap{
+		1: Int64("id"),
+		2: Timestamp("created_at"),
+		3: Int64("author_id"),
+		4: String("title").MinLen(5).MaxLen(64).Required(),
+		5: String("content").Optional(),
+		6: Int64("subreddit_id"),
+	},
+	ModelIgnore: []string{"content"},
+	Model:       &sqlgen.Post{},
+})
+
+var GetPostRequest = PostFile.NewMessage(MessageSchema{
+	Name: "GetPostRequest",
+	Fields: FieldsMap{
+		1: PostSchema.GetField("id"),
+	},
+})
+
+var GetPostResponse = PostFile.NewMessage(MessageSchema{
+	Name: "GetPostResponse",
+	Fields: FieldsMap{
+		1: MsgField("post", PostSchema),
+	},
+})
+
+var UpdatePostRequest = PostFile.NewMessage(MessageSchema{Name: "UpdatePostRequest", Fields: FieldsMap{
+	1: MsgField("post", PostSchema),
+	2: FieldMask("field_mask"),
+}})
 
 type UserWithPosts struct {
 	Id        int64         `json:"id"`
@@ -87,33 +79,37 @@ type UserWithPosts struct {
 	Posts     []sqlgen.Post `json:"posts"`
 }
 
-var UserSchema = protoPackage.NewMessage(MessageSchema{
+var UserFile = protoPackage.NewFile(FileSchema{
+	Name:    "user",
+	Package: protoPackage,
+})
+
+var UserSchema = UserFile.NewMessage(MessageSchema{
 	Name: "User",
 	Fields: FieldsMap{
 		1: String("name").Required().MinLen(2).MaxLen(32),
 		2: Int64("id"),
 		3: Timestamp("created_at"),
-		4: Repeated("posts", MsgField("post", &PostSchema)),
+		4: Repeated("posts", MsgField("post", PostSchema)),
 	},
-	Model:      &db.UserWithPosts{},
-	ImportPath: "myapp/v1/user.proto",
+	Model: &db.UserWithPosts{},
 })
 
-var GetUserRequest = protoPackage.NewMessage(MessageSchema{
+var GetUserRequest = UserFile.NewMessage(MessageSchema{
 	Name: "GetUserRequest",
 	Fields: FieldsMap{
 		1: Int64("id").Required(),
 	},
 })
 
-var GetUserResponse = protoPackage.NewMessage(MessageSchema{
+var GetUserResponse = UserFile.NewMessage(MessageSchema{
 	Name: "GetUserResponse",
 	Fields: FieldsMap{
-		1: MsgField("user", &UserSchema),
+		1: MsgField("user", UserSchema),
 	},
 })
 
-var UpdateUserRequest = protoPackage.NewMessage(MessageSchema{
+var UpdateUserRequest = UserFile.NewMessage(MessageSchema{
 	Name: "UpdateUserRequest",
 	Fields: FieldsMap{
 		1: Int64("id").Required(),
@@ -121,8 +117,8 @@ var UpdateUserRequest = protoPackage.NewMessage(MessageSchema{
 	},
 })
 
-var UserService = ServiceSchema{
-	Resource: UserSchema,
+var UserService = UserFile.NewService(ServiceSchema{
+	Resource: "User",
 	Handlers: HandlersMap{
 		"GetUser": {
 			GetUserRequest, GetUserResponse,
@@ -132,10 +128,9 @@ var UserService = ServiceSchema{
 			Empty(),
 		},
 	},
-}
+})
 
 func TestMain(t *testing.T) {
-	generator := protoPackage.Services(UserService, PostService)
-	err := generator.Generate()
+	err := protoPackage.Generate()
 	assert.NoError(t, err, "Main Test")
 }

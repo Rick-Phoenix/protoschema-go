@@ -27,8 +27,8 @@ type UserWithPosts struct {
 
 func ToPointer[T any](s []T) []*T {
 	out := make([]*T, len(s))
-	for _, v := range s {
-		out = append(out, &v)
+	for i, v := range s {
+		out[i] = &v
 	}
 
 	return out

@@ -7,6 +7,8 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+
+	u "github.com/Rick-Phoenix/goutils"
 )
 
 type FieldsMap map[uint32]FieldBuilder
@@ -26,7 +28,6 @@ type MessageSchema struct {
 	Model           any
 	ModelIgnore     []string
 	SkipValidation  bool
-	Converter       *messageConverter
 	File            *FileSchema
 	Package         *ProtoPackage
 	ImportPath      string
@@ -42,7 +43,6 @@ type MessageData struct {
 	ReservedNames   []string
 	Options         []ProtoOption
 	Enums           []EnumGroup
-	Converter       *messageConverter
 	File            *FileSchema
 	Package         *ProtoPackage
 }
@@ -53,21 +53,27 @@ type modelField struct {
 }
 
 type messageConverter struct {
-	TimestampFields  Set
-	InternalRepeated []string
-	Imports          Set
-	Resource         string
-	SrcType          string
-	Fields           []modelField
+	TimestampFields Set
+	Resource        string
+	SrcType         string
+	Fields          []modelField
 }
 
-func (s *MessageSchema) GetFields() map[string]FieldBuilder {
+type convertersData struct {
+	Package            string
+	GoPackage          string
+	Imports            Set
+	Converters         []*messageConverter
+	RepeatedConverters Set
+}
+
+func (m *MessageSchema) GetFields() map[string]FieldBuilder {
 	out := make(map[string]FieldBuilder)
 
-	keys := slices.Sorted(maps.Keys(s.Fields))
+	keys := slices.Sorted(maps.Keys(m.Fields))
 
 	for _, k := range keys {
-		f := s.Fields[k]
+		f := m.Fields[k]
 
 		data := f.GetData()
 		out[data.Name] = f
@@ -76,8 +82,8 @@ func (s *MessageSchema) GetFields() map[string]FieldBuilder {
 	return out
 }
 
-func (s *MessageSchema) GetField(n string) FieldBuilder {
-	for _, f := range s.Fields {
+func (m *MessageSchema) GetField(n string) FieldBuilder {
+	for _, f := range m.Fields {
 		// Make sure to clone
 		data := f.GetData()
 		if data.Name == n {
@@ -85,41 +91,41 @@ func (s *MessageSchema) GetField(n string) FieldBuilder {
 		}
 	}
 
-	log.Fatalf("Could not find field %q in schema %q", n, s.Name)
+	log.Fatalf("Could not find field %q in schema %q", n, m.Name)
 	return nil
 }
 
-func (s *MessageSchema) CreateConverter(field reflect.StructField, pfield FieldBuilder) {
+func (m *MessageSchema) CreateConverter(converter *messageConverter, field reflect.StructField, pfield FieldBuilder) {
 	fieldConvData := modelField{Name: field.Name}
 	if field.Type.String() == "time.Time" {
-		s.Converter.TimestampFields[field.Name] = present
-		s.Converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
+		converter.TimestampFields[field.Name] = present
+		m.Package.Converters.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
 	}
 	if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
-		isInternal := msgRef.Package == s.Package
+		isInternal := msgRef.Package == m.Package
 		if isInternal {
 			fieldConvData.IsInternal = true
-			s.Converter.Imports[getPkgPath(field.Type)] = present
+			m.Package.Converters.Imports[getPkgPath(field.Type)] = present
 			if pfield.IsRepeated() {
-				s.Converter.InternalRepeated = append(s.Converter.InternalRepeated, pfield.GetMessageRef().Name)
+				m.Package.Converters.RepeatedConverters[msgRef.Name] = present
 			}
 		}
-
 	}
-	s.Converter.Fields = append(s.Converter.Fields, fieldConvData)
+	converter.Fields = append(converter.Fields, fieldConvData)
 }
 
-func (s *MessageSchema) CheckModel() error {
-	model := reflect.TypeOf(s.Model).Elem()
+func (m MessageSchema) CheckModel() error {
+	model := reflect.TypeOf(m.Model).Elem()
 	modelName := model.String()
-	msgFields := s.GetFields()
+	msgFields := m.GetFields()
+	ignores := u.NewSet(m.ModelIgnore...)
 
-	s.Converter = &messageConverter{
-		Resource:        s.Name,
+	conv := &messageConverter{
+		Resource:        m.Name,
 		SrcType:         modelName,
 		TimestampFields: make(Set),
-		Imports:         []string{getPkgPath(model)},
 	}
+	m.Package.Converters.Converters = append(m.Package.Converters.Converters, conv)
 
 	var err error
 
@@ -139,21 +145,22 @@ func (s *MessageSchema) CheckModel() error {
 			if modelFieldName == "" {
 				modelFieldName = toSnakeCase(field.Name)
 			}
-			ignore := slices.Contains(s.ModelIgnore, modelFieldName)
+			ignore := ignores.Has(modelFieldName)
 			fieldType := field.Type.String()
 
 			if pfield, exists := msgFields[modelFieldName]; exists {
-				s.CreateConverter(field, pfield)
+				m.CreateConverter(conv, field, pfield)
+
+				delete(msgFields, modelFieldName)
 
 				if ignore {
 					continue
 				}
 
-				delete(msgFields, modelFieldName)
 				goType := pfield.GetGoType()
 				fieldName := pfield.GetName()
 
-				if pfield.GetGoType() != fieldType && !slices.Contains(s.ModelIgnore, fieldName) {
+				if pfield.GetGoType() != fieldType && !ignores.Has(fieldName) {
 					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
 				}
 			} else if !ignore {
@@ -167,7 +174,7 @@ func (s *MessageSchema) CheckModel() error {
 
 	if len(msgFields) > 0 {
 		for name := range msgFields {
-			if !slices.Contains(s.ModelIgnore, name) {
+			if !ignores.Has(name) {
 				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the message schema for model %q.", name, modelName))
 			}
 		}
@@ -180,21 +187,21 @@ func (s *MessageSchema) CheckModel() error {
 	return err
 }
 
-func (s *MessageSchema) Build(imports Set) (MessageData, error) {
+func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 	var protoFields []FieldData
 	var fieldsErrors error
 
-	if s.Model != nil && !s.SkipValidation {
-		err := s.CheckModel()
+	if m.Model != nil && !m.SkipValidation {
+		err := m.CheckModel()
 		if err != nil {
 			return MessageData{}, err
 		}
 	}
 
-	fieldNumbers := slices.Sorted(maps.Keys(s.Fields))
+	fieldNumbers := slices.Sorted(maps.Keys(m.Fields))
 
 	for _, fieldNr := range fieldNumbers {
-		fieldBuilder := s.Fields[fieldNr]
+		fieldBuilder := m.Fields[fieldNr]
 		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
 			fieldsErrors = errors.Join(fieldsErrors, indentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
@@ -206,7 +213,7 @@ func (s *MessageSchema) Build(imports Set) (MessageData, error) {
 	oneOfs := []OneofData{}
 	var oneOfErrors error
 
-	for _, oneof := range s.Oneofs {
+	for _, oneof := range m.Oneofs {
 		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
@@ -218,8 +225,8 @@ func (s *MessageSchema) Build(imports Set) (MessageData, error) {
 	subMessages := []MessageData{}
 	var subMessagesErrors error
 
-	for _, m := range s.Messages {
-		data, err := s.Build(imports)
+	for _, m := range m.Messages {
+		data, err := m.Build(imports)
 		if err != nil {
 			subMessagesErrors = errors.Join(subMessagesErrors, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
@@ -231,11 +238,11 @@ func (s *MessageSchema) Build(imports Set) (MessageData, error) {
 		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
 	}
 
-	return MessageData{Name: s.Name, Fields: protoFields, ReservedNumbers: s.ReservedNumbers, ReservedRanges: s.ReservedRanges, ReservedNames: s.ReservedNames, Options: s.Options, Oneofs: oneOfs, Enums: s.Enums, Messages: subMessages, Converter: s.Converter, File: s.File, Package: s.Package}, nil
+	return MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package}, nil
 }
 
-func Empty() MessageSchema {
-	return MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
+func Empty() *MessageSchema {
+	return &MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{Name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
 }
 
 var (

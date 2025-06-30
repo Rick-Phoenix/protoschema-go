@@ -1,0 +1,26 @@
+{{ define "protoFile" }}
+syntax = "proto3";
+
+{{ range $importPath, $_ := .Imports }}
+{{ if gt (len $importPath) 0 -}}import "{{ $importPath }}";{{end}}
+{{- end }}
+
+package {{ .Package.Name }};
+
+{{ range .Options -}}
+{{ fmtOpt . }};
+{{ end }}
+
+{{ template "extensions" . }}
+
+{{ range .Enums -}}
+{{ template "enum" . }}
+{{ end }}
+
+{{ template "message" . }}
+
+{{ template "service" . }}
+
+{{ end }}
+
+

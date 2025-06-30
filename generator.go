@@ -12,17 +12,9 @@ import (
 	"text/template"
 )
 
-type convertersData struct {
-	Package            string
-	GoPackage          string
-	Imports            Set
-	Converters         []messageConverter
-	RepeatedConverters Set
-}
-
 type GeneratorFunc func(d FileData) error
 
-type ServiceHandler struct {
+type ConnectHandler struct {
 	ResourceName string
 	Handlers     []HandlerData
 	Imports      Set
@@ -35,7 +27,7 @@ var templateFS embed.FS
 func (p *ProtoPackage) genConnectHandler(s ServiceData) error {
 	tmpl := p.tmpl
 	var handlerBuffer bytes.Buffer
-	handlerData := ServiceHandler{GenPkg: p.goPackagePath, ResourceName: s.Resource, Handlers: s.Handlers, Imports: Set{p.goPackagePath: present}}
+	handlerData := ConnectHandler{GenPkg: p.goPackagePath, ResourceName: s.Resource, Handlers: s.Handlers, Imports: Set{p.goPackagePath: present}}
 	if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
 		return fmt.Errorf("Failed to execute template: %w", err)
 	}
@@ -60,15 +52,15 @@ func (p *ProtoPackage) Generate() error {
 
 	tmpl := p.tmpl
 
-	for _, f := range filesData {
+	for _, fileData := range filesData {
 		// p.genConnectHandler(f)
 
-		outputFile := strings.ToLower(f.Name) + ".proto"
+		outputFile := strings.ToLower(fileData.Name) + ".proto"
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
-		delete(f.Imports, filepath.Join(p.protoPackagePath, outputFile))
+		delete(fileData.Imports, filepath.Join(p.protoPackagePath, outputFile))
 
 		var outputBuffer bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&outputBuffer, "service.proto.tmpl", f); err != nil {
+		if err := tmpl.ExecuteTemplate(&outputBuffer, "protoFile", fileData); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 
@@ -95,7 +87,7 @@ func (p *ProtoPackage) Generate() error {
 		}
 
 		for _, fun := range p.generatorFuncs {
-			err := fun(f)
+			err := fun(fileData)
 			if err != nil {
 				return err
 			}
@@ -103,7 +95,7 @@ func (p *ProtoPackage) Generate() error {
 	}
 
 	var outputBuffer bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", p.converters); err != nil {
+	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter.go.tmpl", p.Converters); err != nil {
 		fmt.Printf("Failed to execute template: %s", err.Error())
 	}
 
@@ -195,9 +187,13 @@ var funcMap = template.FuncMap{
 }
 
 func getMsgName(m MessageSchema, protoPackage string) string {
-	if m.ProtoPackage == protoPackage {
+	if m.Package == nil {
 		return m.Name
 	}
 
-	return m.ProtoPackage + "." + m.Name
+	if m.Package.Name == protoPackage {
+		return m.Name
+	}
+
+	return m.Package.Name + "." + m.Name
 }

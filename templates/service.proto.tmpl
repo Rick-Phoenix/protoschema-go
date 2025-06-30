@@ -1,31 +1,16 @@
-syntax = "proto3";
+{{ define "service" }}
 
-{{ range $importPath, $_ := .Imports }}
-{{ if gt (len $importPath) 0 -}}import "{{ $importPath }}";{{end}}
-{{- end }}
+{{ $protoPkg := .Package.Name }}
 
-package {{ .PackageName }};
-
-{{ range .FileOptions -}}
-{{ fmtOpt . }};
-{{ end }}
-
-{{ template "extensions" . }}
-
-{{ range .Enums -}}
-{{ template "enum" . }}
-{{ end }}
-
-{{ template "message" . }}
-
-{{ $protoPkg := .PackageName }}
-service {{ serviceSuffix .ResourceName }} {
-{{ range .ServiceOptions -}}
+{{ range .Services }}
+service {{ serviceSuffix .Resource }} {
+{{ range .Options -}}
   {{ fmtOpt . }};
 {{ end }}
   {{- range .Handlers}}
   rpc {{ .Name }}({{ getMsgName .Request $protoPkg }}) returns({{ getMsgName .Response $protoPkg }});
   {{- end}}
 }
+{{ end }}
 
-
+{{ end }}

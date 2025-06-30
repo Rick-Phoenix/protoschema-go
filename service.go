@@ -8,15 +8,15 @@ import (
 
 type HandlerData struct {
 	Name     string
-	Request  MessageSchema
-	Response MessageSchema
+	Request  *MessageSchema
+	Response *MessageSchema
 }
 
 type HandlersMap map[string]Handler
 
 type Handler struct {
-	Request  MessageSchema
-	Response MessageSchema
+	Request  *MessageSchema
+	Response *MessageSchema
 }
 
 type ServiceData struct {

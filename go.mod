@@ -12,13 +12,17 @@ require (
 	modernc.org/sqlite v1.38.0
 )
 
+replace github.com/Rick-Phoenix/goutils v0.1.0 => ../go-utils
+
 require (
 	buf.build/go/protovalidate v0.11.0 // indirect
 	cel.dev/expr v0.23.1 // indirect
 	connectrpc.com/validate v0.3.0 // indirect
+	github.com/Rick-Phoenix/goutils v0.1.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/google/cel-go v0.25.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/labstack/echo/v4 v4.13.4 // indirect

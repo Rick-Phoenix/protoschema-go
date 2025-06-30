@@ -34,8 +34,8 @@ func {{ .Resource }}To{{ .Resource }}Msg({{ .Resource }} *{{ .SrcType }}) *{{ $g
 func {{ .Resource }}sTo{{ .Resource }}sMsg({{ .Resource }} []*{{ .SrcType }}) []*{{ $goPkg }}.{{ .Resource }} {
 	out := make([]*{{ $goPkg }}.{{ .Resource }}, len({{ .Resource }}))
 
-	for _, v := range {{ .Resource }} {
-		out = append(out, {{ .Resource }}To{{ .Resource }}Msg(v))
+	for i, v := range {{ .Resource }} {
+    out[i] = {{ .Resource }}To{{ .Resource }}Msg(v)
 	}
 
 	return out
