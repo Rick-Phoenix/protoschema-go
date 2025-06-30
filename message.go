@@ -133,7 +133,7 @@ func (m *MessageSchema) CreateFieldConverter(converter *messageConverter, field 
 		m.Package.Converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
 	}
 
-	if pfield.GetData().IsNonScalar && !isTime {
+	if pfield.IsNonScalar() && !isTime {
 		m.Package.Converter.Imports[getPkgPath(field.Type)] = present
 
 		if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {

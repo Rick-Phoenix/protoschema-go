@@ -48,9 +48,14 @@ type FieldBuilder interface {
 	GetData() FieldData
 	IsMap() bool
 	IsRepeated() bool
+	IsNonScalar() bool
 	GetGoType() string
 	GetName() string
 	GetMessageRef() *MessageSchema
+}
+
+func (b *protoFieldInternal) IsNonScalar() bool {
+	return b.isNonScalar
 }
 
 func (b *protoFieldInternal) GetMessageRef() *MessageSchema {

@@ -23,23 +23,10 @@ func Repeated(name string, b FieldBuilder) *RepeatedField {
 	}
 
 	self.ProtoField = &ProtoField[RepeatedField]{protoFieldInternal: &protoFieldInternal{
-		options: options, rules: rules, repeated: true, goType: "[]" + b.GetGoType(), name: name,
+		options: options, rules: rules, repeated: true, goType: "[]" + b.GetGoType(), name: name, isNonScalar: true, messageRef: b.GetMessageRef(),
 	}, self: self}
 
 	return self
-}
-
-func (b *RepeatedField) GetMessageRef() *MessageSchema {
-	return b.field.GetMessageRef()
-}
-
-func (b *RepeatedField) GetData() FieldData {
-	data := b.protoFieldInternal.GetData()
-	data.Name = b.name
-	data.IsNonScalar = true
-	data.Repeated = true
-
-	return data
 }
 
 func (b *RepeatedField) Build(fieldNr uint32, imports Set) (FieldData, error) {

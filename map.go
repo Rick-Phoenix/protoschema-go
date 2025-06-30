@@ -23,17 +23,10 @@ func Map(name string, keys FieldBuilder, values FieldBuilder) *MapField {
 	}
 
 	self.ProtoField = &ProtoField[MapField]{protoFieldInternal: &protoFieldInternal{
-		options: options, rules: rules, isMap: true, isNonScalar: true, goType: fmt.Sprintf("map[%s]%s", keys.GetGoType(), values.GetGoType()),
+		name: name, options: options, rules: rules, isMap: true, isNonScalar: true, goType: fmt.Sprintf("map[%s]%s", keys.GetGoType(), values.GetGoType()),
 	}, self: self}
 
 	return self
-}
-
-func (b *MapField) GetData() FieldData {
-	data := b.protoFieldInternal.GetData()
-	data.Name = b.name
-
-	return data
 }
 
 func (b *MapField) Build(fieldNr uint32, imports Set) (FieldData, error) {
