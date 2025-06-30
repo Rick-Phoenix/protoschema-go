@@ -5,7 +5,7 @@ syntax = "proto3";
 {{ if gt (len $importPath) 0 -}}import "{{ $importPath }}";{{end}}
 {{- end }}
 
-package {{ .Package.Name }};
+package {{ .Package.GetName }};
 
 {{ range .Options -}}
 {{ fmtOpt . }};

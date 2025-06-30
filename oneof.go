@@ -31,6 +31,16 @@ type OneofGroup struct {
 	Hook     OneofHook
 }
 
+func (of OneofGroup) GetField(name string) FieldBuilder {
+	for _, v := range of.Choices {
+		if v.GetName() == name {
+			return v
+		}
+	}
+	fmt.Printf("Could not find field %q in oneof %q", name, of.Name)
+	return nil
+}
+
 func (of OneofGroup) GetFields() []FieldData {
 	data := make([]FieldData, len(of.Choices))
 

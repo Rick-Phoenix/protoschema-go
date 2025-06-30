@@ -1,17 +1,11 @@
 package handlers
 
-import (
-	"context"
-	"database/sql"
-	"errors"
 
-	"connectrpc.com/connect"
-	"github.com/Rick-Phoenix/gofirst/db"
-	"github.com/Rick-Phoenix/gofirst/gen/myappv1"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"modernc.org/sqlite"
-	sqlite3 "modernc.org/sqlite/lib"
-)
+import (
+  "github.com/Rick-Phoenix/gofirst/gen/myappv1"
+  )
+
+
 
 type UserService struct {
 	Store *db.Store
@@ -21,42 +15,56 @@ func NewUserService(s *db.Store) *UserService {
 	return &UserService{Store: s}
 }
 
+
+
+
+
 func (s *UserService) GetUser(
 	ctx context.Context,
-	req *connect.Request[myappv1.GetUserRequest],
+  req *connect.Request[myappv1.GetUserRequest],
 ) (*connect.Response[myappv1.GetUserResponse], error) {
-	resource, err := s.Store.method(ctx, params)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	} else {
-		var sqliteErr *sqlite.Error
-		if errors.As(err, &sqliteErr) {
-			switch sqliteErr.Code() {
-			case sqlite3.SQLITE_CONSTRAINT:
-				//
-			}
-		}
-	}
 
-	return connect.NewResponse(&myappv1.GetUserResponse{}), nil
+  resource, err := s.Store.method(ctx, params)
+  if errors.Is(err, sql.ErrNoRows) {
+    return nil, connect.NewError(connect.CodeNotFound, err)
+  } else {
+    var sqliteErr *sqlite.Error
+    if errors.As(err, &sqliteErr) {
+      switch sqliteErr.Code() {
+      case sqlite3.SQLITE_CONSTRAINT:
+        //
+      }
+    }
+  }
+
+  return connect.NewResponse(&myappv1.GetUserResponse{
+
+	}), nil
 }
+
+
 
 func (s *UserService) UpdateUser(
 	ctx context.Context,
-	req *connect.Request[myappv1.UpdateUserRequest],
+  req *connect.Request[myappv1.UpdateUserRequest],
 ) (*connect.Response[emptypb.Empty], error) {
-	resource, err := s.Store.method(ctx, params)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, connect.NewError(connect.CodeNotFound, err)
-	} else {
-		var sqliteErr *sqlite.Error
-		if errors.As(err, &sqliteErr) {
-			switch sqliteErr.Code() {
-			case sqlite3.SQLITE_CONSTRAINT:
-				//
-			}
-		}
-	}
 
-	return connect.NewResponse(&emptypb.Empty{}), nil
+  resource, err := s.Store.method(ctx, params)
+  if errors.Is(err, sql.ErrNoRows) {
+    return nil, connect.NewError(connect.CodeNotFound, err)
+  } else {
+    var sqliteErr *sqlite.Error
+    if errors.As(err, &sqliteErr) {
+      switch sqliteErr.Code() {
+      case sqlite3.SQLITE_CONSTRAINT:
+        //
+      }
+    }
+  }
+
+  return connect.NewResponse(&emptypb.Empty{
+
+	}), nil
 }
+
+

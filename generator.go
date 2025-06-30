@@ -28,7 +28,7 @@ func (p *ProtoPackage) genConnectHandler(f FileData) error {
 	for _, s := range f.Services {
 		var handlerBuffer bytes.Buffer
 		handlerData := ConnectHandler{Imports: Set{p.goPackagePath: present}, ServiceData: s}
-		if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
+		if err := tmpl.ExecuteTemplate(&handlerBuffer, "connectHandler", handlerData); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 
@@ -91,7 +91,7 @@ func (p *ProtoPackage) Generate() error {
 
 	if p.converterFunc == nil {
 		var outputBuffer bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter", p.Converter); err != nil {
+		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter", p.converter); err != nil {
 			fmt.Printf("Failed to execute template: %s", err.Error())
 		}
 

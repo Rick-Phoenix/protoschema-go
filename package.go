@@ -26,7 +26,7 @@ type ProtoPackageConfig struct {
 }
 
 type ProtoPackage struct {
-	Name               string
+	name               string
 	protoRoot          string
 	goPackagePath      string
 	goPackageName      string
@@ -42,13 +42,29 @@ type ProtoPackage struct {
 	oneofHook          OneofHook
 	tmpl               *template.Template
 	fileSchemas        []*FileSchema
-	Converter          ConverterData
+	converter          converterData
 	converterFunc      ConverterFunc
+}
+
+func (p *ProtoPackage) GetName() string {
+	if p == nil {
+		return ""
+	}
+
+	return p.name
+}
+
+func (p *ProtoPackage) GetGoPackageName() string {
+	if p == nil {
+		return ""
+	}
+
+	return p.goPackageName
 }
 
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p := &ProtoPackage{
-		Name:               conf.Name,
+		name:               conf.Name,
 		protoRoot:          conf.ProtoRoot,
 		goPackagePath:      conf.GoPackage,
 		goModule:           conf.GoModule,
@@ -91,12 +107,12 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p.tmpl = tmpl
 
 	p.converterPackage = filepath.Base(p.converterOutputDir)
-	converters := ConverterData{
+	converters := converterData{
 		Package:   p.converterPackage,
 		GoPackage: p.goPackageName,
 		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
 	}
-	p.Converter = converters
+	p.converter = converters
 
 	return p
 }
@@ -105,7 +121,7 @@ func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 	newFile := &FileSchema{
 		Name:       s.Name + ".proto",
 		Package:    p,
-		imports:    make(Set),
+		Imports:    make(Set),
 		Options:    s.Options,
 		Extensions: s.Extensions,
 		enums:      s.enums,

@@ -9,7 +9,7 @@ import (
 type FileSchema struct {
 	Package    *ProtoPackage
 	Name       string
-	imports    Set
+	Imports    Set
 	Extensions Extensions
 	Options    []ProtoOption
 	enums      []*EnumGroup

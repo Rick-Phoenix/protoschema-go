@@ -1,3 +1,4 @@
+{{ define "connectHandler" }}
 package handlers
 
 {{ template "imports" .Imports }}
@@ -37,5 +38,7 @@ func (s *{{ $res }}Service) {{ .Name }}(
 
 	}), nil
 }
+
+{{ end }}
 
 {{ end }}
