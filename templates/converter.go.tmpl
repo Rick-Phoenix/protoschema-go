@@ -7,7 +7,7 @@ package {{ .Package }}
 {{ $repeated := .RepeatedConverters -}}
 {{ $goPkg := .GoPackage }}
 
-{{ range .Converters -}}
+{{ range .MessageConverters -}}
 
 {{- $resname := .Resource -}}
 {{- $timestampFields := .TimestampFields -}}

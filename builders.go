@@ -78,7 +78,7 @@ func (b *protoFieldInternal) GetData() FieldData {
 		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
 		Imports:  slices.Clone(b.imports),
 		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
-		GoType: b.goType, IsMap: b.isMap,
+		GoType: b.goType, IsMap: b.isMap, MessageRef: b.messageRef,
 	}
 }
 

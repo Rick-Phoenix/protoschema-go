@@ -86,30 +86,33 @@ func (p *ProtoPackage) Generate() error {
 			}
 		}
 
-		for _, fun := range p.generatorFuncs {
-			err := fun(fileData)
+		for _, hook := range p.genHooks {
+			err := hook(fileData)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var outputBuffer bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&outputBuffer, "converter", p.Converters); err != nil {
-		fmt.Printf("Failed to execute template: %s", err.Error())
+	if p.converterFunc == nil {
+		var outputBuffer bytes.Buffer
+		if err := tmpl.ExecuteTemplate(&outputBuffer, "converter", p.Converter); err != nil {
+			fmt.Printf("Failed to execute template: %s", err.Error())
+		}
+
+		outputPath := filepath.Join(p.converterOutputDir, p.converterPackage+".go")
+
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
+			fmt.Print(err)
+		}
+
+		fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)
+
 	}
-
-	outputPath := filepath.Join(p.converterOutputDir, p.converterPackage+".go")
-
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
-		fmt.Print(err)
-	}
-
-	fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)
 
 	return nil
 }

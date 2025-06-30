@@ -59,11 +59,11 @@ type messageConverter struct {
 	Fields          []modelField
 }
 
-type convertersData struct {
+type ConverterData struct {
 	Package            string
 	GoPackage          string
 	Imports            Set
-	Converters         []*messageConverter
+	MessageConverters  []*messageConverter
 	RepeatedConverters Set
 }
 
@@ -114,23 +114,33 @@ func (m *MessageSchema) GetField(n string) FieldBuilder {
 	return nil
 }
 
-func (m *MessageSchema) CreateConverter(converter *messageConverter, field reflect.StructField, pfield FieldBuilder) {
+type ConverterFuncData struct {
+	Package    *ProtoPackage
+	File       *FileSchema
+	Message    *MessageSchema
+	ModelField reflect.StructField
+	ProtoField FieldBuilder
+}
+
+type ConverterFunc func(ConverterFuncData)
+
+func (m *MessageSchema) CreateFieldConverter(converter *messageConverter, field reflect.StructField, pfield FieldBuilder) {
 	fieldConvData := modelField{Name: field.Name}
 	isTime := field.Type.String() == "time.Time"
 
 	if isTime {
 		converter.TimestampFields[field.Name] = present
-		m.Package.Converters.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
+		m.Package.Converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
 	}
 
 	if pfield.GetData().IsNonScalar && !isTime {
-		m.Package.Converters.Imports[getPkgPath(field.Type)] = present
+		m.Package.Converter.Imports[getPkgPath(field.Type)] = present
 
 		if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
 			if msgRef.IsInternal(m.Package) {
 				fieldConvData.IsInternal = true
 				if pfield.IsRepeated() {
-					m.Package.Converters.RepeatedConverters[msgRef.Name] = present
+					m.Package.Converter.RepeatedConverters[msgRef.Name] = present
 				}
 			}
 		}
@@ -150,8 +160,13 @@ func (m MessageSchema) CheckModel() error {
 		SrcType:         modelName,
 		TimestampFields: make(Set),
 	}
-	m.Package.Converters.Converters = append(m.Package.Converters.Converters, conv)
-	m.Package.Converters.Imports[getPkgPath(model)] = present
+
+	hasConverterFunc := m.Package != nil && m.Package.converterFunc != nil
+
+	if !hasConverterFunc {
+		m.Package.Converter.MessageConverters = append(m.Package.Converter.MessageConverters, conv)
+		m.Package.Converter.Imports[getPkgPath(model)] = present
+	}
 
 	var err error
 
@@ -175,7 +190,13 @@ func (m MessageSchema) CheckModel() error {
 			fieldType := field.Type.String()
 
 			if pfield, exists := msgFields[modelFieldName]; exists {
-				m.CreateConverter(conv, field, pfield)
+				if hasConverterFunc {
+					m.Package.converterFunc(ConverterFuncData{
+						Package: m.Package, File: m.File, Message: &m, ModelField: field, ProtoField: pfield,
+					})
+				} else {
+					m.CreateFieldConverter(conv, field, pfield)
+				}
 
 				delete(msgFields, modelFieldName)
 

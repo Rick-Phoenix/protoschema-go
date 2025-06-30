@@ -18,7 +18,8 @@ type ProtoPackageConfig struct {
 	GoModule           string
 	ConverterOutputDir string
 	HandlersOutputDir  string
-	GeneratorFuncs     []GeneratorFunc
+	GenHooks           []GeneratorFunc
+	ConverterFunc      ConverterFunc
 }
 
 type ProtoPackage struct {
@@ -32,10 +33,11 @@ type ProtoPackage struct {
 	protoOutputDir     string
 	handlersOutputDir  string
 	protoPackagePath   string
-	generatorFuncs     []GeneratorFunc
+	genHooks           []GeneratorFunc
 	tmpl               *template.Template
-	files              []*FileSchema
-	Converters         convertersData
+	fileSchemas        []*FileSchema
+	Converter          ConverterData
+	converterFunc      ConverterFunc
 }
 
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
@@ -46,7 +48,8 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		goModule:           conf.GoModule,
 		converterOutputDir: conf.ConverterOutputDir,
 		handlersOutputDir:  conf.HandlersOutputDir,
-		generatorFuncs:     conf.GeneratorFuncs,
+		genHooks:           conf.GenHooks,
+		converterFunc:      conf.ConverterFunc,
 	}
 
 	if conf.Name == "" {
@@ -79,12 +82,12 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p.tmpl = tmpl
 
 	p.converterPackage = filepath.Base(p.converterOutputDir)
-	converters := convertersData{
+	converters := ConverterData{
 		Package:   p.converterPackage,
 		GoPackage: p.goPackageName,
 		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
 	}
-	p.Converters = converters
+	p.Converter = converters
 
 	return p
 }
@@ -100,7 +103,7 @@ func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 		messages:   s.messages,
 		services:   s.services,
 	}
-	p.files = append(p.files, newFile)
+	p.fileSchemas = append(p.fileSchemas, newFile)
 	return newFile
 }
 
@@ -108,7 +111,7 @@ func (p *ProtoPackage) BuildFiles() []FileData {
 	out := []FileData{}
 	var fileErrors error
 
-	for _, f := range p.files {
+	for _, f := range p.fileSchemas {
 		file, err := f.Build()
 		if err != nil {
 			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %s", f.Name), err))
