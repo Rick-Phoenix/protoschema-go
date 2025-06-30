@@ -8,8 +8,8 @@ import (
 
 type HandlerData struct {
 	Name     string
-	Request  string
-	Response string
+	Request  *MessageSchema
+	Response *MessageSchema
 }
 
 type HandlersMap map[string]Handler
@@ -18,6 +18,8 @@ type Handler struct {
 	Request  *MessageSchema
 	Response *MessageSchema
 }
+
+type ServiceHook func(s ServiceData)
 
 type ServiceData struct {
 	Resource string
@@ -33,6 +35,7 @@ type ServiceSchema struct {
 	Package  *ProtoPackage
 	Handlers HandlersMap
 	Options  []ProtoOption
+	Hook     ServiceHook
 }
 
 func (s ServiceSchema) Build(imports Set) ServiceData {
@@ -75,9 +78,12 @@ func (s ServiceSchema) Build(imports Set) ServiceData {
 
 		handlerData := HandlerData{
 			Name:     name,
-			Request:  h.Request.GetFullName(s.Package),
-			Response: h.Response.GetFullName(s.Package),
+			Request:  h.Request,
+			Response: h.Response,
 		}
+
+		handlerData.Request.Name = handlerData.Request.GetFullName(s.Package)
+		handlerData.Response.Name = handlerData.Response.GetFullName(s.Package)
 
 		for _, v := range []*MessageSchema{h.Request, h.Response} {
 			if v != nil && v.File != s.File && v.ImportPath != "" {
@@ -85,6 +91,10 @@ func (s ServiceSchema) Build(imports Set) ServiceData {
 			}
 		}
 		out.Handlers = append(out.Handlers, handlerData)
+	}
+
+	if s.Hook != nil {
+		s.Hook(out)
 	}
 
 	return out

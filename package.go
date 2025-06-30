@@ -18,7 +18,9 @@ type ProtoPackageConfig struct {
 	GoModule           string
 	ConverterOutputDir string
 	HandlersOutputDir  string
-	GenHooks           []GeneratorFunc
+	FileHook           FileHook
+	ServiceHook        ServiceHook
+	MessageHook        MessageHook
 	ConverterFunc      ConverterFunc
 }
 
@@ -33,7 +35,9 @@ type ProtoPackage struct {
 	protoOutputDir     string
 	handlersOutputDir  string
 	protoPackagePath   string
-	genHooks           []GeneratorFunc
+	fileHook           FileHook
+	serviceHook        ServiceHook
+	messageHook        MessageHook
 	tmpl               *template.Template
 	fileSchemas        []*FileSchema
 	Converter          ConverterData
@@ -48,7 +52,9 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		goModule:           conf.GoModule,
 		converterOutputDir: conf.ConverterOutputDir,
 		handlersOutputDir:  conf.HandlersOutputDir,
-		genHooks:           conf.GenHooks,
+		fileHook:           conf.FileHook,
+		serviceHook:        conf.ServiceHook,
+		messageHook:        conf.MessageHook,
 		converterFunc:      conf.ConverterFunc,
 	}
 
@@ -99,9 +105,13 @@ func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 		imports:    make(Set),
 		Options:    s.Options,
 		Extensions: s.Extensions,
-		Enums:      s.Enums,
+		enums:      s.enums,
 		messages:   s.messages,
 		services:   s.services,
+		Hook:       s.Hook,
+	}
+	if s.Hook == nil {
+		s.Hook = p.fileHook
 	}
 	p.fileSchemas = append(p.fileSchemas, newFile)
 	return newFile

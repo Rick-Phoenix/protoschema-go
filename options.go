@@ -12,6 +12,16 @@ type ProtoOption struct {
 	Value any
 }
 
+var Options = struct {
+	DisableValidator ProtoOption
+	ProtoDeprecated  ProtoOption
+	AllowAlias       ProtoOption
+}{
+	DisableValidator: ProtoOption{Name: "(buf.validate.message).disabled", Value: true},
+	ProtoDeprecated:  ProtoOption{Name: "deprecated", Value: true},
+	AllowAlias:       ProtoOption{Name: "allow_alias", Value: true},
+}
+
 func getOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error) {
 	flatOpts := []string{}
 	var err error

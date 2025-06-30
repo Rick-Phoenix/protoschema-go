@@ -15,6 +15,8 @@ type FieldsMap map[uint32]FieldBuilder
 
 type Range [2]int32
 
+type MessageHook func(d MessageData) error
+
 type MessageSchema struct {
 	Name            string
 	Fields          FieldsMap
@@ -31,6 +33,7 @@ type MessageSchema struct {
 	File            *FileSchema
 	Package         *ProtoPackage
 	ImportPath      string
+	Hook            MessageHook
 }
 
 type MessageData struct {
@@ -236,7 +239,7 @@ func (m MessageSchema) CheckModel() error {
 
 func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 	var protoFields []FieldData
-	var fieldsErrors error
+	var errAgg error
 
 	if m.Model != nil && !m.SkipValidation {
 		err := m.CheckModel()
@@ -251,51 +254,49 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 		fieldBuilder := m.Fields[fieldNr]
 		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
-			fieldsErrors = errors.Join(fieldsErrors, indentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
+			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
 		} else {
 			protoFields = append(protoFields, field)
 		}
 	}
 
 	oneOfs := []OneofData{}
-	var oneOfErrors error
 
 	for _, oneof := range m.Oneofs {
 		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
-			oneOfErrors = errors.Join(oneOfErrors, indentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
+			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
 		}
 		oneOfs = append(oneOfs, data)
 	}
 
 	subMessages := []MessageData{}
-	var subMessagesErrors error
 
 	for _, m := range m.Messages {
 		data, err := m.Build(imports)
 		if err != nil {
-			subMessagesErrors = errors.Join(subMessagesErrors, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
+			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
 
 		subMessages = append(subMessages, data)
 	}
 
-	if fieldsErrors != nil || oneOfErrors != nil || subMessagesErrors != nil {
-		return MessageData{}, errors.Join(fieldsErrors, oneOfErrors, subMessagesErrors)
+	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package}
+
+	if m.Hook != nil {
+		err := m.Hook(out)
+		if err != nil {
+			errAgg = errors.Join(errAgg, indentErrors("Error in message hook", err))
+		}
 	}
 
-	return MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package}, nil
+	return out, errAgg
 }
 
 func Empty() *MessageSchema {
 	return &MessageSchema{Name: "Empty", ImportPath: "google/protobuf/empty.proto", Package: &ProtoPackage{Name: "google.protobuf", goPackageName: "emptypb", goPackagePath: "google.golang.org/protobuf/types/known/emptypb"}}
 }
-
-var (
-	DisableValidator = ProtoOption{Name: "(buf.validate.message).disabled", Value: true}
-	ProtoDeprecated  = ProtoOption{Name: "deprecated", Value: true}
-)
 
 func ProtoVOneof(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
@@ -313,4 +314,20 @@ func ProtoVOneof(required bool, fields ...string) ProtoOption {
 
 	mo.Value = val
 	return mo
+}
+
+func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
+	of.Message = m
+	of.File = m.File
+	of.Package = m.Package
+	m.Oneofs = append(m.Oneofs, of)
+	return &of
+}
+
+func (m *MessageSchema) NewEnum(e EnumGroup) *EnumGroup {
+	e.Message = m
+	e.File = m.File
+	e.Package = m.Package
+	m.Enums = append(m.Enums, e)
+	return &e
 }

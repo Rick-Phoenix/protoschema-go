@@ -3,19 +3,19 @@ package handlers
 {{ template "imports" .Imports }}
 
 
-type {{ .ResourceName }}Service struct {
+type {{ .Resource }}Service struct {
 	Store *db.Store
 }
 
-func New{{ .ResourceName }}Service(s *db.Store) *{{ .ResourceName }}Service {
-	return &{{ .ResourceName }}Service{Store: s}
+func New{{ .Resource }}Service(s *db.Store) *{{ .Resource }}Service {
+	return &{{ .Resource }}Service{Store: s}
 }
 
-{{ $resName := .ResourceName }}
+{{ $res := .Resource }}
 
 {{ range .Handlers }}
 
-func (s *{{ $resName }}Service) {{ .Name }}(
+func (s *{{ $res }}Service) {{ .Name }}(
 	ctx context.Context,
   req *connect.Request[{{ .Request.GoPackageName }}.{{ .Request.Name }}],
 ) (*connect.Response[{{ .Response.GoPackageName }}.{{ .Response.Name }}], error) {

@@ -12,37 +12,39 @@ import (
 	"text/template"
 )
 
-type GeneratorFunc func(d FileData) error
+type FileHook func(d FileData) error
 
 type ConnectHandler struct {
-	ResourceName string
-	Handlers     []HandlerData
-	Imports      Set
-	GenPkg       string
+	Service ServiceData
+	Imports Set
 }
 
 //go:embed templates/*
 var templateFS embed.FS
 
-func (p *ProtoPackage) genConnectHandler(s ServiceData) error {
+func (p *ProtoPackage) genConnectHandler(f FileData) error {
 	tmpl := p.tmpl
-	var handlerBuffer bytes.Buffer
-	handlerData := ConnectHandler{GenPkg: p.goPackagePath, ResourceName: s.Resource, Handlers: s.Handlers, Imports: Set{p.goPackagePath: present}}
-	if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
-		return fmt.Errorf("Failed to execute template: %w", err)
+
+	for _, s := range f.Services {
+		var handlerBuffer bytes.Buffer
+		handlerData := ConnectHandler{Imports: Set{p.goPackagePath: present}, Service: s}
+		if err := tmpl.ExecuteTemplate(&handlerBuffer, "handler.go.tmpl", handlerData); err != nil {
+			return fmt.Errorf("Failed to execute template: %w", err)
+		}
+
+		handlerOut := filepath.Join(p.handlersOutputDir, strings.ToLower(s.Resource)+"_handler.go")
+
+		if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(handlerOut, handlerBuffer.Bytes(), 0644); err != nil {
+			return err
+		}
+
+		fmt.Printf("✅ Generated handler in %s\n", handlerOut)
+
 	}
-
-	handlerOut := filepath.Join(p.handlersOutputDir, strings.ToLower(s.Resource)+"_handler.go")
-
-	if err := os.MkdirAll(filepath.Dir(handlerOut), 0755); err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(handlerOut, handlerBuffer.Bytes(), 0644); err != nil {
-		return err
-	}
-
-	fmt.Printf("✅ Generated handler in %s\n", handlerOut)
 
 	return nil
 }
@@ -53,7 +55,7 @@ func (p *ProtoPackage) Generate() error {
 	tmpl := p.tmpl
 
 	for _, fileData := range filesData {
-		// p.genConnectHandler(f)
+		p.genConnectHandler(fileData)
 
 		outputFile := strings.ToLower(fileData.Name)
 		outputPath := filepath.Join(p.protoOutputDir, outputFile)
@@ -86,12 +88,6 @@ func (p *ProtoPackage) Generate() error {
 			}
 		}
 
-		for _, hook := range p.genHooks {
-			err := hook(fileData)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	if p.converterFunc == nil {

@@ -7,6 +7,8 @@ import (
 	"slices"
 )
 
+type OneofChoices map[uint32]FieldBuilder
+
 type OneofData struct {
 	Name    string
 	Choices []FieldData
@@ -18,9 +20,22 @@ type OneofGroup struct {
 	Required bool
 	Choices  OneofChoices
 	Options  []ProtoOption
+	Package  *ProtoPackage
+	File     *FileSchema
+	Message  *MessageSchema
 }
 
-type OneofChoices map[uint32]FieldBuilder
+func (of OneofGroup) GetFields() []FieldData {
+	data := make([]FieldData, len(of.Choices))
+
+	i := 0
+	for _, field := range of.Choices {
+		data[i] = field.GetData()
+		i++
+	}
+
+	return data
+}
 
 func (of OneofGroup) Build(imports Set) (OneofData, error) {
 	choicesData := []FieldData{}

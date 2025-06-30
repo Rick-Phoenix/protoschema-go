@@ -14,6 +14,9 @@ type EnumGroup struct {
 	ReservedNumbers []int32
 	ReservedRanges  []Range
 	Options         []ProtoOption
+	Package         *ProtoPackage
+	File            *FileSchema
+	Message         *MessageSchema
 }
 
 type EnumField struct {
@@ -81,5 +84,3 @@ func (ef *EnumField) DefinedOnly() *EnumField {
 	ef.rules["defined_only"] = true
 	return ef
 }
-
-var AllowAlias = ProtoOption{Name: "allow_alias", Value: true}

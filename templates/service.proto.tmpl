@@ -6,7 +6,7 @@ service {{ serviceSuffix .Resource }} {
   {{ fmtOpt . }};
 {{ end }}
   {{- range .Handlers}}
-  rpc {{ .Name }}({{ .Request }}) returns({{  .Response  }});
+  rpc {{ .Name }}({{ .Request.Name }}) returns({{  .Response.Name  }});
   {{- end}}
 }
 {{ end }}
