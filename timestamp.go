@@ -203,7 +203,7 @@ func (tf *TimestampField) GtNow() *TimestampField {
 	return tf.self
 }
 
-// An example value for this field.
+// An example value for this field. More than one example can be provided by calling this method multiple times.
 func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))

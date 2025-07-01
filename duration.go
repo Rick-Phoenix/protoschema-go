@@ -198,7 +198,7 @@ func (df *DurationField) Const(d string) *DurationField {
 	return df.self
 }
 
-// An example value for this field.
+// An example value for this field. More than one example can be provided by calling this method multiple times.
 func (df *DurationField) Example(val *durationpb.Duration) *DurationField {
 	if val == nil {
 		df.errors = errors.Join(df.errors, fmt.Errorf("'Example()' received a nil pointer."))

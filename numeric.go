@@ -166,10 +166,6 @@ func Float(name string) *FloatField {
 	}
 
 	floatField := &FloatField{}
-	floatField.ProtoField = &ProtoField[FloatField]{
-		protoFieldInternal: internal,
-		self:               floatField,
-	}
 	floatField.NumericField = newNumericField[FloatField, float32](internal, floatField, true)
 	return floatField
 }
@@ -193,10 +189,6 @@ func Double(name string) *DoubleField {
 	}
 
 	floatField := &DoubleField{}
-	floatField.ProtoField = &ProtoField[DoubleField]{
-		protoFieldInternal: internal,
-		self:               floatField,
-	}
 	floatField.NumericField = newNumericField[DoubleField, float64](internal, floatField, true)
 	return floatField
 }
@@ -220,10 +212,7 @@ func Int64(name string) *Int64Field {
 	}
 
 	int64Field := &Int64Field{}
-	int64Field.ProtoField = &ProtoField[Int64Field]{
-		protoFieldInternal: internal,
-		self:               int64Field,
-	}
+
 	int64Field.NumericField = newNumericField[Int64Field, int64](internal, int64Field, false)
 	return int64Field
 }
@@ -247,10 +236,6 @@ func UInt32(name string) *UInt32Field {
 	}
 
 	uint32Field := &UInt32Field{}
-	uint32Field.ProtoField = &ProtoField[UInt32Field]{
-		protoFieldInternal: internal,
-		self:               uint32Field,
-	}
 	uint32Field.NumericField = newNumericField[UInt32Field, uint32](internal, uint32Field, false)
 	return uint32Field
 }
@@ -274,10 +259,6 @@ func UInt64(name string) *UInt64Field {
 	}
 
 	uint64Field := &UInt64Field{}
-	uint64Field.ProtoField = &ProtoField[UInt64Field]{
-		protoFieldInternal: internal,
-		self:               uint64Field,
-	}
 	uint64Field.NumericField = newNumericField[UInt64Field, uint64](internal, uint64Field, false)
 	return uint64Field
 }
@@ -301,10 +282,6 @@ func SInt32(name string) *SInt32Field {
 	}
 
 	sint32Field := &SInt32Field{}
-	sint32Field.ProtoField = &ProtoField[SInt32Field]{
-		protoFieldInternal: internal,
-		self:               sint32Field,
-	}
 	sint32Field.NumericField = newNumericField[SInt32Field, int32](internal, sint32Field, false)
 	return sint32Field
 }
@@ -328,10 +305,6 @@ func SInt64(name string) *SInt64Field {
 	}
 
 	sint64Field := &SInt64Field{}
-	sint64Field.ProtoField = &ProtoField[SInt64Field]{
-		protoFieldInternal: internal,
-		self:               sint64Field,
-	}
 	sint64Field.NumericField = newNumericField[SInt64Field, int64](internal, sint64Field, false)
 	return sint64Field
 }
@@ -355,10 +328,6 @@ func Fixed32(name string) *Fixed32Field {
 	}
 
 	fixed32Field := &Fixed32Field{}
-	fixed32Field.ProtoField = &ProtoField[Fixed32Field]{
-		protoFieldInternal: internal,
-		self:               fixed32Field,
-	}
 	fixed32Field.NumericField = newNumericField[Fixed32Field, uint32](internal, fixed32Field, false)
 	return fixed32Field
 }
@@ -382,10 +351,6 @@ func Fixed64(name string) *Fixed64Field {
 	}
 
 	fixed64Field := &Fixed64Field{}
-	fixed64Field.ProtoField = &ProtoField[Fixed64Field]{
-		protoFieldInternal: internal,
-		self:               fixed64Field,
-	}
 	fixed64Field.NumericField = newNumericField[Fixed64Field, uint64](internal, fixed64Field, false)
 	return fixed64Field
 }
@@ -409,10 +374,6 @@ func SFixed32(name string) *SFixed32Field {
 	}
 
 	sfixed32Field := &SFixed32Field{}
-	sfixed32Field.ProtoField = &ProtoField[SFixed32Field]{
-		protoFieldInternal: internal,
-		self:               sfixed32Field,
-	}
 	sfixed32Field.NumericField = newNumericField[SFixed32Field, int32](internal, sfixed32Field, false)
 	return sfixed32Field
 }
@@ -436,10 +397,6 @@ func SFixed64(name string) *SFixed64Field {
 	}
 
 	sfixed64Field := &SFixed64Field{}
-	sfixed64Field.ProtoField = &ProtoField[SFixed64Field]{
-		protoFieldInternal: internal,
-		self:               sfixed64Field,
-	}
 	sfixed64Field.NumericField = newNumericField[SFixed64Field, int64](internal, sfixed64Field, false)
 	return sfixed64Field
 }

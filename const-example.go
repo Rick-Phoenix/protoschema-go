@@ -20,7 +20,7 @@ func (b *ConstField[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	return b.self
 }
 
-// An example value for this field.
+// An example value for this field. More than one example can be provided by calling this method multiple times.
 func (b *ConstField[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
 	opt, err := getProtoOption("example", val)
 	b.constInternal.errors = errors.Join(b.constInternal.errors, err)

@@ -24,33 +24,6 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	*OptionalField[BuilderT]
 }
 
-// The constructor for a protobuf string field.
-func String(name string) *StringField {
-	rules := make(map[string]any)
-	options := make(map[string]any)
-	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
-
-	sf := &StringField{}
-	sf.ProtoField = &ProtoField[StringField]{
-		protoFieldInternal: internal,
-		self:               sf,
-	}
-	sf.ByteOrStringField = &ByteOrStringField[StringField, string]{
-		internal: internal,
-		self:     sf,
-	}
-	sf.ConstField = &ConstField[StringField, string, string]{
-		constInternal: internal,
-		self:          sf,
-	}
-	sf.OptionalField = &OptionalField[StringField]{
-		optionalInternal: internal,
-		self:             sf,
-	}
-
-	return sf
-}
-
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
 	if b.hasWellKnownRule {
 		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A string field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
@@ -108,6 +81,18 @@ func (b *ByteOrStringField[BuilderT, ValueT]) Ipv6() *BuilderT {
 	return b.self
 }
 
+// Rule: this string or bytes field must be of the exact specified length.
+func (l *ByteOrStringField[BuilderT, ValueT]) Len(n uint) *BuilderT {
+	if l.minLen != nil {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use min_len and len together."))
+	}
+	if l.maxLen != nil {
+		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use max_len and len together."))
+	}
+	l.internal.rules["len"] = n
+	return l.self
+}
+
 // Rule: this string or bytes field must be of the minimum specified length.
 func (l *ByteOrStringField[BuilderT, ValueT]) MinLen(n uint) *BuilderT {
 	if _, exists := l.internal.rules["len"]; exists {
@@ -134,22 +119,37 @@ func (l *ByteOrStringField[BuilderT, ValueT]) MaxLen(n uint) *BuilderT {
 	return l.self
 }
 
-// Rule: this string or bytes field must be of the exact specified length.
-func (l *ByteOrStringField[BuilderT, ValueT]) Len(n uint) *BuilderT {
-	if l.minLen != nil {
-		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use min_len and len together."))
-	}
-	if l.maxLen != nil {
-		l.internal.errors = errors.Join(l.internal.errors, fmt.Errorf("Cannot use max_len and len together."))
-	}
-	l.internal.rules["len"] = n
-	return l.self
-}
-
 // Rule: this string or bytes field must match the specified regex.
 func (b *ByteOrStringField[BuilderT, ValueT]) Pattern(regex string) *BuilderT {
 	b.internal.rules["pattern"] = regex
 	return b.self
+}
+
+// The constructor for a protobuf string field.
+func String(name string) *StringField {
+	rules := make(map[string]any)
+	options := make(map[string]any)
+	internal := &protoFieldInternal{name: name, protoType: "string", goType: "string", options: options, rules: rules}
+
+	sf := &StringField{}
+	sf.ProtoField = &ProtoField[StringField]{
+		protoFieldInternal: internal,
+		self:               sf,
+	}
+	sf.ByteOrStringField = &ByteOrStringField[StringField, string]{
+		internal: internal,
+		self:     sf,
+	}
+	sf.ConstField = &ConstField[StringField, string, string]{
+		constInternal: internal,
+		self:          sf,
+	}
+	sf.OptionalField = &OptionalField[StringField]{
+		optionalInternal: internal,
+		self:             sf,
+	}
+
+	return sf
 }
 
 // Rule: this string must have the exact specified byte length.
