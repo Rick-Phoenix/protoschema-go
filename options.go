@@ -7,11 +7,13 @@ import (
 	"slices"
 )
 
+// A protobuf option.
 type ProtoOption struct {
 	Name  string
 	Value any
 }
 
+// A preset of commonly used options.
 var Options = struct {
 	DisableValidator ProtoOption
 	ProtoDeprecated  ProtoOption
@@ -22,6 +24,12 @@ var Options = struct {
 	AllowAlias:       ProtoOption{Name: "allow_alias", Value: true},
 }
 
+// Rule: uses the protovalidate version of oneof. The differences with the standard oneof implementation are:
+// 1. Map and repeated fields are allowed
+// 2. If more than one field is populated, it will cause an error
+// 3. A field must be explicitely set (its default value is not accepted) to be considered populated
+// If required is set to true, at least one field must be set.
+// The unpopulated fields will be automatically ignored in terms of validation unless specified otherwise.
 func ProtoValidateOneof(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
 	values := make(map[string]any)

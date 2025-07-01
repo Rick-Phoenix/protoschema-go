@@ -1,5 +1,6 @@
 package schemabuilder
 
+// The protobuf extensions for a given file.
 type Extensions struct {
 	Service []ExtensionField
 	Message []ExtensionField
@@ -8,6 +9,7 @@ type Extensions struct {
 	OneOf   []ExtensionField
 }
 
+// A field belonging to a protobuf extension.
 type ExtensionField struct {
 	Name     string
 	Type     string

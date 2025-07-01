@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"slices"
 	"time"
+
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
+// An instance of a google.protobuf.Duration protobuf field.
 type DurationField struct {
 	*ProtoField[DurationField]
 
@@ -21,6 +24,7 @@ type DurationField struct {
 	lte *time.Duration
 }
 
+// Constructor for a google.protobuf.Duration protobuf field.
 func Duration(name string) *DurationField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -50,6 +54,7 @@ func Duration(name string) *DurationField {
 	return gf
 }
 
+// Rule: this duration must be lower than the value indicated.
 func (tf *DurationField) Lt(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))
@@ -73,6 +78,7 @@ func (tf *DurationField) Lt(d string) *DurationField {
 	return tf.self
 }
 
+// Rule: this duration must be lower than or equal to the value indicated.
 func (tf *DurationField) Lte(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))
@@ -97,6 +103,7 @@ func (tf *DurationField) Lte(d string) *DurationField {
 	return tf.self
 }
 
+// Rule: this duration must be higher than the value indicated.
 func (tf *DurationField) Gt(d string) *DurationField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'gt' and 'gte'."))
@@ -121,6 +128,7 @@ func (tf *DurationField) Gt(d string) *DurationField {
 	return tf.self
 }
 
+// Rule: this duration must be higher than or equal to the value indicated.
 func (tf *DurationField) Gte(d string) *DurationField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'gt' and 'gte'."))
@@ -145,6 +153,7 @@ func (tf *DurationField) Gte(d string) *DurationField {
 	return tf.self
 }
 
+// Rule: the field's value must be among those listed in order to be accepted.
 func (tf *DurationField) In(values ...string) *DurationField {
 	for _, v := range values {
 		err := validateDurationString(v)
@@ -161,6 +170,7 @@ func (tf *DurationField) In(values ...string) *DurationField {
 	return tf.self
 }
 
+// Rule: the field's value must not be present among those listed in order to be accepted.
 func (tf *DurationField) NotIn(values ...string) *DurationField {
 	for _, v := range values {
 		err := validateDurationString(v)
@@ -177,12 +187,23 @@ func (tf *DurationField) NotIn(values ...string) *DurationField {
 	return tf.self
 }
 
-func (tf *DurationField) Const(d string) *DurationField {
+// Rule: this field can only be this specific value. This will cause an error if it is used with other rules.
+func (df *DurationField) Const(d string) *DurationField {
 	err := validateDurationString(d)
 	if err != nil {
-		tf.errors = errors.Join(tf.errors, err)
+		df.errors = errors.Join(df.errors, err)
 	}
-	tf.protoFieldInternal.isConst = true
-	tf.rules["const"] = d
-	return tf.self
+	df.protoFieldInternal.isConst = true
+	df.rules["const"] = d
+	return df.self
+}
+
+// An example value for this field.
+func (df *DurationField) Example(val *durationpb.Duration) *DurationField {
+	if val == nil {
+		df.errors = errors.Join(df.errors, fmt.Errorf("'Example()' received a nil pointer."))
+		return df.self
+	}
+	df.repeatedOptions = append(df.repeatedOptions, fmt.Sprintf("(buf.validate.field).duration.example = { seconds: %d }", val.GetSeconds()))
+	return df.self
 }

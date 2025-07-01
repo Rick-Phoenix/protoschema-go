@@ -1,13 +1,13 @@
 package schemabuilder
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-
-	"golang.org/x/exp/constraints"
 )
 
-type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
+// The generic numeric field struct, implemented by the various numeric field types.
+type NumericField[BuilderT any, ValueT cmp.Ordered] struct {
 	*ProtoField[BuilderT]
 	*ConstField[BuilderT, ValueT, ValueT]
 	*OptionalField[BuilderT]
@@ -24,7 +24,7 @@ type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 	isFloatType bool
 }
 
-func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
+func newNumericField[BuilderT any, ValueT cmp.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
 		ProtoField: &ProtoField[BuilderT]{
 			protoFieldInternal: pfi,
@@ -42,6 +42,7 @@ func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldIn
 	}
 }
 
+// Rule: this numeric field must be smaller than the indicated value.
 func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
@@ -59,6 +60,7 @@ func (nf *NumericField[BuilderT, ValueT]) Lt(val ValueT) *BuilderT {
 	return nf.ProtoField.self
 }
 
+// Rule: this numeric field must be smaller than or equal to the indicated value.
 func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	if nf.hasLtOrLte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'lt' and 'lte' rules."))
@@ -76,6 +78,7 @@ func (nf *NumericField[BuilderT, ValueT]) Lte(val ValueT) *BuilderT {
 	return nf.ProtoField.self
 }
 
+// Rule: this numeric field must be larger than the indicated value.
 func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
@@ -93,6 +96,7 @@ func (nf *NumericField[BuilderT, ValueT]) Gt(val ValueT) *BuilderT {
 	return nf.ProtoField.self
 }
 
+// Rule: this numeric field must be larger than or equal to the indicated value.
 func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	if nf.hasGtOrGte {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("A numeric field cannot have both 'gt' and 'gte' rules."))
@@ -110,6 +114,7 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	return nf.ProtoField.self
 }
 
+// Rule: this numeric field must be finite. Only applicable to float and double field types.
 func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	if !nf.isFloatType {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("The 'finite' rule is only applicable to float and double types."))
@@ -118,10 +123,12 @@ func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	return nf.ProtoField.self
 }
 
+// An instance of an int32 protobuf field.
 type Int32Field struct {
 	*NumericField[Int32Field, int32]
 }
 
+// The constructor for an int32 protobuf field.
 func Int32(name string) *Int32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -140,10 +147,12 @@ func Int32(name string) *Int32Field {
 	return integerField
 }
 
+// An instance of a float protobuf field.
 type FloatField struct {
 	*NumericField[FloatField, float32]
 }
 
+// The constructor for a float protobuf field.
 func Float(name string) *FloatField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -165,10 +174,12 @@ func Float(name string) *FloatField {
 	return floatField
 }
 
+// An instance of a double protobuf field.
 type DoubleField struct {
 	*NumericField[DoubleField, float64]
 }
 
+// The constructor for a double protobuf field.
 func Double(name string) *DoubleField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -190,10 +201,12 @@ func Double(name string) *DoubleField {
 	return floatField
 }
 
+// An instance of an int64 protobuf field.
 type Int64Field struct {
 	*NumericField[Int64Field, int64]
 }
 
+// The constructor for an int64 protobuf field.
 func Int64(name string) *Int64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -215,10 +228,12 @@ func Int64(name string) *Int64Field {
 	return int64Field
 }
 
+// An instance of a uint32 protobuf field.
 type UInt32Field struct {
 	*NumericField[UInt32Field, uint32]
 }
 
+// The constructor for a uint32 protobuf field.
 func UInt32(name string) *UInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -240,10 +255,12 @@ func UInt32(name string) *UInt32Field {
 	return uint32Field
 }
 
+// An instance of a uint64 protobuf field.
 type UInt64Field struct {
 	*NumericField[UInt64Field, uint64]
 }
 
+// The constructor for a uint64 protobuf field.
 func UInt64(name string) *UInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -265,10 +282,12 @@ func UInt64(name string) *UInt64Field {
 	return uint64Field
 }
 
+// An instance of a sint32 protobuf field.
 type SInt32Field struct {
 	*NumericField[SInt32Field, int32]
 }
 
+// The constructor for a sint32 protobuf field.
 func SInt32(name string) *SInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -290,10 +309,12 @@ func SInt32(name string) *SInt32Field {
 	return sint32Field
 }
 
+// An instance of a sint64 protobuf field.
 type SInt64Field struct {
 	*NumericField[SInt64Field, int64]
 }
 
+// The constructor for a sint64 protobuf field.
 func SInt64(name string) *SInt64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -315,10 +336,12 @@ func SInt64(name string) *SInt64Field {
 	return sint64Field
 }
 
+// An instance of a fixed32 protobuf field.
 type Fixed32Field struct {
 	*NumericField[Fixed32Field, uint32]
 }
 
+// The constructor for a fixed32 protobuf field.
 func Fixed32(name string) *Fixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -340,10 +363,12 @@ func Fixed32(name string) *Fixed32Field {
 	return fixed32Field
 }
 
+// An instance of a fixed64 protobuf field.
 type Fixed64Field struct {
 	*NumericField[Fixed64Field, uint64]
 }
 
+// The constructor for a fixed64 protobuf field.
 func Fixed64(name string) *Fixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -365,10 +390,12 @@ func Fixed64(name string) *Fixed64Field {
 	return fixed64Field
 }
 
+// An instance of a sfixed32 protobuf field.
 type SFixed32Field struct {
 	*NumericField[SFixed32Field, int32]
 }
 
+// The constructor for a sfixed32 protobuf field.
 func SFixed32(name string) *SFixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -390,10 +417,12 @@ func SFixed32(name string) *SFixed32Field {
 	return sfixed32Field
 }
 
+// An instance of a sfixed64 protobuf field.
 type SFixed64Field struct {
 	*NumericField[SFixed64Field, int64]
 }
 
+// The constructor for a sfixed64 protobuf field.
 func SFixed64(name string) *SFixed64Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)

@@ -15,6 +15,7 @@ type HandlerData struct {
 	Response *MessageSchema
 }
 
+// Maps handlers to their names.
 type HandlersMap map[string]Handler
 
 type Handler struct {

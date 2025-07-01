@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// A field that has a protobuf message as its type.
 func MsgField(name string, s *MessageSchema) *GenericField {
 	rules := make(map[string]any)
 

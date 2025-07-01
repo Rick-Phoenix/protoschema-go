@@ -2,6 +2,7 @@ package schemabuilder
 
 import "google.golang.org/protobuf/types/known/fieldmaskpb"
 
+// A constructor for a google.protobuf.FieldMask protobuf field.
 func FieldMask(name string) *GenericField {
 	return MsgField(name, &MessageSchema{
 		Name:       "FieldMask",
@@ -14,6 +15,7 @@ func FieldMask(name string) *GenericField {
 	})
 }
 
+// A constructor for a google.protobuf.Empty protobuf field.
 func Empty() *MessageSchema {
 	return &MessageSchema{
 		Name:       "Empty",

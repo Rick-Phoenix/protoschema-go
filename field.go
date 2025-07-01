@@ -7,6 +7,7 @@ import (
 	"slices"
 )
 
+// The processed data from a FieldBuilder instance.
 type FieldData struct {
 	Rules         map[string]any
 	Options       []string
@@ -45,6 +46,7 @@ type protoFieldInternal struct {
 	enumRef         *EnumGroup
 }
 
+// The FieldBuilder interface, which is implemented by the various field constructors.
 type FieldBuilder interface {
 	Build(fieldNr uint32, imports Set) (FieldData, error)
 	GetData() FieldData
@@ -146,11 +148,13 @@ func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (FieldData, erro
 	return data, nil
 }
 
+// The generic ProtoField type, which contains the methods shared among all FieldBuilder implementations.
 type ProtoField[BuilderT any] struct {
 	*protoFieldInternal
 	self *BuilderT
 }
 
+// An instance of a generic protobuf field. Mostly used for imported message fields.
 type GenericField struct {
 	*ProtoField[GenericField]
 }

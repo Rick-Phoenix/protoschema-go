@@ -6,6 +6,7 @@ import (
 	"maps"
 )
 
+// An instance of a repeated protobuf field.
 type RepeatedField struct {
 	name     string
 	field    FieldBuilder
@@ -15,6 +16,7 @@ type RepeatedField struct {
 	*ProtoField[RepeatedField]
 }
 
+// The constructor for a protobuf repeated field. The name indicated in the FieldBuilder constructor itself will be ignored, while the first argument will be used.
 func Repeated(name string, b FieldBuilder) *RepeatedField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -29,6 +31,7 @@ func Repeated(name string, b FieldBuilder) *RepeatedField {
 	return self
 }
 
+// The method that processes the field's schema and returns its data. Used to satisfy the FieldBuilder interface. Mostly for internal use.
 func (b *RepeatedField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	fieldData, err := b.field.Build(fieldNr, imports)
 
@@ -86,12 +89,14 @@ func (b *RepeatedField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	return FieldData{Name: b.name, ProtoType: fieldData.ProtoType, GoType: b.goType, Optional: fieldData.Optional, FieldNr: fieldNr, Repeated: true, Options: options, IsNonScalar: true, MessageRef: fieldData.MessageRef}, nil
 }
 
+// Rule: this repeated field must contain unique values. Causes an error if the fields are non-scalar.
 func (b *RepeatedField) Unique() *RepeatedField {
 	b.options["(buf.validate.field).repeated.unique"] = true
 	b.unique = true
 	return b
 }
 
+// Rule: this repeated field must have at least the specified number of items.
 func (b *RepeatedField) MinItems(n uint) *RepeatedField {
 	if b.maxItems != nil && *b.maxItems < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))
@@ -103,6 +108,7 @@ func (b *RepeatedField) MinItems(n uint) *RepeatedField {
 	return b
 }
 
+// Rule: this repeated field must have no more than the specified number of items.
 func (b *RepeatedField) MaxItems(n uint) *RepeatedField {
 	if b.minItems != nil && *b.minItems > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("max_items cannot be smaller than min_items."))

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+
+	"github.com/labstack/gommon/log"
 )
 
 // The oneof's fields. The key is the field number for that field.
@@ -37,13 +39,14 @@ type OneofGroup struct {
 	Hook     OneofHook
 }
 
+// Returns a field with a specific name, causing a fatal error if the field is not found. Modifying this field will modify the original value.
 func (of *OneofGroup) GetField(name string) FieldBuilder {
 	for _, v := range of.Fields {
 		if v.GetName() == name {
 			return v
 		}
 	}
-	fmt.Printf("Could not find field %q in oneof %q", name, of.Name)
+	log.Fatalf("Could not find field %q in oneof %q", name, of.Name)
 	return nil
 }
 

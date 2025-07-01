@@ -6,6 +6,7 @@ import (
 	"slices"
 )
 
+// An instance of a protobuf map field.
 type MapField struct {
 	name     string
 	keys     FieldBuilder
@@ -15,6 +16,7 @@ type MapField struct {
 	*ProtoField[MapField]
 }
 
+// The constructor for a protobuf map field.
 func Map(name string, keys FieldBuilder, values FieldBuilder) *MapField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -29,6 +31,7 @@ func Map(name string, keys FieldBuilder, values FieldBuilder) *MapField {
 	return self
 }
 
+// The method that processes the field's schema and returns its data. Used to satisfy the FieldBuilder interface. Mostly for internal use.
 func (b *MapField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	err := b.errors
 
@@ -80,6 +83,7 @@ func (b *MapField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	return FieldData{Name: b.name, ProtoType: fmt.Sprintf("map<%s, %s>", keysField.ProtoType, valuesField.ProtoType), GoType: b.goType, Optional: keysField.Optional, FieldNr: fieldNr, Options: options, IsNonScalar: true, IsMap: b.isMap}, nil
 }
 
+// Rule: this map must have at least this amount of key-value pairs.
 func (b *MapField) MinPairs(n uint) *MapField {
 	if b.maxPairs != nil && *b.maxPairs < n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))
@@ -89,6 +93,7 @@ func (b *MapField) MinPairs(n uint) *MapField {
 	return b
 }
 
+// Rule: this map must have no more than this amount of key-value pairs.
 func (b *MapField) MaxPairs(n uint) *MapField {
 	if b.minPairs != nil && *b.minPairs > n {
 		b.errors = errors.Join(b.errors, fmt.Errorf("min_pairs cannot be larger than max_pairs."))

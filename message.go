@@ -94,7 +94,19 @@ func (m *MessageSchema) GetImportPath() string {
 	return m.ImportPath
 }
 
-// Returns a map with the field names as keys and the *copies* of the FieldBuilder instances as the values. The copies will have their field number unset.
+// Gets a FieldBuilder instance with a specific name, causes a fatal error if the field is not found. Modifying this field will also modify the original.
+func (m *MessageSchema) GetField(n string) FieldBuilder {
+	for _, f := range m.Fields {
+		if f.GetName() == n {
+			return f
+		}
+	}
+
+	log.Fatalf("Could not find field %q in schema %q", n, m.Name)
+	return nil
+}
+
+// Returns a map with the field names as keys and the FieldBuilder instances as the values. Modifying these will modify their original values.
 func (m *MessageSchema) GetFields() map[string]FieldBuilder {
 	out := make(map[string]FieldBuilder)
 
@@ -142,18 +154,6 @@ func (m *MessageSchema) IsInternal(p *ProtoPackage) bool {
 	}
 
 	return m.Package == p
-}
-
-// Gets the *copy* of a field with a specific name (with its field number being unset), causes a fatal error if the field is not found.
-func (m *MessageSchema) GetField(n string) FieldBuilder {
-	for _, f := range m.Fields {
-		if f.GetName() == n {
-			return f
-		}
-	}
-
-	log.Fatalf("Could not find field %q in schema %q", n, m.Name)
-	return nil
 }
 
 // Returns the name of the go package for this message's package, if set.
@@ -319,7 +319,7 @@ func (m *MessageSchema) build(imports Set) (MessageData, error) {
 }
 
 // Adds a OneofGroup to this message, automatically setting its Message, File and Package fields, while also falling back to the global OneofHook if a specific Hook is not defined.
-// Returns the pointer to this OneofGroup instance (not a copy).
+// Returns the pointer to this OneofGroup instance.
 func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
 	of.Message = m
 	of.File = m.File
@@ -332,7 +332,7 @@ func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
 }
 
 // Adds a EnumGroup to this message, automatically setting its Message, File, ImportPath and Package fields.
-// Returns the pointer to this EnumGroup instance (not a copy).
+// Returns the pointer to this EnumGroup instance.
 func (m *MessageSchema) NewEnum(e EnumGroup) *EnumGroup {
 	e.Message = m
 	e.File = m.File

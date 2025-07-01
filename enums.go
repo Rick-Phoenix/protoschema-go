@@ -123,7 +123,7 @@ func EnumField(name string, enum *EnumGroup) *ProtoEnumField {
 	return ef
 }
 
-// The method that processes the field's schema and returns its data. Mostly for internal use.
+// The method that processes the field's schema and returns its data. Used to satisfy the FieldBuilder interface. Mostly for internal use.
 func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	data := FieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
@@ -163,7 +163,7 @@ func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) 
 	return data, nil
 }
 
-// Causes a protovalidate violation if the field does not contain one of the defined values for its enum type.
+// Rule: this field must contain one of the defined values for its enum type.
 func (ef *ProtoEnumField) DefinedOnly() *ProtoEnumField {
 	ef.rules["defined_only"] = true
 	return ef

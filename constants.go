@@ -1,6 +1,6 @@
 package schemabuilder
 
-var ProtoTypeMap = map[string]string{
+var protoTypeMap = map[string]string{
 	"string":                    "string",
 	"bytes":                     "[]byte",
 	"bool":                      "bool",

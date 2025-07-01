@@ -2,8 +2,10 @@ package schemabuilder
 
 import "reflect"
 
+// By default, this package will try to automatically generate functions that can convert messages with specific models (like database items) into their respective message type. If this function is defined, it will take over that role, and it will receive the data for each message field.
 type ConverterFunc func(ConverterFuncData)
 
+// The data passed to the ConverterFunc, if defined. When iterating the fields of a message schema's model, this function will be called with the reflect.Structfield value for that struct field, along with the respective FieldBuilder instance and the surrounding Package, File and Message instances.
 type ConverterFuncData struct {
 	Package    *ProtoPackage
 	File       *FileSchema

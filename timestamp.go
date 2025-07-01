@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// An instance of a protobuf timestamp field.
 type TimestampField struct {
 	*ProtoField[TimestampField]
 
@@ -21,6 +22,7 @@ type TimestampField struct {
 	gte *timestamppb.Timestamp
 }
 
+// The constructor for a timestamp field.
 func Timestamp(name string) *TimestampField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
@@ -50,6 +52,7 @@ func Timestamp(name string) *TimestampField {
 	return gf
 }
 
+// Rule: this timestamp field must be within the selected duration.
 func (tf *TimestampField) Within(t *durationpb.Duration) *TimestampField {
 	if t == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Within()' received a nil pointer."))
@@ -60,6 +63,7 @@ func (tf *TimestampField) Within(t *durationpb.Duration) *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp must be earlier than the selected timestamp.
 func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
@@ -84,6 +88,7 @@ func (tf *TimestampField) Lt(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp field must be earlier than or equal to the selected timestamp.
 func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
@@ -107,6 +112,7 @@ func (tf *TimestampField) Lte(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp must be in the past.
 func (tf *TimestampField) LtNow() *TimestampField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'lt', 'lt_now' and 'lte'."))
@@ -128,6 +134,7 @@ func (tf *TimestampField) LtNow() *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp must be later than the selected timestamp.
 func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
@@ -151,6 +158,7 @@ func (tf *TimestampField) Gt(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp must be later than or equal to the selected timestamp.
 func (tf *TimestampField) Gte(t *timestamppb.Timestamp) *TimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
@@ -173,6 +181,7 @@ func (tf *TimestampField) Gte(t *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
+// Rule: this timestamp must be in the future.
 func (tf *TimestampField) GtNow() *TimestampField {
 	if tf.hasGtOrGte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A timestamp field cannot have more than one rule between 'gt', 'gt_now' and 'gte'."))
@@ -194,6 +203,7 @@ func (tf *TimestampField) GtNow() *TimestampField {
 	return tf.self
 }
 
+// An example value for this field.
 func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Example()' received a nil pointer."))
@@ -203,6 +213,7 @@ func (tf *TimestampField) Example(val *timestamppb.Timestamp) *TimestampField {
 	return tf.self
 }
 
+// Rule: this field can only be this specific value. This will cause an error if it is used with other rules.
 func (tf *TimestampField) Const(val *timestamppb.Timestamp) *TimestampField {
 	if val == nil {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("'Const()' received a nil pointer."))

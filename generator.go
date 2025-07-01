@@ -12,7 +12,7 @@ import (
 	"text/template"
 )
 
-type ConnectHandler struct {
+type connectHandler struct {
 	ServiceData
 	Imports Set
 }
@@ -25,7 +25,7 @@ func (p *ProtoPackage) genConnectHandler(f FileData) error {
 
 	for _, s := range f.Services {
 		var handlerBuffer bytes.Buffer
-		handlerData := ConnectHandler{Imports: Set{p.GoPackagePath: present}, ServiceData: s}
+		handlerData := connectHandler{Imports: Set{p.GoPackagePath: present}, ServiceData: s}
 		if err := tmpl.ExecuteTemplate(&handlerBuffer, "connectHandler", handlerData); err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
@@ -47,6 +47,7 @@ func (p *ProtoPackage) genConnectHandler(f FileData) error {
 	return nil
 }
 
+// The function that processes the file schemas (and all the schemas inside them) and generates the proto files, while also calling the various hooks and the converter function.
 func (p *ProtoPackage) Generate() error {
 	filesData := p.BuildFiles()
 

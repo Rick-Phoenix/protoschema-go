@@ -1,11 +1,13 @@
 package schemabuilder
 
+// An instance of a boolean protobuf field.
 type BoolField struct {
 	*ProtoField[BoolField]
 	*ConstField[BoolField, bool, bool]
 	*OptionalField[BoolField]
 }
 
+// The constructor for the protobuf boolean field.
 func Bool(name string) *BoolField {
 	bf := &BoolField{}
 	internal := &protoFieldInternal{

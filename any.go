@@ -1,9 +1,11 @@
 package schemabuilder
 
+// An instance of a google.protobuf.Any field.
 type AnyField struct {
 	*ProtoField[AnyField]
 }
 
+// The constructor for a google.protobuf.Any field.
 func Any(name string) *AnyField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -33,12 +35,14 @@ func Any(name string) *AnyField {
 	return gf
 }
 
-func (af *AnyField) In(values ...string) *AnyField {
-	af.protoFieldInternal.rules["in"] = values
+// Rule: this Any field's type_url must be among those listed here in order to be accepted.
+func (af *AnyField) In(typeUrls ...string) *AnyField {
+	af.protoFieldInternal.rules["in"] = typeUrls
 	return af.self
 }
 
-func (af *AnyField) NotIn(values ...string) *AnyField {
-	af.protoFieldInternal.rules["not_in"] = values
+// Rule: this Any field's type_url must not be among those listed here in order to be accepted.
+func (af *AnyField) NotIn(typeUrls ...string) *AnyField {
+	af.protoFieldInternal.rules["not_in"] = typeUrls
 	return af.self
 }

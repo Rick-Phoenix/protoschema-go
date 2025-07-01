@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// A subtype of protobuf field that can be constant.
 type ConstField[BuilderT, ValueT any, SingleValT comparable] struct {
 	constInternal *protoFieldInternal
 	self          *BuilderT
@@ -12,12 +13,14 @@ type ConstField[BuilderT, ValueT any, SingleValT comparable] struct {
 	notIn         []SingleValT
 }
 
+// Rule: this field can only be this specific value. This will cause an error if it is used with other rules.
 func (b *ConstField[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {
 	b.constInternal.rules["const"] = val
 	b.constInternal.isConst = true
 	return b.self
 }
 
+// An example value for this field.
 func (b *ConstField[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT {
 	opt, err := getProtoOption("example", val)
 	b.constInternal.errors = errors.Join(b.constInternal.errors, err)
@@ -25,6 +28,7 @@ func (b *ConstField[BuilderT, ValueT, SingleValT]) Example(val ValueT) *BuilderT
 	return b.self
 }
 
+// Rule: the field's value must be among those listed in order to be accepted.
 func (b *ConstField[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *BuilderT {
 	if len(b.notIn) > 0 {
 		overlaps := sliceIntersects(vals, b.notIn)
@@ -39,6 +43,7 @@ func (b *ConstField[BuilderT, ValueT, SingleValT]) In(vals ...SingleValT) *Build
 	return b.self
 }
 
+// Rule: the field's value must not be present among those listed in order to be accepted.
 func (b *ConstField[BuilderT, ValueT, SingleValT]) NotIn(vals ...SingleValT) *BuilderT {
 	if len(b.in) > 0 {
 		overlaps := sliceIntersects(vals, b.in)
