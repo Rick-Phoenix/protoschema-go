@@ -3,6 +3,8 @@ package schemabuilder
 import (
 	"errors"
 	"fmt"
+
+	"golang.org/x/exp/slices"
 )
 
 type ConstField[BuilderT, ValueT any, SingleValT comparable] struct {
@@ -10,6 +12,15 @@ type ConstField[BuilderT, ValueT any, SingleValT comparable] struct {
 	self          *BuilderT
 	in            []SingleValT
 	notIn         []SingleValT
+}
+
+func (cf *ConstField[BuilderT, ValueT, SingleValT]) clone(internalClone *protoFieldInternal, selfClone *BuilderT) *ConstField[BuilderT, ValueT, SingleValT] {
+	clone := *cf
+	clone.in = slices.Clone(clone.in)
+	clone.notIn = slices.Clone(clone.notIn)
+	clone.constInternal = internalClone
+	clone.self = selfClone
+	return &clone
 }
 
 func (b *ConstField[BuilderT, ValueT, SingleValT]) Const(val ValueT) *BuilderT {

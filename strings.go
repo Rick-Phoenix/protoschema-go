@@ -22,6 +22,29 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 	*OptionalField[BuilderT]
 }
 
+func (bsf *ByteOrStringField[BuilderT, ValueT]) clone(internalClone *protoFieldInternal, selfClone *BuilderT) *ByteOrStringField[BuilderT, ValueT] {
+	clone := *bsf
+	clone.internal = internalClone
+	clone.self = selfClone
+	clone.minLen = &*clone.minLen
+	clone.maxLen = &*clone.maxLen
+	clone.OptionalField = clone.OptionalField.clone(internalClone, selfClone)
+	return &clone
+}
+
+func (sf *StringField) Clone() *StringField {
+	selfClone := *sf
+	internalClone := selfClone.protoFieldInternal.clone()
+
+	selfClone.minBytes = &*selfClone.minBytes
+	selfClone.maxBytes = &*selfClone.maxBytes
+
+	selfClone.ByteOrStringField = selfClone.ByteOrStringField.clone(internalClone, &selfClone)
+	selfClone.ProtoField = selfClone.ProtoField.clone(internalClone, &selfClone)
+	selfClone.ConstField = selfClone.ConstField.clone(internalClone, &selfClone)
+	return &selfClone
+}
+
 func String(name string) *StringField {
 	rules := make(map[string]any)
 	options := make(map[string]any)
@@ -275,6 +298,17 @@ type BytesField struct {
 	*ProtoField[BytesField]
 	*ByteOrStringField[BytesField, []byte]
 	*ConstField[BytesField, []byte, byte]
+}
+
+func (bf *BytesField) Clone() *BytesField {
+	clone := *bf
+	internalClone := bf.ProtoField.protoFieldInternal.clone()
+
+	clone.ProtoField = clone.ProtoField.clone(internalClone, &clone)
+	clone.ByteOrStringField = clone.ByteOrStringField.clone(internalClone, &clone)
+	clone.ConstField = clone.ConstField.clone(internalClone, &clone)
+
+	return &clone
 }
 
 func Bytes(name string) *BytesField {

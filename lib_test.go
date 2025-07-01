@@ -200,7 +200,7 @@ func TestGeneration(t *testing.T) {
 
 	UserSchema.NewOneof(sb.OneofGroup{
 		Name: "myoneof",
-		Fields: sb.OneofChoices{
+		Fields: sb.OneofFields{
 			9:  sb.String("example"),
 			10: sb.Int32("another"),
 		},

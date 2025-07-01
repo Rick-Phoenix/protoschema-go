@@ -7,22 +7,33 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
+// The members of an enum group.
 type EnumMembers map[int32]string
 
+// The schema for a protobuf Enum.This should be created with the constructor from the FileSchema or MessageSchema instances to automatically populate the Package, File and Message fields. It can also be used as a struct to define an Enum that was not defined by using this library.
 type EnumGroup struct {
-	Name            string
+	// The enum's name. If this enum was defined in a message, the GetName method will automatically prepend the parent message's name.
+	Name string
+	// The members of this enum group.
 	Members         EnumMembers
 	ReservedNames   []string
 	ReservedNumbers []int32
 	ReservedRanges  []Range
-	Options         []ProtoOption
-	Package         *ProtoPackage
-	File            *FileSchema
-	Message         *MessageSchema
-	Metadata        map[string]any
-	ImportPath      string
+	// Custom options for this enum. A preset for the allow_alias option is available in this package under Options.AllowAlias.
+	Options []ProtoOption
+	// The package that this enum belongs to. Automatically set when using the constructors.
+	Package *ProtoPackage
+	// The file that this enum belongs to. Automatically set when using the constructors.
+	File *FileSchema
+	// The message that this enum belongs to (if defined within a message). Automatically set when using the constructors.
+	Message *MessageSchema
+	// Custom metadata to use with the FileHook, which will receive the data for the EnumGroups in it, including this map.
+	Metadata map[string]any
+	// The import path to this enum's file. Automatically set when using the constructors.
+	ImportPath string
 }
 
+// Returns the enum's name, prepending the name of the parent message (and its own parent messages), if there is one.
 func (e *EnumGroup) GetName() string {
 	if e == nil {
 		return ""
@@ -36,6 +47,7 @@ func (e *EnumGroup) GetName() string {
 	return name
 }
 
+// If the argument package is the same as this enum's, it will return the enum's name (with the parent message's name, if there is one). Otherwise, it will return the full name, including the package that it belongs to.
 func (e *EnumGroup) GetFullName(p *ProtoPackage) string {
 	if e == nil {
 		return ""
@@ -45,9 +57,14 @@ func (e *EnumGroup) GetFullName(p *ProtoPackage) string {
 		return e.GetName()
 	}
 
+	if e.Message != nil {
+		return e.Message.GetFullName(p) + "." + e.Name
+	}
+
 	return e.Package.GetName() + "." + e.GetName()
 }
 
+// Returns the import path of the file that this enum belongs to (if one is defined).
 func (e *EnumGroup) GetImportPath() string {
 	if e == nil {
 		return ""
@@ -60,6 +77,7 @@ func (e *EnumGroup) GetImportPath() string {
 	return e.ImportPath
 }
 
+// Returns true if the argument package is the same as this enum's.
 func (e *EnumGroup) IsInternal(p *ProtoPackage) bool {
 	if e == nil || p == nil {
 		return false
@@ -68,12 +86,14 @@ func (e *EnumGroup) IsInternal(p *ProtoPackage) bool {
 	return e.Package == p
 }
 
+// A message field with an enum type.
 type ProtoEnumField struct {
 	*ProtoField[ProtoEnumField]
 	*ConstField[ProtoEnumField, int32, int32]
 	*OptionalField[ProtoEnumField]
 }
 
+// The constructor for an enum field.
 func EnumField(name string, enum *EnumGroup) *ProtoEnumField {
 	if enum == nil {
 		log.Fatalf("Could not create the enum field %q because the enum given was nil.", name)
@@ -103,6 +123,7 @@ func EnumField(name string, enum *EnumGroup) *ProtoEnumField {
 	return ef
 }
 
+// The method that processes the field's schema and returns its data. Mostly for internal use.
 func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	data := FieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
@@ -142,6 +163,7 @@ func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) 
 	return data, nil
 }
 
+// Causes a protovalidate violation if the field does not contain one of the defined values for its enum type.
 func (ef *ProtoEnumField) DefinedOnly() *ProtoEnumField {
 	ef.rules["defined_only"] = true
 	return ef

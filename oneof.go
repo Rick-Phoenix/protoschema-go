@@ -7,10 +7,13 @@ import (
 	"slices"
 )
 
-type OneofChoices map[uint32]FieldBuilder
+// The oneof's fields. The key is the field number for that field.
+type OneofFields map[uint32]FieldBuilder
 
+// A function that gets called with the output of the OneofGroup after it has been processed. Can be defined for the entire package or at the single Oneof level.
 type OneofHook func(OneofData) error
 
+// The processed data for the Oneof. Gets passed to the Hook after being generated.
 type OneofData struct {
 	Name     string
 	Fields   []FieldData
@@ -21,10 +24,11 @@ type OneofData struct {
 	Message  *MessageSchema
 }
 
+// The schema for a protobuf Oneof.This should be created with the constructor from a MessageSchema instance to automatically populate the Package, File and Message fields. It can also be used as a struct to define a Oneof that was not defined by using this library.
 type OneofGroup struct {
 	Name     string
 	Required bool
-	Fields   OneofChoices
+	Fields   OneofFields
 	Options  []ProtoOption
 	Package  *ProtoPackage
 	File     *FileSchema
