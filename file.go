@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"path"
+
+	u "github.com/Rick-Phoenix/goutils"
 )
 
 type FileSchema struct {
@@ -28,7 +30,6 @@ type FileData struct {
 	Enums      []EnumGroup
 	Messages   []MessageData
 	Services   []ServiceData
-	Hook       FileHook
 	Metadata   map[string]any
 }
 
@@ -61,7 +62,7 @@ func (f *FileSchema) GetImportPath() string {
 func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
 	s.Package = f.Package
 	s.File = f
-	s.ImportPath = path.Join(f.Package.protoPackagePath, f.Name)
+	s.ImportPath = path.Join(f.Package.BasePath, f.Name)
 	f.messages = append(f.messages, &s)
 	if s.Hook == nil {
 		s.Hook = s.Package.messageHook
@@ -89,7 +90,7 @@ func (f *FileSchema) NewEnum(e EnumGroup) *EnumGroup {
 	return &e
 }
 
-func (f *FileSchema) Build() (FileData, error) {
+func (f *FileSchema) build() (FileData, error) {
 	imports := make(Set)
 
 	file := FileData{
@@ -98,8 +99,8 @@ func (f *FileSchema) Build() (FileData, error) {
 		Extensions: f.Extensions,
 		Options:    f.Options,
 		Name:       f.Name,
-		Hook:       f.Hook,
 		Metadata:   f.Metadata,
+		Enums:      u.ToValSlice(f.enums),
 	}
 
 	if len(f.Extensions.File)+len(f.Extensions.Service)+len(f.Extensions.Message)+len(f.Extensions.Field)+len(f.Extensions.OneOf) > 0 {
@@ -111,7 +112,7 @@ func (f *FileSchema) Build() (FileData, error) {
 	for _, m := range f.messages {
 		var errAgg error
 
-		message, err := m.Build(imports)
+		message, err := m.build(imports)
 		errAgg = errors.Join(errAgg, err)
 		file.Messages = append(file.Messages, message)
 
@@ -121,7 +122,7 @@ func (f *FileSchema) Build() (FileData, error) {
 	}
 
 	for _, serv := range f.services {
-		file.Services = append(file.Services, serv.Build(imports))
+		file.Services = append(file.Services, serv.build(imports))
 	}
 
 	if f.Hook != nil {

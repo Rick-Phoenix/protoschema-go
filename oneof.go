@@ -13,16 +13,18 @@ type OneofHook func(OneofData) error
 
 type OneofData struct {
 	Name     string
-	Choices  []FieldData
+	Fields   []FieldData
 	Options  []ProtoOption
 	Metadata map[string]any
-	Hook     OneofHook
+	Package  *ProtoPackage
+	File     *FileSchema
+	Message  *MessageSchema
 }
 
 type OneofGroup struct {
 	Name     string
 	Required bool
-	Choices  OneofChoices
+	Fields   OneofChoices
 	Options  []ProtoOption
 	Package  *ProtoPackage
 	File     *FileSchema
@@ -31,8 +33,8 @@ type OneofGroup struct {
 	Hook     OneofHook
 }
 
-func (of OneofGroup) GetField(name string) FieldBuilder {
-	for _, v := range of.Choices {
+func (of *OneofGroup) GetField(name string) FieldBuilder {
+	for _, v := range of.Fields {
 		if v.GetName() == name {
 			return v
 		}
@@ -41,26 +43,14 @@ func (of OneofGroup) GetField(name string) FieldBuilder {
 	return nil
 }
 
-func (of OneofGroup) GetFields() []FieldData {
-	data := make([]FieldData, len(of.Choices))
-
-	i := 0
-	for _, field := range of.Choices {
-		data[i] = field.GetData()
-		i++
-	}
-
-	return data
-}
-
-func (of OneofGroup) Build(imports Set) (OneofData, error) {
+func (of *OneofGroup) build(imports Set) (OneofData, error) {
 	choicesData := []FieldData{}
 	var fieldErr error
 
-	oneofKeys := slices.Sorted(maps.Keys(of.Choices))
+	oneofKeys := slices.Sorted(maps.Keys(of.Fields))
 
 	for _, number := range oneofKeys {
-		field := of.Choices[number]
+		field := of.Fields[number]
 
 		data, err := field.Build(number, imports)
 		fieldErr = errors.Join(fieldErr, err)
@@ -95,7 +85,13 @@ func (of OneofGroup) Build(imports Set) (OneofData, error) {
 	}
 
 	out := OneofData{
-		Name: of.Name, Options: options, Choices: choicesData,
+		Name:     of.Name,
+		Options:  options,
+		Fields:   choicesData,
+		Metadata: of.Metadata,
+		Package:  of.Package,
+		Message:  of.Message,
+		File:     of.File,
 	}
 
 	if of.Hook != nil {

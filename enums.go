@@ -3,6 +3,8 @@ package schemabuilder
 import (
 	"errors"
 	"maps"
+
+	"github.com/labstack/gommon/log"
 )
 
 type EnumMembers map[int32]string
@@ -18,31 +20,90 @@ type EnumGroup struct {
 	File            *FileSchema
 	Message         *MessageSchema
 	Metadata        map[string]any
+	ImportPath      string
 }
 
-type EnumField struct {
-	*ProtoField[EnumField]
-	*ConstField[EnumField, int32, int32]
-	*OptionalField[EnumField]
+func (e *EnumGroup) GetName() string {
+	if e == nil {
+		return ""
+	}
+
+	name := e.Name
+	if e.Message != nil {
+		name = e.Message.GetName() + "." + e.Name
+	}
+
+	return name
 }
 
-func Enum(name string, enumName string) *EnumField {
+func (e *EnumGroup) GetFullName(p *ProtoPackage) string {
+	if e == nil {
+		return ""
+	}
+
+	if e.Package == nil || e.Package == p {
+		return e.GetName()
+	}
+
+	return e.Package.GetName() + "." + e.GetName()
+}
+
+func (e *EnumGroup) GetImportPath() string {
+	if e == nil {
+		return ""
+	}
+
+	if e.ImportPath == "" && e.File != nil {
+		return e.File.GetImportPath()
+	}
+
+	return e.ImportPath
+}
+
+func (e *EnumGroup) IsInternal(p *ProtoPackage) bool {
+	if e == nil || p == nil {
+		return false
+	}
+
+	return e.Package == p
+}
+
+type ProtoEnumField struct {
+	*ProtoField[ProtoEnumField]
+	*ConstField[ProtoEnumField, int32, int32]
+	*OptionalField[ProtoEnumField]
+}
+
+func EnumField(name string, enum *EnumGroup) *ProtoEnumField {
+	if enum == nil {
+		log.Fatalf("Could not create the enum field %q because the enum given was nil.", name)
+	}
+
 	rules := make(map[string]any)
 	options := make(map[string]any)
 
-	ef := &EnumField{}
-	internal := &protoFieldInternal{name: name, goType: "int32", protoType: enumName, rules: rules, protoBaseType: "enum", options: options}
+	ef := &ProtoEnumField{}
+	internal := &protoFieldInternal{
+		name:          name,
+		goType:        "int32",
+		protoType:     enum.GetName(),
+		rules:         rules,
+		protoBaseType: "enum",
+		options:       options,
+		enumRef:       enum,
+		imports:       []string{enum.GetImportPath()},
+	}
 
-	ef.ProtoField = &ProtoField[EnumField]{
+	ef.ProtoField = &ProtoField[ProtoEnumField]{
 		protoFieldInternal: internal, self: ef,
 	}
-	ef.ConstField = &ConstField[EnumField, int32, int32]{constInternal: internal, self: ef}
-	ef.OptionalField = &OptionalField[EnumField]{optionalInternal: internal, self: ef}
+	ef.ConstField = &ConstField[ProtoEnumField, int32, int32]{constInternal: internal, self: ef}
+	ef.OptionalField = &OptionalField[ProtoEnumField]{optionalInternal: internal, self: ef}
 
 	return ef
 }
 
-func (ef *EnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
+func (ef *ProtoEnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	data := FieldData{Name: ef.name, ProtoType: ef.protoType, GoType: ef.goType, FieldNr: fieldNr, Rules: ef.rules, Optional: ef.optional, ProtoBaseType: "enum"}
 
 	var errAgg error
@@ -81,7 +142,7 @@ func (ef *EnumField) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	return data, nil
 }
 
-func (ef *EnumField) DefinedOnly() *EnumField {
+func (ef *ProtoEnumField) DefinedOnly() *ProtoEnumField {
 	ef.rules["defined_only"] = true
 	return ef
 }

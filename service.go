@@ -40,7 +40,7 @@ type ServiceSchema struct {
 	Metadata map[string]any
 }
 
-func (s ServiceSchema) Build(imports Set) ServiceData {
+func (s *ServiceSchema) build(imports Set) ServiceData {
 	out := ServiceData{
 		Resource: s.Resource, Options: s.Options, Metadata: s.Metadata,
 	}

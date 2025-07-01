@@ -22,6 +22,24 @@ var Options = struct {
 	AllowAlias:       ProtoOption{Name: "allow_alias", Value: true},
 }
 
+func ProtoValidateOneof(required bool, fields ...string) ProtoOption {
+	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
+	values := make(map[string]any)
+	values["fields"] = fields
+
+	if required {
+		values["required"] = true
+	}
+
+	val, err := formatProtoValue(values)
+	if err != nil {
+		fmt.Printf("Error while formatting the fields for oneof: %v", err)
+	}
+
+	mo.Value = val
+	return mo
+}
+
 func getOptions(optsMap map[string]any, repeatedOpts []string) ([]string, error) {
 	flatOpts := []string{}
 	var err error

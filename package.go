@@ -13,11 +13,15 @@ import (
 )
 
 type ProtoPackageConfig struct {
-	Name               string
-	BasePath           string
-	ProtoRoot          string
-	GoPackage          string
-	GoModule           string
+	// The name of the package, i.e. "myapp.v1".
+	Name string
+	// The path to the root of the proto project.
+	ProtoRoot string
+	// The full path to the package of the generated go files.
+	GoPackage string
+	// The go module for this project.
+	GoModule string
+	// The output directory for the converter file.
 	ConverterOutputDir string
 	FileHook           FileHook
 	ServiceHook        ServiceHook
@@ -27,7 +31,9 @@ type ProtoPackageConfig struct {
 }
 
 type ProtoPackage struct {
-	Name               string
+	Name string
+	// Only needed if it does not follow the convention "myapp.v1" -> "myapp/v1"
+	BasePath           string
 	GoPackagePath      string
 	GoPackageName      string
 	protoRoot          string
@@ -35,7 +41,6 @@ type ProtoPackage struct {
 	converterOutputDir string
 	converterPackage   string
 	protoOutputDir     string
-	protoPackagePath   string
 	fileHook           FileHook
 	serviceHook        ServiceHook
 	messageHook        MessageHook
@@ -73,13 +78,13 @@ func (p *ProtoPackage) GetBasePath() string {
 		return ""
 	}
 
-	if p.protoPackagePath == "" {
+	if p.BasePath == "" {
 		pkgPath := strings.ReplaceAll(p.Name, ".", "/")
-		p.protoPackagePath = pkgPath
+		p.BasePath = pkgPath
 		return pkgPath
 	}
 
-	return p.protoPackagePath
+	return p.BasePath
 }
 
 func (p *ProtoPackage) GetGoPackagePath() string {
@@ -93,8 +98,9 @@ func (p *ProtoPackage) GetGoPackagePath() string {
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p := &ProtoPackage{
 		Name:               conf.Name,
-		protoRoot:          conf.ProtoRoot,
+		BasePath:           strings.ReplaceAll(conf.Name, ".", "/"),
 		GoPackagePath:      conf.GoPackage,
+		protoRoot:          conf.ProtoRoot,
 		goModule:           conf.GoModule,
 		converterOutputDir: conf.ConverterOutputDir,
 		fileHook:           conf.FileHook,
@@ -102,7 +108,6 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		messageHook:        conf.MessageHook,
 		oneofHook:          conf.OneofHook,
 		converterFunc:      conf.ConverterFunc,
-		protoPackagePath:   conf.BasePath,
 	}
 
 	if conf.Name == "" {
@@ -115,10 +120,7 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 
 	p.GoPackageName = path.Base(conf.GoPackage)
 
-	if p.protoPackagePath == "" {
-		p.protoPackagePath = strings.ReplaceAll(conf.Name, ".", "/")
-	}
-	p.protoOutputDir = filepath.Join(conf.ProtoRoot, p.protoPackagePath)
+	p.protoOutputDir = filepath.Join(conf.ProtoRoot, p.BasePath)
 
 	if p.converterOutputDir == "" {
 		p.converterOutputDir = "gen/converter"
@@ -167,7 +169,7 @@ func (p *ProtoPackage) BuildFiles() []FileData {
 	var fileErrors error
 
 	for _, f := range p.fileSchemas {
-		file, err := f.Build()
+		file, err := f.build()
 		if err != nil {
 			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %s", f.Name), err))
 		}

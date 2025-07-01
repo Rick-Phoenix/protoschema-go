@@ -22,9 +22,9 @@ type MessageSchema struct {
 	Name            string
 	Fields          FieldsMap
 	oneofs          []OneofGroup
-	enums           []EnumGroup
+	enums           []*EnumGroup
+	messages        []*MessageSchema
 	Options         []ProtoOption
-	Messages        []MessageSchema
 	ReservedNumbers []uint
 	ReservedRanges  []Range
 	ReservedNames   []string
@@ -37,6 +37,7 @@ type MessageSchema struct {
 	Hook            MessageHook
 	Metadata        map[string]any
 	ConverterFunc   ConverterFunc
+	ParentMessage   *MessageSchema
 }
 
 type MessageData struct {
@@ -52,26 +53,6 @@ type MessageData struct {
 	File            *FileSchema
 	Package         *ProtoPackage
 	Metadata        map[string]any
-}
-
-type modelFieldData struct {
-	Name       string
-	IsInternal bool
-}
-
-type messageConverter struct {
-	TimestampFields Set
-	Resource        string
-	SrcType         string
-	Fields          []modelFieldData
-}
-
-type converterData struct {
-	Package            string
-	GoPackage          string
-	Imports            Set
-	MessageConverters  []*messageConverter
-	RepeatedConverters Set
 }
 
 func (m *MessageSchema) GetImportPath() string {
@@ -111,15 +92,23 @@ func (m *MessageSchema) GetName() string {
 		return ""
 	}
 
+	if m.ParentMessage != nil {
+		return m.ParentMessage.GetName() + "." + m.Name
+	}
+
 	return m.Name
 }
 
-func (m MessageSchema) GetFullName(pkg *ProtoPackage) string {
-	if m.Package == pkg || m.Package == nil {
-		return m.Name
+func (m *MessageSchema) GetFullName(pkg *ProtoPackage) string {
+	if m == nil {
+		return ""
 	}
 
-	return m.Package.GetName() + "." + m.Name
+	if m.Package == pkg || m.Package == nil {
+		return m.GetName()
+	}
+
+	return m.Package.GetName() + "." + m.GetName()
 }
 
 func (m *MessageSchema) IsInternal(p *ProtoPackage) bool {
@@ -141,42 +130,15 @@ func (m *MessageSchema) GetField(n string) FieldBuilder {
 	return nil
 }
 
-type ConverterFuncData struct {
-	Package    *ProtoPackage
-	File       *FileSchema
-	Message    *MessageSchema
-	ModelField reflect.StructField
-	ProtoField FieldBuilder
-}
-
-type ConverterFunc func(ConverterFuncData)
-
-func (m *MessageSchema) createFieldConverter(converter *messageConverter, modelField reflect.StructField, pfield FieldBuilder) {
-	fieldConvData := modelFieldData{Name: modelField.Name}
-	isTime := modelField.Type.String() == "time.Time"
-
-	if isTime {
-		converter.TimestampFields[modelField.Name] = present
-		m.Package.converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
+func (m *MessageSchema) GetGoPackageName() string {
+	if m == nil || m.Package == nil {
+		return ""
 	}
 
-	if pfield.IsNonScalar() && !isTime {
-		m.Package.converter.Imports[getPkgPath(modelField.Type)] = present
-
-		if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
-			if msgRef.IsInternal(m.Package) {
-				fieldConvData.IsInternal = true
-				if pfield.IsRepeated() {
-					m.Package.converter.RepeatedConverters[msgRef.Name] = present
-				}
-			}
-		}
-	}
-
-	converter.Fields = append(converter.Fields, fieldConvData)
+	return m.Package.GetGoPackageName()
 }
 
-func (m MessageSchema) CheckModel() error {
+func (m *MessageSchema) checkModel() error {
 	model := reflect.TypeOf(m.Model).Elem()
 	modelName := model.String()
 	msgFields := m.GetFields()
@@ -219,7 +181,7 @@ func (m MessageSchema) CheckModel() error {
 			if pfield, exists := msgFields[modelFieldName]; exists {
 				if hasConverterFunc {
 					m.ConverterFunc(ConverterFuncData{
-						Package: m.Package, File: m.File, Message: &m, ModelField: field, ProtoField: pfield,
+						Package: m.Package, File: m.File, Message: m, ModelField: field, ProtoField: pfield,
 					})
 				} else {
 					m.createFieldConverter(conv, field, pfield)
@@ -261,12 +223,12 @@ func (m MessageSchema) CheckModel() error {
 	return err
 }
 
-func (m *MessageSchema) Build(imports Set) (MessageData, error) {
+func (m *MessageSchema) build(imports Set) (MessageData, error) {
 	var protoFields []FieldData
 	var errAgg error
 
 	if m.Model != nil && !m.SkipValidation {
-		err := m.CheckModel()
+		err := m.checkModel()
 		if err != nil {
 			return MessageData{}, err
 		}
@@ -287,7 +249,7 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 	oneOfs := []OneofData{}
 
 	for _, oneof := range m.oneofs {
-		data, oneofErr := oneof.Build(imports)
+		data, oneofErr := oneof.build(imports)
 
 		if oneofErr != nil {
 			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for oneof %q", data.Name), oneofErr))
@@ -297,8 +259,8 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 
 	subMessages := []MessageData{}
 
-	for _, m := range m.Messages {
-		data, err := m.Build(imports)
+	for _, m := range m.messages {
+		data, err := m.build(imports)
 		if err != nil {
 			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for nested message %q", m.Name), err))
 		}
@@ -306,7 +268,7 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 		subMessages = append(subMessages, data)
 	}
 
-	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.enums, Messages: subMessages, File: m.File, Package: m.Package, Metadata: m.Metadata}
+	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: u.ToValSlice(m.enums), Messages: subMessages, File: m.File, Package: m.Package, Metadata: m.Metadata}
 
 	if m.Hook != nil {
 		err := m.Hook(out)
@@ -316,31 +278,6 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 	}
 
 	return out, errAgg
-}
-
-func (m MessageSchema) GetGoPackageName() string {
-	if m.Package == nil {
-		return ""
-	}
-	return m.Package.GetGoPackageName()
-}
-
-func ProtoValidateOneof(required bool, fields ...string) ProtoOption {
-	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
-	values := make(map[string]any)
-	values["fields"] = fields
-
-	if required {
-		values["required"] = true
-	}
-
-	val, err := formatProtoValue(values)
-	if err != nil {
-		fmt.Printf("Error while formatting the fields for oneof: %v", err)
-	}
-
-	mo.Value = val
-	return mo
 }
 
 func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
@@ -358,6 +295,16 @@ func (m *MessageSchema) NewEnum(e EnumGroup) *EnumGroup {
 	e.Message = m
 	e.File = m.File
 	e.Package = m.Package
-	m.enums = append(m.enums, e)
+	e.ImportPath = m.ImportPath
+	m.enums = append(m.enums, &e)
 	return &e
+}
+
+func (m *MessageSchema) NestedMessage(nm MessageSchema) *MessageSchema {
+	nm.ParentMessage = m
+	nm.File = m.File
+	nm.Package = m.Package
+	nm.ImportPath = m.ImportPath
+	m.messages = append(m.messages, &nm)
+	return &nm
 }

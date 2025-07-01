@@ -22,6 +22,7 @@ type FieldData struct {
 	Required      bool
 	IsNonScalar   bool
 	MessageRef    *MessageSchema
+	EnumRef       *EnumGroup
 }
 
 type protoFieldInternal struct {
@@ -41,6 +42,7 @@ type protoFieldInternal struct {
 	isMap           bool
 	isConst         bool
 	messageRef      *MessageSchema
+	enumRef         *EnumGroup
 }
 
 type FieldBuilder interface {

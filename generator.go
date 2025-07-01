@@ -175,10 +175,14 @@ var funcMap = template.FuncMap{
 		return present
 	},
 	"getProtoType": func(f FieldData, protoPackage *ProtoPackage) string {
-		if f.MessageRef == nil {
-			return f.ProtoType
+		if f.MessageRef != nil {
+			return f.MessageRef.GetFullName(protoPackage)
 		}
 
-		return f.MessageRef.GetFullName(protoPackage)
+		if f.EnumRef != nil {
+			return f.EnumRef.GetFullName(protoPackage)
+		}
+
+		return f.ProtoType
 	},
 }
