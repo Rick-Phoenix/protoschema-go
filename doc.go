@@ -4,4 +4,4 @@
 // 3. It automatically generates functions that convert structs of a specific type to their respective protobuf message types.
 // 4. It exposes several hooks that allow the user to customize the logic for all of the above.
 // 5. It provides a way to easily define protovalidate rules for protobuf messages, oneofs and fields, in a way that is typesafe and attempts to catch most erroneous definitions.
-package schemabuilder
+package protoschema

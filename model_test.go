@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 // type UserWithPostsConst struct {
 // 	ID        int64         `json:"id"`

@@ -1,5 +1,4 @@
-// in schemabuilder/protogen/generator.go
-package schemabuilder
+package protoschema
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 var protoTypeMap = map[string]string{
 	"string":                    "string",

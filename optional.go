@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 import u "github.com/Rick-Phoenix/goutils"
 

@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 // An instance of a google.protobuf.Any field.
 type AnyField struct {

@@ -1,4 +1,4 @@
-package schemabuilder_test
+package protoschema_test
 
 // func TestCheckCelExpression(t *testing.T) {
 // 	env, err := cel.NewEnv(

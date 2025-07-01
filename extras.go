@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 import "google.golang.org/protobuf/types/known/fieldmaskpb"
 

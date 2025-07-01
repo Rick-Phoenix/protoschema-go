@@ -1,4 +1,4 @@
-package schemabuilder
+package protoschema
 
 // The protobuf extensions for a given file.
 type Extensions struct {
