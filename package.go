@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,11 +14,11 @@ import (
 
 type ProtoPackageConfig struct {
 	Name               string
+	BasePath           string
 	ProtoRoot          string
 	GoPackage          string
 	GoModule           string
 	ConverterOutputDir string
-	HandlersOutputDir  string
 	FileHook           FileHook
 	ServiceHook        ServiceHook
 	MessageHook        MessageHook
@@ -26,15 +27,14 @@ type ProtoPackageConfig struct {
 }
 
 type ProtoPackage struct {
-	name               string
+	Name               string
+	GoPackagePath      string
+	GoPackageName      string
 	protoRoot          string
-	goPackagePath      string
-	goPackageName      string
 	goModule           string
 	converterOutputDir string
 	converterPackage   string
 	protoOutputDir     string
-	handlersOutputDir  string
 	protoPackagePath   string
 	fileHook           FileHook
 	serviceHook        ServiceHook
@@ -51,7 +51,7 @@ func (p *ProtoPackage) GetName() string {
 		return ""
 	}
 
-	return p.name
+	return p.Name
 }
 
 func (p *ProtoPackage) GetGoPackageName() string {
@@ -59,22 +59,50 @@ func (p *ProtoPackage) GetGoPackageName() string {
 		return ""
 	}
 
-	return p.goPackageName
+	if p.GoPackageName == "" {
+		if goPkgBase := path.Base(p.GoPackagePath); goPkgBase != "." {
+			return goPkgBase
+		}
+	}
+
+	return p.GoPackageName
+}
+
+func (p *ProtoPackage) GetBasePath() string {
+	if p == nil {
+		return ""
+	}
+
+	if p.protoPackagePath == "" {
+		pkgPath := strings.ReplaceAll(p.Name, ".", "/")
+		p.protoPackagePath = pkgPath
+		return pkgPath
+	}
+
+	return p.protoPackagePath
+}
+
+func (p *ProtoPackage) GetGoPackagePath() string {
+	if p == nil {
+		return ""
+	}
+
+	return p.GoPackagePath
 }
 
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p := &ProtoPackage{
-		name:               conf.Name,
+		Name:               conf.Name,
 		protoRoot:          conf.ProtoRoot,
-		goPackagePath:      conf.GoPackage,
+		GoPackagePath:      conf.GoPackage,
 		goModule:           conf.GoModule,
 		converterOutputDir: conf.ConverterOutputDir,
-		handlersOutputDir:  conf.HandlersOutputDir,
 		fileHook:           conf.FileHook,
 		serviceHook:        conf.ServiceHook,
 		messageHook:        conf.MessageHook,
 		oneofHook:          conf.OneofHook,
 		converterFunc:      conf.ConverterFunc,
+		protoPackagePath:   conf.BasePath,
 	}
 
 	if conf.Name == "" {
@@ -85,18 +113,15 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		log.Fatalf("Missing go package definition.")
 	}
 
-	p.goPackageName = path.Base(conf.GoPackage)
+	p.GoPackageName = path.Base(conf.GoPackage)
 
-	protoPackagePath := strings.ReplaceAll(conf.Name, ".", "/")
-	p.protoPackagePath = protoPackagePath
-	p.protoOutputDir = filepath.Join(conf.ProtoRoot, protoPackagePath)
+	if p.protoPackagePath == "" {
+		p.protoPackagePath = strings.ReplaceAll(conf.Name, ".", "/")
+	}
+	p.protoOutputDir = filepath.Join(conf.ProtoRoot, p.protoPackagePath)
 
 	if p.converterOutputDir == "" {
 		p.converterOutputDir = "gen/converter"
-	}
-
-	if p.handlersOutputDir == "" {
-		p.handlersOutputDir = "gen/handlers"
 	}
 
 	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
@@ -107,12 +132,12 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p.tmpl = tmpl
 
 	p.converterPackage = filepath.Base(p.converterOutputDir)
-	converters := converterData{
+	converter := converterData{
 		Package:   p.converterPackage,
-		GoPackage: p.goPackageName,
-		Imports:   Set{p.goPackagePath: present}, RepeatedConverters: make(Set),
+		GoPackage: p.GoPackageName,
+		Imports:   Set{p.GoPackagePath: present}, RepeatedConverters: make(Set),
 	}
-	p.converter = converters
+	p.converter = converter
 
 	return p
 }
@@ -129,6 +154,7 @@ func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 		services:   s.services,
 		Hook:       s.Hook,
 	}
+	maps.Copy(newFile.Imports, s.Imports)
 	if s.Hook == nil {
 		s.Hook = p.fileHook
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"path"
 	"reflect"
 	"slices"
 
@@ -20,8 +21,8 @@ type MessageHook func(d MessageData) error
 type MessageSchema struct {
 	Name            string
 	Fields          FieldsMap
-	Oneofs          []OneofGroup
-	Enums           []EnumGroup
+	oneofs          []OneofGroup
+	enums           []EnumGroup
 	Options         []ProtoOption
 	Messages        []MessageSchema
 	ReservedNumbers []uint
@@ -35,6 +36,7 @@ type MessageSchema struct {
 	ImportPath      string
 	Hook            MessageHook
 	Metadata        map[string]any
+	ConverterFunc   ConverterFunc
 }
 
 type MessageData struct {
@@ -52,7 +54,7 @@ type MessageData struct {
 	Metadata        map[string]any
 }
 
-type modelField struct {
+type modelFieldData struct {
 	Name       string
 	IsInternal bool
 }
@@ -61,7 +63,7 @@ type messageConverter struct {
 	TimestampFields Set
 	Resource        string
 	SrcType         string
-	Fields          []modelField
+	Fields          []modelFieldData
 }
 
 type converterData struct {
@@ -70,6 +72,24 @@ type converterData struct {
 	Imports            Set
 	MessageConverters  []*messageConverter
 	RepeatedConverters Set
+}
+
+func (m *MessageSchema) GetImportPath() string {
+	if m == nil {
+		return ""
+	}
+
+	if m.ImportPath == "" {
+		if filePath := m.File.GetImportPath(); filePath != "" {
+			return filePath
+		}
+
+		if pkgBasePath := m.Package.GetBasePath(); pkgBasePath != "" {
+			return path.Join(pkgBasePath, addMissingSuffix(toSnakeCase(m.Name), ".proto"))
+		}
+	}
+
+	return m.ImportPath
 }
 
 func (m *MessageSchema) GetFields() map[string]FieldBuilder {
@@ -84,6 +104,14 @@ func (m *MessageSchema) GetFields() map[string]FieldBuilder {
 	}
 
 	return out
+}
+
+func (m *MessageSchema) GetName() string {
+	if m == nil {
+		return ""
+	}
+
+	return m.Name
 }
 
 func (m MessageSchema) GetFullName(pkg *ProtoPackage) string {
@@ -123,17 +151,17 @@ type ConverterFuncData struct {
 
 type ConverterFunc func(ConverterFuncData)
 
-func (m *MessageSchema) CreateFieldConverter(converter *messageConverter, field reflect.StructField, pfield FieldBuilder) {
-	fieldConvData := modelField{Name: field.Name}
-	isTime := field.Type.String() == "time.Time"
+func (m *MessageSchema) createFieldConverter(converter *messageConverter, modelField reflect.StructField, pfield FieldBuilder) {
+	fieldConvData := modelFieldData{Name: modelField.Name}
+	isTime := modelField.Type.String() == "time.Time"
 
 	if isTime {
-		converter.TimestampFields[field.Name] = present
+		converter.TimestampFields[modelField.Name] = present
 		m.Package.converter.Imports["google.golang.org/protobuf/types/known/timestamppb"] = present
 	}
 
 	if pfield.IsNonScalar() && !isTime {
-		m.Package.converter.Imports[getPkgPath(field.Type)] = present
+		m.Package.converter.Imports[getPkgPath(modelField.Type)] = present
 
 		if msgRef := pfield.GetMessageRef(); msgRef != nil && msgRef.Model != nil {
 			if msgRef.IsInternal(m.Package) {
@@ -160,7 +188,7 @@ func (m MessageSchema) CheckModel() error {
 		TimestampFields: make(Set),
 	}
 
-	hasConverterFunc := m.Package != nil && m.Package.converterFunc != nil
+	hasConverterFunc := m.Package != nil && m.ConverterFunc != nil
 
 	if !hasConverterFunc {
 		m.Package.converter.MessageConverters = append(m.Package.converter.MessageConverters, conv)
@@ -178,8 +206,8 @@ func (m MessageSchema) CheckModel() error {
 				if embeddedType.Kind() == reflect.Struct {
 					// Recursive
 					processFields(embeddedType)
-					continue
 				}
+				continue
 			}
 			modelFieldName := field.Tag.Get("json")
 			if modelFieldName == "" {
@@ -190,11 +218,11 @@ func (m MessageSchema) CheckModel() error {
 
 			if pfield, exists := msgFields[modelFieldName]; exists {
 				if hasConverterFunc {
-					m.Package.converterFunc(ConverterFuncData{
+					m.ConverterFunc(ConverterFuncData{
 						Package: m.Package, File: m.File, Message: &m, ModelField: field, ProtoField: pfield,
 					})
 				} else {
-					m.CreateFieldConverter(conv, field, pfield)
+					m.createFieldConverter(conv, field, pfield)
 				}
 
 				delete(msgFields, modelFieldName)
@@ -258,7 +286,7 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 
 	oneOfs := []OneofData{}
 
-	for _, oneof := range m.Oneofs {
+	for _, oneof := range m.oneofs {
 		data, oneofErr := oneof.Build(imports)
 
 		if oneofErr != nil {
@@ -278,7 +306,7 @@ func (m *MessageSchema) Build(imports Set) (MessageData, error) {
 		subMessages = append(subMessages, data)
 	}
 
-	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.Enums, Messages: subMessages, File: m.File, Package: m.Package, Metadata: m.Metadata}
+	out := MessageData{Name: m.Name, Fields: protoFields, ReservedNumbers: m.ReservedNumbers, ReservedRanges: m.ReservedRanges, ReservedNames: m.ReservedNames, Options: m.Options, Oneofs: oneOfs, Enums: m.enums, Messages: subMessages, File: m.File, Package: m.Package, Metadata: m.Metadata}
 
 	if m.Hook != nil {
 		err := m.Hook(out)
@@ -294,10 +322,10 @@ func (m MessageSchema) GetGoPackageName() string {
 	if m.Package == nil {
 		return ""
 	}
-	return m.Package.goPackageName
+	return m.Package.GetGoPackageName()
 }
 
-func ProtoVOneof(required bool, fields ...string) ProtoOption {
+func ProtoValidateOneof(required bool, fields ...string) ProtoOption {
 	mo := ProtoOption{Name: "(buf.validate.message).oneof"}
 	values := make(map[string]any)
 	values["fields"] = fields
@@ -319,8 +347,8 @@ func (m *MessageSchema) NewOneof(of OneofGroup) *OneofGroup {
 	of.Message = m
 	of.File = m.File
 	of.Package = m.Package
-	m.Oneofs = append(m.Oneofs, of)
-	if of.Hook == nil {
+	m.oneofs = append(m.oneofs, of)
+	if of.Hook == nil && m.Package != nil {
 		of.Hook = m.Package.oneofHook
 	}
 	return &of
@@ -330,6 +358,6 @@ func (m *MessageSchema) NewEnum(e EnumGroup) *EnumGroup {
 	e.Message = m
 	e.File = m.File
 	e.Package = m.Package
-	m.Enums = append(m.Enums, e)
+	m.enums = append(m.enums, e)
 	return &e
 }

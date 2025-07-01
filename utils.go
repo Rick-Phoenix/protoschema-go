@@ -133,12 +133,15 @@ func formatBytesAsProtoLiteral(b []byte) (string, error) {
 	return buf.String(), nil
 }
 
-func addServiceSuffix(name string) string {
-	if !strings.HasSuffix(name, "Service") {
-		return name + "Service"
+func addMissingSuffix(s, suf string) string {
+	if !strings.HasSuffix(s, suf) {
+		return s + suf
 	}
+	return s
+}
 
-	return name
+func addServiceSuffix(name string) string {
+	return addMissingSuffix(name, "Service")
 }
 
 func joinIntSlice(s []int, separator string) string {

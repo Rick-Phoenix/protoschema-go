@@ -27,7 +27,25 @@ func Duration(name string) *DurationField {
 
 	gf := &DurationField{}
 	gf.ProtoField = &ProtoField[DurationField]{
-		&protoFieldInternal{name: name, protoType: "google.protobuf.Duration", protoBaseType: "duration", goType: "*durationpb.Duration", imports: []string{"google/protobuf/duration.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		protoFieldInternal: &protoFieldInternal{
+			name:          name,
+			protoType:     "google.protobuf.Duration",
+			protoBaseType: "duration",
+			goType:        "*durationpb.Duration",
+			imports:       []string{"google/protobuf/duration.proto"},
+			options:       options,
+			isNonScalar:   true,
+			rules:         rules,
+			messageRef: &MessageSchema{
+				ImportPath: "google/protobuf/duration.proto",
+				Package: &ProtoPackage{
+					GoPackagePath: "google.golang.org/protobuf/types/known/durationpb",
+					GoPackageName: "durationpb",
+					Name:          "Duration",
+				},
+			},
+		},
+		self: gf,
 	}
 	return gf
 }

@@ -12,22 +12,22 @@ func MsgField(name string, s *MessageSchema) *GenericField {
 		log.Fatalf("Could not generate the message type for field %q because the schema given was nil.", name)
 	}
 
-	var goType string
-
-	if s.Model == nil {
-		goType = "any"
-	} else {
-		goType = reflect.TypeOf(s.Model).String()
-	}
-
 	if s.Name == "" {
 		log.Fatalf("Could not generate the message type for field %q because the schema given has no name.", name)
 	}
 
+	var goType string
+
+	if s.Model != nil {
+		goType = reflect.TypeOf(s.Model).String()
+	} else {
+		goType = "any"
+	}
+
 	imports := []string{}
 
-	if s.ImportPath != "" {
-		imports = append(imports, s.ImportPath)
+	if importPath := s.GetImportPath(); importPath != "" {
+		imports = append(imports, importPath)
 	}
 
 	internal := &protoFieldInternal{

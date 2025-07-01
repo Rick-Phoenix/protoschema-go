@@ -27,7 +27,25 @@ func Timestamp(name string) *TimestampField {
 
 	gf := &TimestampField{}
 	gf.ProtoField = &ProtoField[TimestampField]{
-		&protoFieldInternal{name: name, protoType: "google.protobuf.Timestamp", goType: "time.Time", protoBaseType: "timestamp", imports: []string{"google/protobuf/timestamp.proto"}, options: options, isNonScalar: true, rules: rules}, gf,
+		protoFieldInternal: &protoFieldInternal{
+			name:          name,
+			protoType:     "google.protobuf.Timestamp",
+			goType:        "time.Time",
+			protoBaseType: "timestamp",
+			imports:       []string{"google/protobuf/timestamp.proto"},
+			options:       options,
+			isNonScalar:   true,
+			rules:         rules,
+			messageRef: &MessageSchema{
+				Name:       "Timestamp",
+				ImportPath: "google/protobuf/timestamp.proto",
+				Package: &ProtoPackage{
+					GoPackagePath: "google.golang.org/protobuf/types/known/timestamppb",
+					Name:          "google.protobuf",
+				},
+			},
+		},
+		self: gf,
 	}
 	return gf
 }

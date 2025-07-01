@@ -32,6 +32,32 @@ type FileData struct {
 	Metadata   map[string]any
 }
 
+func (f *FileSchema) GetName() string {
+	if f == nil {
+		return ""
+	}
+
+	if f.Name == "" {
+		return ""
+	}
+
+	return addMissingSuffix(f.Name, ".proto")
+}
+
+func (f *FileSchema) GetImportPath() string {
+	if f == nil {
+		return ""
+	}
+
+	name := f.GetName()
+
+	if name == "" {
+		return ""
+	}
+
+	return path.Join(f.Package.GetBasePath(), name)
+}
+
 func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
 	s.Package = f.Package
 	s.File = f
@@ -40,6 +66,9 @@ func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
 	if s.Hook == nil {
 		s.Hook = s.Package.messageHook
 	}
+	if s.ConverterFunc == nil && f.Package != nil {
+		s.ConverterFunc = f.Package.converterFunc
+	}
 	return &s
 }
 
@@ -47,7 +76,7 @@ func (f *FileSchema) NewService(s ServiceSchema) *ServiceSchema {
 	s.Package = f.Package
 	s.File = f
 	f.services = append(f.services, &s)
-	if s.Hook == nil {
+	if s.Hook == nil && f.Package != nil {
 		s.Hook = f.Package.serviceHook
 	}
 	return &s

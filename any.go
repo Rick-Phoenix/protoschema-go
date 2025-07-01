@@ -9,7 +9,26 @@ func Any(name string) *AnyField {
 	rules := make(map[string]any)
 
 	gf := &AnyField{}
-	gf.ProtoField = &ProtoField[AnyField]{&protoFieldInternal{name: name, protoType: "google.protobuf.Any", goType: "any", options: options, isNonScalar: true, rules: rules, imports: []string{"google/protobuf/any.proto"}}, gf}
+	gf.ProtoField = &ProtoField[AnyField]{
+		protoFieldInternal: &protoFieldInternal{
+			name:        name,
+			protoType:   "google.protobuf.Any",
+			goType:      "any",
+			options:     options,
+			isNonScalar: true,
+			rules:       rules,
+			imports:     []string{"google/protobuf/any.proto"},
+			messageRef: &MessageSchema{
+				ImportPath: "google/protobuf/any.proto",
+				Package: &ProtoPackage{
+					GoPackagePath: "google.golang.org/protobuf/types/known/anypb",
+					GoPackageName: "anypb",
+					Name:          "Any",
+				},
+			},
+		},
+		self: gf,
+	}
 
 	return gf
 }
