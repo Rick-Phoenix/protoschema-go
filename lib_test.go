@@ -270,12 +270,12 @@ func TestGeneration(t *testing.T) {
 		Expected    any
 		Description string
 	}{
-		{out.Package, "myapp.v1", ""},
+		{out.Package, "myapp.v1", "The package name should be myapp.v1"},
 		{out.Messages["User"].Name, "User", "Message name should be 'User'"},
-		{out.Services["UserService"].Handlers["GetUser"].InputType, "GetUserRequest", ""},
-		{out.Services["UserService"].Handlers["GetUser"].OutputType, "GetUserResponse", ""},
-		{out.Services["UserService"].Handlers["UpdateUser"].InputType, "UpdateUserRequest", ""},
-		{out.Services["UserService"].Handlers["UpdateUser"].OutputType, "google.protobuf.Empty", ""},
+		{out.Services["UserService"].Handlers["GetUser"].InputType, "GetUserRequest", "GetUser should have GetUserRequest as its input type"},
+		{out.Services["UserService"].Handlers["GetUser"].OutputType, "GetUserResponse", "GetUser should have GetUserResponse as its output type"},
+		{out.Services["UserService"].Handlers["UpdateUser"].InputType, "UpdateUserRequest", "UpdateUser should have UpdateUserRequest as its input type"},
+		{out.Services["UserService"].Handlers["UpdateUser"].OutputType, "google.protobuf.Empty", "UpdateUser shouldhave google.protobuf.Empty as its output type"},
 		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Number, int32(1), "Message option should have the correct field number"},
 		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Optional, true, "Should be optional"},
 		{out.Extensions["google.protobuf.FileOptions"].Fields["testopt"].Number, int32(1), "File option should have the correct field number"},
