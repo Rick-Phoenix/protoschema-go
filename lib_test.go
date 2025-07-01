@@ -59,6 +59,7 @@ type MessageData struct {
 	Fields          map[string]FieldData
 	Enums           map[string]EnumData
 	Oneofs          map[string]OneofData
+	Messages        map[string]MessageData
 	ReservedNames   []string
 	ReservedNumbers []int32
 	ReservedRanges  []sb.Range
@@ -126,19 +127,8 @@ func TestGeneration(t *testing.T) {
 		Field:   MyOptions,
 	}
 
-	TestEnum := sb.EnumGroup{
-		Name: "myenum",
-		Members: sb.EnumMembers{
-			0: "VAL_1",
-			1: "VAL_2",
-		},
-		Options:         []sb.ProtoOption{sb.Options.AllowAlias},
-		ReservedNames:   []string{"name1", "name2"},
-		ReservedNumbers: []int32{10, 11},
-		ReservedRanges:  []sb.Range{{20, 23}},
-	}
-	tmpDir := t.TempDir()
-	// tmpDir := "gen/temp"
+	// tmpDir := t.TempDir()
+	tmpDir := "gen/temp"
 	goMod := "github.com/Rick-Phoenix/gofirst"
 	config := sb.ProtoPackageConfig{
 		Name:               "myapp.v1",
@@ -170,8 +160,6 @@ func TestGeneration(t *testing.T) {
 		Name:       "user",
 		Extensions: TestExtensions,
 	})
-
-	UserFile.NewEnum(TestEnum)
 
 	UserSchema := UserFile.NewMessage(sb.MessageSchema{
 		Name: "User",
@@ -206,11 +194,34 @@ func TestGeneration(t *testing.T) {
 		},
 	})
 
+	TestEnum := sb.EnumGroup{
+		Name: "myenum",
+		Members: sb.EnumMembers{
+			0: "VAL_1",
+			1: "VAL_2",
+		},
+		Options:         []sb.ProtoOption{sb.Options.AllowAlias},
+		ReservedNames:   []string{"name1", "name2"},
+		ReservedNumbers: []int32{10, 11},
+		ReservedRanges:  []sb.Range{{20, 23}},
+	}
+
+	UserFile.NewEnum(TestEnum)
 	UserSchema.NewEnum(TestEnum)
+
+	NestedUserMsg := UserSchema.NestedMessage(sb.MessageSchema{
+		Name: "nested",
+		Fields: sb.FieldsMap{
+			1: sb.String("example"),
+		},
+	})
+
+	UserTestEnum := NestedUserMsg.NewEnum(TestEnum)
 
 	GetUserRequest := UserFile.NewMessage(sb.MessageSchema{
 		Name: "GetUserRequest", Fields: sb.FieldsMap{
 			1: sb.Int64("id"),
+			2: sb.EnumField("nestedenum", UserTestEnum),
 		},
 	})
 
@@ -301,6 +312,8 @@ func TestGeneration(t *testing.T) {
 		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Value, true},
 		{userMsg.Fields["fav_cat"].RepeatedOptions[4].Value, "tabby"},
 		{userMsg.Fields["fav_cat"].RepeatedOptions[5].Value, "calico"},
+		// Nested enums should have the correct name
+		{out.Messages["GetUserRequest"].Fields["nestedenum"].TypeName, "User.nested.myenum"},
 	}
 
 	containsTests := []struct {
@@ -646,12 +659,13 @@ func ExtractMessages(messages []*descriptorpb.DescriptorProto) map[string]Messag
 		oneofs := ExtractOneofs(m.GetOneofDecl())
 		enumData := ExtractEnums(m.GetEnumType())
 
+		nestedMessages := ExtractMessages(m.GetNestedType())
 		opts, repOpts := ExtractOpts(m.GetOptions().GetUninterpretedOption())
 
 		resNrs, resRanges := ExtractReservedNrs(m.GetReservedRange())
 
 		msgData := MessageData{
-			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData, Oneofs: oneofs,
+			Name: m.GetName(), Fields: fieldsMap, ReservedNames: m.GetReservedName(), Options: opts, RepeatedOptions: repOpts, ReservedNumbers: resNrs, ReservedRanges: resRanges, Enums: enumData, Oneofs: oneofs, Messages: nestedMessages,
 		}
 
 		msgsMap[m.GetName()] = msgData
