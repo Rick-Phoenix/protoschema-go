@@ -12,6 +12,7 @@ import (
 	"text/template"
 )
 
+// The configuration for a ProtoPackage instance
 type ProtoPackageConfig struct {
 	// The name of the package, i.e. "myapp.v1".
 	Name string
@@ -21,20 +22,31 @@ type ProtoPackageConfig struct {
 	GoPackage string
 	// The go module for this project.
 	GoModule string
-	// The output directory for the converter file.
+	// (Default: "gen/converter") The output directory for the converter file. The last part will be the name of the converter package.
 	ConverterOutputDir string
-	FileHook           FileHook
-	ServiceHook        ServiceHook
-	MessageHook        MessageHook
-	OneofHook          OneofHook
-	ConverterFunc      ConverterFunc
+	// Function that runs after each file schema is processed (can be overridden at the schema level).
+	FileHook FileHook
+	// Function that runs after each service schema is processed (can be overridden at the schema level).
+	ServiceHook ServiceHook
+	// Function that runs after each message schema is processed (can be overridden at the schema level).
+	MessageHook MessageHook
+	// Function that runs after each oneof schema is processed (can be overridden at the schema level).
+	OneofHook OneofHook
+	// If undefined, the package will use a default function to try and automatically generate a file that contains functions to automatically convert a struct from the message's Model type (for example, a struct coming from a database or from another api) to the generated type for that message.
+	// If defined, this function will receive a rich set of data for each message field to define its own logic for generating files or performing custom actions.
+	// It can also be overridden for a single message.
+	ConverterFunc ConverterFunc
 }
 
+// The ProtoPackage struct, which holds the data and methods for file generation (if created with the constructor). Can also be used without the constructor to define the package data for imported message types.
 type ProtoPackage struct {
+	// The name of the package, i.e. "myapp.v1".
 	Name string
-	// Only needed if it does not follow the convention "myapp.v1" -> "myapp/v1"
-	BasePath           string
-	GoPackagePath      string
+	// If retrieved with the getter or the constructor, it defaults to the package name with slashes instead of dots, as per the proto convention ("myapp.v1" -> "myapp/v1")
+	BasePath string
+	// The full path to the package of the generated go files.
+	GoPackagePath string
+	// If retrieved with the getter or the constructor, it defaults to the last part of the go package path.
 	GoPackageName      string
 	protoRoot          string
 	goModule           string
@@ -51,6 +63,7 @@ type ProtoPackage struct {
 	converterFunc      ConverterFunc
 }
 
+// Access the package name safely.
 func (p *ProtoPackage) GetName() string {
 	if p == nil {
 		return ""
@@ -59,6 +72,7 @@ func (p *ProtoPackage) GetName() string {
 	return p.Name
 }
 
+// Accesses the go package name and uses the default value if it's missing.
 func (p *ProtoPackage) GetGoPackageName() string {
 	if p == nil {
 		return ""
@@ -73,6 +87,7 @@ func (p *ProtoPackage) GetGoPackageName() string {
 	return p.GoPackageName
 }
 
+// Accesses the base path of the proto package, inferring it (assuming conventional paths) from the package's name if missing.
 func (p *ProtoPackage) GetBasePath() string {
 	if p == nil {
 		return ""
@@ -87,6 +102,7 @@ func (p *ProtoPackage) GetBasePath() string {
 	return p.BasePath
 }
 
+// Returns the full path to the package of the generated go files.
 func (p *ProtoPackage) GetGoPackagePath() string {
 	if p == nil {
 		return ""
@@ -144,6 +160,7 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	return p
 }
 
+// Adds a file to the package and returns a pointer to it.
 func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 	newFile := &FileSchema{
 		Name:       s.Name + ".proto",
@@ -164,6 +181,8 @@ func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 	return newFile
 }
 
+// Processes all the files' data and returns it. This is called automatically when .Generate() is called.
+// In most cases it's better to use the FileHook to perform custom actions on the data, but this can also be used to collect all the processed data and use it directly.
 func (p *ProtoPackage) BuildFiles() []FileData {
 	out := []FileData{}
 	var fileErrors error

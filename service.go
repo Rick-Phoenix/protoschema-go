@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// Function that receives the service data after its schema has been processed.
+type ServiceHook func(s ServiceData)
+
 type HandlerData struct {
 	Name     string
 	Request  *MessageSchema
@@ -19,8 +22,7 @@ type Handler struct {
 	Response *MessageSchema
 }
 
-type ServiceHook func(s ServiceData)
-
+// The output struct of the schema after it has been processed. Gets passed as an argument to the ServiceHook.
 type ServiceData struct {
 	Resource string
 	File     *FileSchema
@@ -30,13 +32,20 @@ type ServiceData struct {
 	Metadata map[string]any
 }
 
+// The schema for a proto service. It should be created with the constructor from a FileSchema instance, as that populates the File and Package fields automatically.
 type ServiceSchema struct {
+	// The name of the service's resource. It will be joined with the "Service" suffix to create the service name. (i.e. "User" -> "UserService")
 	Resource string
-	File     *FileSchema
-	Package  *ProtoPackage
+	// The FileSchema to which this service belongs. Set automatically when using the constructor.
+	File *FileSchema
+	// The ProtoPackage to which this service belongs. Set automatically when using the constructor.
+	Package *ProtoPackage
+	// A map of handlers. These correspond to the "rpc" directives in a proto file.
 	Handlers HandlersMap
 	Options  []ProtoOption
-	Hook     ServiceHook
+	// Schema-specific ServiceHook. If this is unset, and the service was created with the constructor, it defaults to the package-level ServiceHook. Otherwise, it overrides it.
+	Hook ServiceHook
+	// A map to store custom metadata to use in the hook. This gets passed directly to ServiceData instance.
 	Metadata map[string]any
 }
 

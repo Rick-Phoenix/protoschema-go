@@ -12,8 +12,6 @@ import (
 	"text/template"
 )
 
-type FileHook func(d FileData) error
-
 type ConnectHandler struct {
 	ServiceData
 	Imports Set

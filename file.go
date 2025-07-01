@@ -8,19 +8,30 @@ import (
 	u "github.com/Rick-Phoenix/goutils"
 )
 
+// Function that receives the file data after processing the its schema. If it returns an error, this will be marked as fatal at the very last moment, in order to accumulate all the errors in the schemas and report them.
+type FileHook func(d FileData) error
+
+// The struct for the File schema. It should be created with the constructor from the ProtoPackage instance except for defining file data for imported message types that have not been created from this library.
 type FileSchema struct {
-	Package    *ProtoPackage
-	Name       string
+	// Automatically set when created with the constructor from a ProtoPackage instance.
+	Package *ProtoPackage
+	// The name of the file. The ".proto" suffix will be added automatically by the constructor and the getter.
+	Name string
+	// Imports required by the components of the file will be added automatically. This can be used to add extra imports if necessary.
 	Imports    Set
 	Extensions Extensions
-	Options    []ProtoOption
-	enums      []*EnumGroup
-	messages   []*MessageSchema
-	services   []*ServiceSchema
-	Hook       FileHook
-	Metadata   map[string]any
+	// Top level options.
+	Options  []ProtoOption
+	enums    []*EnumGroup
+	messages []*MessageSchema
+	services []*ServiceSchema
+	// Overrides the package-level FileHook, if defined.
+	Hook FileHook
+	// Custom map to store data that can be used with hooks.
+	Metadata map[string]any
 }
 
+// The struct containing all the results from processing the components of the file. Will be passed to the FileHook after being generated if it's defined.
 type FileData struct {
 	Package    *ProtoPackage
 	Name       string
@@ -33,6 +44,7 @@ type FileData struct {
 	Metadata   map[string]any
 }
 
+// Accesses the name safely, and adds the ".proto" suffix if missing.
 func (f *FileSchema) GetName() string {
 	if f == nil {
 		return ""
@@ -45,6 +57,7 @@ func (f *FileSchema) GetName() string {
 	return addMissingSuffix(f.Name, ".proto")
 }
 
+// Returns the base path of its package, joined with the file name.
 func (f *FileSchema) GetImportPath() string {
 	if f == nil {
 		return ""
@@ -59,6 +72,8 @@ func (f *FileSchema) GetImportPath() string {
 	return path.Join(f.Package.GetBasePath(), name)
 }
 
+// Creates a new MessageSchema instance, automatically setting its Package, File and ImportPath fields.
+// If a Hook is missing in the schema, it assigns the global MessageHook (if defined).
 func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
 	s.Package = f.Package
 	s.File = f
@@ -73,6 +88,8 @@ func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {
 	return &s
 }
 
+// Creates a new ServiceSchema instance, automatically setting its Package and File fields.
+// If a Hook is missing in the schema, it assigns the global ServiceHook (if defined).
 func (f *FileSchema) NewService(s ServiceSchema) *ServiceSchema {
 	s.Package = f.Package
 	s.File = f
@@ -83,6 +100,7 @@ func (f *FileSchema) NewService(s ServiceSchema) *ServiceSchema {
 	return &s
 }
 
+// Creates a new EnumGroup instance, automatically setting its Package and File fields.
 func (f *FileSchema) NewEnum(e EnumGroup) *EnumGroup {
 	e.File = f
 	e.Package = f.Package

@@ -13,13 +13,3 @@ func (b *ProtoField[BuilderT]) CelOption(id, message, expression string) *Builde
 
 	return b.self
 }
-
-func MessageCelOption(id, message, expression string) ProtoOption {
-	out := ProtoOption{}
-
-	out.Name = "(buf.validate.message).cel"
-
-	out.Value = CelOption{Id: id, Message: message, Expression: expression}
-
-	return out
-}
