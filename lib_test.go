@@ -266,54 +266,54 @@ func TestGeneration(t *testing.T) {
 	userMsg := out.Messages["User"]
 
 	equalTests := []struct {
-		Target   any
-		Expected any
+		Target      any
+		Expected    any
+		Description string
 	}{
-		{out.Package, "myapp.v1"},
-		{out.Messages["User"].Name, "User"},
-		{out.Services["UserService"].Handlers["GetUser"].InputType, "GetUserRequest"},
-		{out.Services["UserService"].Handlers["GetUser"].OutputType, "GetUserResponse"},
-		{out.Services["UserService"].Handlers["UpdateUser"].InputType, "UpdateUserRequest"},
-		{out.Services["UserService"].Handlers["UpdateUser"].OutputType, "google.protobuf.Empty"},
-		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Number, int32(1)},
-		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Optional, true},
-		{out.Extensions["google.protobuf.FileOptions"].Fields["testopt"].Number, int32(1)},
-		{out.Extensions["google.protobuf.ServiceOptions"].Fields["testopt"].Number, int32(1)},
-		{out.Extensions["google.protobuf.OneofOptions"].Fields["testopt"].Number, int32(1)},
-		{out.Extensions["google.protobuf.FieldOptions"].Fields["testopt"].Number, int32(1)},
-		{out.Enums["myenum"].Members["VAL_1"].Number, int32(0)},
-		{out.Enums["myenum"].Members["VAL_2"].Number, int32(1)},
-		{out.Enums["myenum"].Options["allow_alias"].Value, true},
-		{userMsg.Enums["myenum"].Members["VAL_1"].Number, int32(0)},
-		{userMsg.Enums["myenum"].Members["VAL_2"].Number, int32(1)},
-		{userMsg.Enums["myenum"].Options["allow_alias"].Value, true},
-		{userMsg.Oneofs["myoneof"].Name, "myoneof"},
-		{userMsg.Fields["posts"].Repeated, true},
-		{userMsg.Fields["fav_cat"].Optional, true},
-		{userMsg.Fields["mymap"].Options["buf.validate.field.map.min_pairs"].Value, uint64(2)},
-		{userMsg.Fields["mymap"].Options["buf.validate.field.map.max_pairs"].Value, uint64(4)},
-		{userMsg.Fields["mymap"].Options["buf.validate.field.map.keys"].Value, "string : { min_len : 1 }"},
-		{userMsg.Fields["mymap"].Options["buf.validate.field.map.values"].Value, "int64 : { gt : 1 in : [ 1 , 2 ] }"},
-		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1)},
-		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4)},
-		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 in : [ 1 , 2 ] }"},
-		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds())},
-		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds())},
+		{out.Package, "myapp.v1", ""},
+		{out.Messages["User"].Name, "User", "Message name should be 'User'"},
+		{out.Services["UserService"].Handlers["GetUser"].InputType, "GetUserRequest", ""},
+		{out.Services["UserService"].Handlers["GetUser"].OutputType, "GetUserResponse", ""},
+		{out.Services["UserService"].Handlers["UpdateUser"].InputType, "UpdateUserRequest", ""},
+		{out.Services["UserService"].Handlers["UpdateUser"].OutputType, "google.protobuf.Empty", ""},
+		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Number, int32(1), "Message option should have the correct field number"},
+		{out.Extensions["google.protobuf.MessageOptions"].Fields["testopt"].Optional, true, "Should be optional"},
+		{out.Extensions["google.protobuf.FileOptions"].Fields["testopt"].Number, int32(1), "File option should have the correct field number"},
+		{out.Extensions["google.protobuf.ServiceOptions"].Fields["testopt"].Number, int32(1), "Service option should have the correct field number"},
+		{out.Extensions["google.protobuf.OneofOptions"].Fields["testopt"].Number, int32(1), "Oneof option should have the correct field number"},
+		{out.Extensions["google.protobuf.FieldOptions"].Fields["testopt"].Number, int32(1), "Field option should have the correct field number"},
+		{out.Enums["myenum"].Members["VAL_1"].Number, int32(0), "Top level enum in user.proto should have VAL_1 with field number 0"},
+		{out.Enums["myenum"].Members["VAL_2"].Number, int32(1), "Top level enum in user.proto should have VAL_2 with field number 1"},
+		{out.Enums["myenum"].Options["allow_alias"].Value, true, "Top level enum in user.proto should have allow_alias set to true"},
+		{userMsg.Enums["myenum"].Members["VAL_1"].Number, int32(0), "The enum inside the User message should have VAL_1 with field number 0"},
+		{userMsg.Enums["myenum"].Members["VAL_2"].Number, int32(1), "The enum inside the User message should have VAL_2 with field number 1"},
+		{userMsg.Enums["myenum"].Options["allow_alias"].Value, true, "The enum inside the User message should have allow_alias set to true"},
+		{userMsg.Oneofs["myoneof"].Name, "myoneof", ""},
+		{userMsg.Fields["posts"].Repeated, true, "The posts field in the user message should be repeated"},
+		{userMsg.Fields["fav_cat"].Optional, true, "The fav_cat field in the user message should be optional"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.min_pairs"].Value, uint64(2), "The mymap field in the user message should have min_pairs set to 2"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.max_pairs"].Value, uint64(4), "The mymap field in the user message should have max_pairs set to 4"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.keys"].Value, "string : { min_len : 1 }", "The mymap field in the user message should have keys.string.min_len set to 1"},
+		{userMsg.Fields["mymap"].Options["buf.validate.field.map.values"].Value, "int64 : { gt : 1 in : [ 1 , 2 ] }", "The mymap field in the user message should have values.int64 set to 'gt: 1, in: [1, 2]'"},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.min_items"].Value, uint64(1), "The reptest field in the user message should have min_items set to 1"},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.max_items"].Value, uint64(4), "The reptest field in the user message should have max_items set to 4"},
+		{userMsg.Fields["reptest"].Options["buf.validate.field.repeated.items"].Value, "int32 : { gt : 1 in : [ 1 , 2 ] }", "The reptest field in the user message should have items.int32 set to 'gt: 1, in: [1, 2]'"},
+		{userMsg.Fields["timetest"].Options["buf.validate.field.timestamp.lt"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds()), fmt.Sprintf("The timetest field in the user message should have lt set to %s", fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds()))},
+		{userMsg.Fields["timetest2"].Options["buf.validate.field.timestamp.const"].Value, fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds()), fmt.Sprintf("The timetest2 field in the user message should have const set to %s", fmt.Sprintf("seconds : %d nanos : 0", timePast.GetSeconds()))},
 		// Non repeated options should be overridden
-		{userMsg.Fields["fav_cat"].Options["myopt"].Value, false},
+		{userMsg.Fields["fav_cat"].Options["myopt"].Value, false, "The field fav_cat in the User message should have the 'myopt' option set to true"},
 		// And separated from repeated options
-		{len(userMsg.Fields["fav_cat"].Options), 1},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Name, "buf.validate.field.cel"},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Value, `id : "cel" message : "msg" expression : "expr"`},
+		{len(userMsg.Fields["fav_cat"].Options), 1, "The field fav_cat in the User message should have only one non-repeated option"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Name, "buf.validate.field.cel", "The field fav_cat in the User message should have 'buf.validate.field.cel' as the first repeated option's name"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[0].Value, `id : "cel" message : "msg" expression : "expr"`, `The field fav_cat in the User message should have "id : "cel" message : "msg" expression : "expr"" as the first repeated option's value`},
 		// Repeated options should be stacked
-		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Name, "repopt"},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Value, true},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Name, "repopt"},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Value, true},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[4].Value, "tabby"},
-		{userMsg.Fields["fav_cat"].RepeatedOptions[5].Value, "calico"},
-		// Nested enums should have the correct name
-		{out.Messages["GetUserRequest"].Fields["nestedenum"].TypeName, "User.nested.myenum"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Name, "repopt", "The field fav_cat in the User message should have 'repopt' as the third repeated option's name"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[2].Value, true, "The field fav_cat in the User message should have 'true' as the third repeated option's value"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Name, "repopt", "The field fav_cat in the User message should have 'repopt' as the fourth repeated option's name"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[3].Value, true, "The field fav_cat in the User message should have 'true' as the fourth repeated option's value"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[4].Value, "tabby", "The field fav_cat in the User message should have 'tabby' as the fifth repeated option's value"},
+		{userMsg.Fields["fav_cat"].RepeatedOptions[5].Value, "calico", "The field fav_cat in the User message should have 'calico' as the sixth repeated option's value"},
+		{out.Messages["GetUserRequest"].Fields["nestedenum"].TypeName, "User.nested.myenum", "Nested enums should have the correct name"},
 	}
 
 	containsTests := []struct {
@@ -397,7 +397,7 @@ func TestGeneration(t *testing.T) {
 	assert.NotContains(t, out.Messages, "Post")
 
 	for _, test := range equalTests {
-		assert.Equal(t, test.Expected, test.Target)
+		assert.Equal(t, test.Expected, test.Target, test.Description)
 	}
 
 	for _, test := range containsTests {
