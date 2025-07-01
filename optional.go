@@ -7,13 +7,6 @@ type OptionalField[BuilderT any] struct {
 	self             *BuilderT
 }
 
-func (of *OptionalField[BuilderT]) clone(internalClone *protoFieldInternal, selfClone *BuilderT) *OptionalField[BuilderT] {
-	clone := *of
-	clone.optionalInternal = internalClone
-	clone.self = selfClone
-	return &clone
-}
-
 func (of *OptionalField[BuilderT]) Optional() *BuilderT {
 	of.optionalInternal.optional = true
 	return of.self

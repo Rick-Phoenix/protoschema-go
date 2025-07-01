@@ -24,22 +24,6 @@ type NumericField[BuilderT any, ValueT constraints.Ordered] struct {
 	isFloatType bool
 }
 
-func (nf *NumericField[BuilderT, ValueT]) clone(internalClone *protoFieldInternal, selfClone *BuilderT) *NumericField[BuilderT, ValueT] {
-	clone := *nf
-
-	clone.ProtoField = clone.ProtoField.clone(internalClone, selfClone)
-	clone.ConstField = clone.ConstField.clone(internalClone, selfClone)
-	clone.OptionalField = clone.OptionalField.clone(internalClone, selfClone)
-
-	clone.self = selfClone
-	clone.lt = &*clone.lt
-	clone.lte = &*clone.lte
-	clone.gt = &*clone.gt
-	clone.gte = &*clone.gte
-
-	return &clone
-}
-
 func newNumericField[BuilderT any, ValueT constraints.Ordered](pfi *protoFieldInternal, self *BuilderT, isFloat bool) *NumericField[BuilderT, ValueT] {
 	return &NumericField[BuilderT, ValueT]{
 		ProtoField: &ProtoField[BuilderT]{
@@ -138,12 +122,6 @@ type Int32Field struct {
 	*NumericField[Int32Field, int32]
 }
 
-func (inf *Int32Field) Clone() *Int32Field {
-	return &Int32Field{
-		NumericField: inf.NumericField.clone(inf.NumericField.protoFieldInternal.clone(), &*inf),
-	}
-}
-
 func Int32(name string) *Int32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -164,12 +142,6 @@ func Int32(name string) *Int32Field {
 
 type FloatField struct {
 	*NumericField[FloatField, float32]
-}
-
-func (f *FloatField) Clone() *FloatField {
-	return &FloatField{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
 }
 
 func Float(name string) *FloatField {
@@ -197,12 +169,6 @@ type DoubleField struct {
 	*NumericField[DoubleField, float64]
 }
 
-func (f *DoubleField) Clone() *DoubleField {
-	return &DoubleField{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
-}
-
 func Double(name string) *DoubleField {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -226,12 +192,6 @@ func Double(name string) *DoubleField {
 
 type Int64Field struct {
 	*NumericField[Int64Field, int64]
-}
-
-func (inf *Int64Field) Clone() *Int64Field {
-	return &Int64Field{
-		NumericField: inf.NumericField.clone(inf.NumericField.protoFieldInternal.clone(), &*inf),
-	}
 }
 
 func Int64(name string) *Int64Field {
@@ -259,12 +219,6 @@ type UInt32Field struct {
 	*NumericField[UInt32Field, uint32]
 }
 
-func (f *UInt32Field) Clone() *UInt32Field {
-	return &UInt32Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
-}
-
 func UInt32(name string) *UInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -288,12 +242,6 @@ func UInt32(name string) *UInt32Field {
 
 type UInt64Field struct {
 	*NumericField[UInt64Field, uint64]
-}
-
-func (f *UInt64Field) Clone() *UInt64Field {
-	return &UInt64Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
 }
 
 func UInt64(name string) *UInt64Field {
@@ -321,12 +269,6 @@ type SInt32Field struct {
 	*NumericField[SInt32Field, int32]
 }
 
-func (f *SInt32Field) Clone() *SInt32Field {
-	return &SInt32Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
-}
-
 func SInt32(name string) *SInt32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -350,12 +292,6 @@ func SInt32(name string) *SInt32Field {
 
 type SInt64Field struct {
 	*NumericField[SInt64Field, int64]
-}
-
-func (f *SInt64Field) Clone() *SInt64Field {
-	return &SInt64Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
 }
 
 func SInt64(name string) *SInt64Field {
@@ -383,12 +319,6 @@ type Fixed32Field struct {
 	*NumericField[Fixed32Field, uint32]
 }
 
-func (f *Fixed32Field) Clone() *Fixed32Field {
-	return &Fixed32Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
-}
-
 func Fixed32(name string) *Fixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -412,12 +342,6 @@ func Fixed32(name string) *Fixed32Field {
 
 type Fixed64Field struct {
 	*NumericField[Fixed64Field, uint64]
-}
-
-func (f *Fixed64Field) Clone() *Fixed64Field {
-	return &Fixed64Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
 }
 
 func Fixed64(name string) *Fixed64Field {
@@ -445,12 +369,6 @@ type SFixed32Field struct {
 	*NumericField[SFixed32Field, int32]
 }
 
-func (f *SFixed32Field) Clone() *SFixed32Field {
-	return &SFixed32Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
-}
-
 func SFixed32(name string) *SFixed32Field {
 	options := make(map[string]any)
 	rules := make(map[string]any)
@@ -474,12 +392,6 @@ func SFixed32(name string) *SFixed32Field {
 
 type SFixed64Field struct {
 	*NumericField[SFixed64Field, int64]
-}
-
-func (f *SFixed64Field) Clone() *SFixed64Field {
-	return &SFixed64Field{
-		NumericField: f.NumericField.clone(f.NumericField.protoFieldInternal.clone(), &*f),
-	}
 }
 
 func SFixed64(name string) *SFixed64Field {

@@ -54,7 +54,6 @@ type FieldBuilder interface {
 	GetGoType() string
 	GetName() string
 	GetMessageRef() *MessageSchema
-	Clone() FieldBuilder
 }
 
 func (b *protoFieldInternal) IsNonScalar() bool {
@@ -88,15 +87,6 @@ func (b *protoFieldInternal) GetData() FieldData {
 		Repeated: b.repeated, Required: b.required, IsNonScalar: b.isNonScalar, Optional: b.optional,
 		GoType: b.goType, IsMap: b.isMap, MessageRef: b.messageRef,
 	}
-}
-
-func (b *protoFieldInternal) clone() *protoFieldInternal {
-	clone := *b
-	clone.imports = slices.Clone(b.imports)
-	clone.rules = maps.Clone(b.rules)
-	clone.repeatedOptions = slices.Clone(b.repeatedOptions)
-	clone.options = maps.Clone(b.options)
-	return &clone
 }
 
 func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (FieldData, error) {
@@ -161,19 +151,6 @@ type ProtoField[BuilderT any] struct {
 	self *BuilderT
 }
 
-func (pf *ProtoField[BuilderT]) clone(internalClone *protoFieldInternal, selfClone *BuilderT) *ProtoField[BuilderT] {
-	clone := *pf
-	clone.self = selfClone
-	clone.protoFieldInternal = internalClone
-	return &clone
-}
-
 type GenericField struct {
 	*ProtoField[GenericField]
-}
-
-func (gf *GenericField) Clone() *GenericField {
-	clone := *gf
-	clone.ProtoField = clone.ProtoField.clone(clone.ProtoField.protoFieldInternal.clone(), &clone)
-	return &clone
 }
