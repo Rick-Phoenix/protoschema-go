@@ -54,7 +54,7 @@ func Duration(name string) *DurationField {
 	return gf
 }
 
-// Rule: this duration must be lower than the value indicated.
+// Rule: this duration must be lower than the value indicated. The argument must be a valid duration string (i.e. "1s", "3h")
 func (tf *DurationField) Lt(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))
@@ -78,7 +78,7 @@ func (tf *DurationField) Lt(d string) *DurationField {
 	return tf.self
 }
 
-// Rule: this duration must be lower than or equal to the value indicated.
+// Rule: this duration must be lower than or equal to the value indicated. The argument must be a valid duration string (i.e. "1s", "3h")
 func (tf *DurationField) Lte(d string) *DurationField {
 	if tf.hasLtOrLte {
 		tf.errors = errors.Join(tf.errors, fmt.Errorf("A duration field cannot have more than one rule between 'lt' and 'lte'."))

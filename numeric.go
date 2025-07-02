@@ -114,7 +114,7 @@ func (nf *NumericField[BuilderT, ValueT]) Gte(val ValueT) *BuilderT {
 	return nf.ProtoField.self
 }
 
-// Rule: this numeric field must be finite. Only applicable to float and double field types.
+// Rule: this numeric field must be finite. Only applicable to float and double types.
 func (nf *NumericField[BuilderT, ValueT]) Finite() *BuilderT {
 	if !nf.isFloatType {
 		nf.errors = errors.Join(nf.errors, fmt.Errorf("The 'finite' rule is only applicable to float and double types."))

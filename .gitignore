@@ -1,1 +1,9 @@
 *.env
+gen
+proto
+cmd
+db
+*.proto
+codecompanion-workspace.json
+sqlc.yaml
+cel_test.go

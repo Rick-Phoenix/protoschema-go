@@ -35,13 +35,13 @@ func Any(name string) *AnyField {
 	return gf
 }
 
-// Rule: this Any field's type_url must be among those listed here in order to be accepted.
+// Rule: this field's type_url must be among those listed in order to be accepted.
 func (af *AnyField) In(typeUrls ...string) *AnyField {
 	af.protoFieldInternal.rules["in"] = typeUrls
 	return af.self
 }
 
-// Rule: this Any field's type_url must not be among those listed here in order to be accepted.
+// Rule: this Any field's type_url must not be among those listed in order to be accepted.
 func (af *AnyField) NotIn(typeUrls ...string) *AnyField {
 	af.protoFieldInternal.rules["not_in"] = typeUrls
 	return af.self

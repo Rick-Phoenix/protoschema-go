@@ -26,7 +26,7 @@ type ByteOrStringField[BuilderT any, ValueT string | []byte] struct {
 
 func (b *ByteOrStringField[BuilderT, ValueT]) setWellKnownRule(ruleName string, ruleValue any) {
 	if b.hasWellKnownRule {
-		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A string field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
+		b.internal.errors = errors.Join(b.internal.errors, fmt.Errorf("A string or bytes field can only have one well-known rule (e.g., email, hostname, ip, etc.)"))
 		return
 	}
 	b.internal.rules[ruleName] = ruleValue
