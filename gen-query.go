@@ -13,8 +13,9 @@ import (
 )
 
 type Subquery struct {
-	Method    string
-	ParamName string
+	Method          string
+	SingleParamName string
+	QueryParamName  string
 }
 
 type SubqueryData struct {
@@ -32,6 +33,7 @@ type QuerySchema struct {
 	Name       string
 	Subqueries []Subquery
 	OutType    any
+	Store      any
 }
 
 type QueryData struct {
@@ -52,32 +54,44 @@ func (p *ProtoPackage) makeQuery() {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 
-	qmap := make(map[string]string)
-	qmap["GetUser"] = "userId"
+	querySchema := QuerySchema{
+		Name:    "GetUserWithPosts",
+		OutType: &db.UserWithPosts{},
+		Subqueries: []Subquery{
+			{"GetUser", "", "GetPostsFromUserIdParams.UserId"},
+			{"GetPostsFromUserId", "", ""},
+		},
+		Store: sqlgen.New(database),
+	}
 
-	val := reflect.TypeOf(sqlgen.New(database))
+	store := reflect.TypeOf(querySchema.Store)
 
-	queryData := QueryData{Name: "GetUserWithPosts", FunctionParams: make(map[string]string)}
+	if store.Elem().Kind() != reflect.Struct {
+		log.Fatalf("Store %q is not a struct.", store.Name())
+	}
 
-	subqueries := []Subquery{{"GetUser", "userId"}, {"GetPostsFromUserId", ""}}
+	queryData := QueryData{Name: querySchema.Name, FunctionParams: make(map[string]string)}
 
 	subQueriesData := []SubqueryData{}
 
-	for _, subQ := range subqueries {
+	for _, subQ := range querySchema.Subqueries {
 		subQData := SubqueryData{Method: subQ.Method}
-		method, _ := val.MethodByName(subQ.Method)
+		method, ok := store.MethodByName(subQ.Method)
 
-		// fmt.Printf("Method Name: %+v\n", method.Name)
+		if !ok {
+			log.Fatalf("Could not find method %q in %q", subQ.Method, store.String())
+		}
+
 		if method.Type.NumIn() >= 3 {
 			secondParam := method.Type.In(2)
 			if secondParam.Kind() == reflect.Struct {
 				subQData.ParamName = secondParam.Name()
 				queryData.FunctionParams[secondParam.Name()] = secondParam.String()
-			} else {
-				if singleParamName, ok := qmap[method.Name]; ok {
-					queryData.FunctionParams[singleParamName] = secondParam.Name()
-					subQData.ParamName = singleParamName
-				}
+			} else if subQ.SingleParamName != "" {
+				subQData.ParamName = subQ.SingleParamName
+				queryData.FunctionParams[subQ.SingleParamName] = secondParam.Name()
+			} else if subQ.QueryParamName != "" {
+				subQData.ParamName = subQ.QueryParamName
 			}
 		}
 
@@ -101,15 +115,13 @@ func (p *ProtoPackage) makeQuery() {
 
 	queryData.Subqueries = subQueriesData
 
-	outType := []db.UserWithPosts{}
-
-	outModel := reflect.TypeOf(outType).Elem()
+	outModel := reflect.TypeOf(querySchema.OutType).Elem()
 
 	if outModel.Kind() == reflect.Pointer {
 		outModel = outModel.Elem()
 	}
 
-	queryData.OutType = reflect.TypeOf(outType).String()
+	queryData.OutType = outModel.String()
 
 	if outModel.Kind() != reflect.Struct {
 		log.Fatalf("Not a struct")

@@ -13,9 +13,6 @@ type {{ .Name }}Params struct {
 {{ end }}
 
 func (s *db.Store) {{ .Name }}(ctx context.Context, {{ .FuncParamName }} {{ .FuncParamType }}) (*{{ .OutType }}, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
   {{ range .Subqueries }}
   {{ .VarName }}Chan := make(chan {{ .ReturnType }})
   {{ end }}
