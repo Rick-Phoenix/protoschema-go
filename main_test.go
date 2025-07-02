@@ -125,5 +125,6 @@ var UserService = UserFile.NewService(ServiceSchema{
 
 func TestMain(t *testing.T) {
 	err := protoPackage.Generate()
+	protoPackage.makeQuery()
 	assert.NoError(t, err, "Main Test")
 }

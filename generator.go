@@ -167,4 +167,5 @@ var funcMap = template.FuncMap{
 
 		return f.ProtoType
 	},
+	"lower": strings.ToLower,
 }
