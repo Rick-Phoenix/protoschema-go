@@ -7,3 +7,4 @@ db
 codecompanion-workspace.json
 sqlc.yaml
 cel_test.go
+connect_handler.go
