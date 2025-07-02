@@ -1,6 +1,6 @@
 # The goal of this package
 
-This package aims to do the following:
+protoschema aims to do the following:
 
 1. Define the contents of protobuf files in a declarative way, directly from go code
 2. Provide a simple, zod-inspired api to easily add protovalidate rules (and other kinds of options) to fields or messages
@@ -255,7 +255,7 @@ service PostService {
 ```
 
 >[!NOTE]
-> This package uses the buf cli with the `buf format` command to prettify the output of the code generation. It is highly encouraged to download the buf cli and make it available in path to avoid having messy-looking proto files.
+> protoschema uses the buf cli with the `buf format` command to prettify the output of the code generation. It is highly encouraged to download the buf cli and make it available in path to avoid having messy-looking proto files.
 
 ## Converter functions
 
@@ -269,6 +269,8 @@ At the moment, the converters generator can only handle the following field type
 
 However, the package also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function. 
 (Function signature is shown below)
+
+This is what the converter package would look like for the schema above:
 
 ```go
 package converter
@@ -295,6 +297,7 @@ func PostToPostMsg(Post *sqlgen.Post) *myappv1.Post {
 	}
 }
 
+// If a message is used as repeated in a field, a slice converter like this will also be generated 
 func PostsToPostsMsg(Post []*sqlgen.Post) []*myappv1.Post {
 	out := make([]*myappv1.Post, len(Post))
 
@@ -304,6 +307,7 @@ func PostsToPostsMsg(Post []*sqlgen.Post) []*myappv1.Post {
 
 	return out
 }
+
 func UserToUserMsg(User *db.UserWithPosts) *myappv1.User {
 	if User == nil {
 		return nil
@@ -352,9 +356,11 @@ To this:
 
 ```go
 type User struct {
+    // Now a string
 	Id           string    `json:"id"`
 	Name         string    `json:"name"`
 	CreatedAt    time.Time `json:"created_at"`
+    // Extra field
 	ExtraDbField string    `json:"extra_db_field"`
 }
 ```
@@ -381,7 +387,7 @@ This ensures that if a change occurs on either side but is not implemented on th
 
 ## Hooks
 
-This package also allows the user to define hooks for the whole package or for single schemas, which will be called when the schema is processed, and receive all the data for that protobuf element (file, service, oneof or message), which can be used to perform custom actions such as code generation. 
+protoschema also allows the user to define hooks for the whole package or for single schemas, which will be called when the schema is processed, and receive all the data for that protobuf element (file, service, oneof or message), which can be used to perform custom actions such as code generation. 
 
 ```go
 // Also available for messages, services and oneofs
@@ -402,16 +408,14 @@ type FileData struct {
 
 # State of the project
 
-This package is still in the beta stage. It may receive some breaking changes in the near future.
+protoschema is still in the beta stage. It may receive some breaking changes in the near future.
 
 # Tools being used
 
-- Protocompile (parser and reporter, used to extract the data from proto files in tests) 
+- [Protocompile](https://github.com/bufbuild/protocompile) (parser and reporter, used to extract the data from proto files in tests) 
 
 # Inspirations
 
-This project was inspired by (and aims to replicate) the beautiful, ergonomic apis of the following projects:
-- Zod
-- hono/zod-openapi
-
-A special thanks goes to the developers of protovalidate, which also inspired this package to a large degree.
+This project was inspired by:
+- [Zod](https://github.com/colinhacks/zod), for its beautiful, ergonomic api for defining validation rules
+- [protovalidate](https://github.com/bufbuild/protovalidate), for its innovative approach of defining validation rules directly within proto files
