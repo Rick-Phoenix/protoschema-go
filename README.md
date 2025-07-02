@@ -126,7 +126,9 @@ func TestMain(t *testing.T) {
 	assert.NoError(t, err, "Main Test")
 }
 ```
-This file gets generated:
+These two files are generated:
+
+- user.proto
 ```proto
 syntax = "proto3";
 
@@ -167,3 +169,140 @@ service UserService {
   rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
 }
 ```
+
+- post.proto
+
+```proto
+syntax = "proto3";
+
+package myapp.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+message Post {
+  int64 id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  int64 author_id = 3;
+  string title = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64,
+    (buf.validate.field).string.min_len = 5
+  ];
+  optional string content = 5;
+  int64 subreddit_id = 6;
+}
+
+message GetPostRequest {
+  int64 id = 1;
+}
+
+message GetPostResponse {
+  Post post = 1;
+}
+
+message UpdatePostRequest {
+  Post post = 1;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+service PostService {
+  rpc GetPost(GetPostRequest) returns (GetPostResponse);
+  rpc UpdatePost(UpdatePostRequest) returns (google.protobuf.Empty);
+}
+```
+
+Along with some converter functions:
+
+```go
+package converter
+
+import (
+	"github.com/Rick-Phoenix/gofirst/db"
+	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
+	"github.com/Rick-Phoenix/gofirst/gen/myappv1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+func PostToPostMsg(Post *sqlgen.Post) *myappv1.Post {
+	if Post == nil {
+		return nil
+	}
+	CreatedAt := timestamppb.New(Post.CreatedAt)
+	return &myappv1.Post{
+		Id:          Post.Id,
+		Title:       Post.Title,
+		Content:     Post.Content,
+		CreatedAt:   CreatedAt,
+		AuthorId:    Post.AuthorId,
+		SubredditId: Post.SubredditId,
+	}
+}
+
+func PostsToPostsMsg(Post []*sqlgen.Post) []*myappv1.Post {
+	out := make([]*myappv1.Post, len(Post))
+
+	for i, v := range Post {
+		out[i] = PostToPostMsg(v)
+	}
+
+	return out
+}
+func UserToUserMsg(User *db.UserWithPosts) *myappv1.User {
+	if User == nil {
+		return nil
+	}
+	CreatedAt := timestamppb.New(User.CreatedAt)
+	return &myappv1.User{
+		Id:        User.Id,
+		Name:      User.Name,
+		CreatedAt: CreatedAt,
+		Posts:     PostsToPostsMsg(User.Posts),
+	}
+}
+```
+
+At the moment, the converters generator can only handle basic types, types that come from other message schemas, or time.Time types, which are converted with timestamppb.New. 
+
+The package also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function.
+
+The package handles validation for message schemas. When a message schema has a defined model, (like the `&db.UserWithPosts{}`), the package will show an error if the types in the schema do not match the types in the model struct, or if a field is present in one but not in the other (a ModelIgnore slice of strings can be used to ignore specific fields if necessary).
+
+For example, let's try changing the User model from this:
+
+```go
+type User struct {
+	Id        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+```
+
+To this:
+
+```go
+type User struct {
+	Id           string    `json:"id"`
+	Name         string    `json:"name"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExtraDbField string    `json:"extra_db_field"`
+}
+```
+
+While also adding an extra field to the message schema which is not present in its model:
+
+`5: String("non_db_field")`
+
+This will cause protovalidate to report these errors and exit:
+
+`  ❌ The following errors occurred:
+Errors in the file user.proto:
+  Errors for the User message schema:
+    Validation errors for model db.UserWithPosts:
+      Expected type "string" for field "id", found "int64".
+      Column "extra_db_field" not found in the proto schema for "sqlgen.User".
+      Unknown field "non_db_field" found in the message schema for model "db.UserWithPosts".`
+
+This ensures that if a change occurs on either side but is not implemented on the other side, the proto files will not be generated (unless the user specifically chooses to skip validation for a given field or for an entire message).

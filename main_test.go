@@ -3,7 +3,6 @@ package protoschema
 import (
 	"path"
 	"testing"
-	"time"
 
 	"github.com/Rick-Phoenix/gofirst/db"
 	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
@@ -71,13 +70,6 @@ var UpdatePostRequest = PostFile.NewMessage(MessageSchema{Name: "UpdatePostReque
 	1: MsgField("post", PostSchema),
 	2: FieldMask("field_mask"),
 }})
-
-type UserWithPosts struct {
-	Id        int64         `json:"id"`
-	Name      string        `json:"name"`
-	CreatedAt time.Time     `json:"created_at"`
-	Posts     []sqlgen.Post `json:"posts"`
-}
 
 var UserFile = protoPackage.NewFile(FileSchema{
 	Name:    "user",
