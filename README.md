@@ -3,16 +3,19 @@
 This package aims to do the following:
 
 1. Define the contents of protobuf files in a declarative way, directly from go code
-2. Provide a simple api to easily add protovalidate rules (and other kinds of options) to fields or messages
+2. Provide a simple, zod-inspired api to easily add protovalidate rules (and other kinds of options) to fields or messages
 3. Couple messages to specific models (like items coming from a database or from another api), and report errors if there is mismatch between the two
 4. Automatically generate functions to convert source types (like the one above) to the go types generated from the protobuf messages definition
 5. Expose various kinds of hooks that can be used to read the data for each field, message or file and perform custom actions like generating other files based on a customized template (or to perform additional validation)
 
 # What it does
 
+## Proto files generation
+
 From this schema declaration:
 
 ```go
+// Define the package
 var (
 	goMod        = "github.com/Rick-Phoenix/gofirst"
 	protoPackage = NewProtoPackage(ProtoPackageConfig{
@@ -23,11 +26,13 @@ var (
 	})
 )
 
+// Add file to package
 var PostFile = protoPackage.NewFile(FileSchema{
 	Package: protoPackage,
 	Name:    "post",
 })
 
+// Add service to file
 var PostService = PostFile.NewService(ServiceSchema{
 	Resource: "Post",
 	Handlers: HandlersMap{
@@ -42,6 +47,7 @@ var PostService = PostFile.NewService(ServiceSchema{
 	},
 })
 
+// Add message to file, with model for validation
 var PostSchema = PostFile.NewMessage(MessageSchema{
 	Name: "Post",
 	Fields: FieldsMap{
@@ -128,6 +134,7 @@ var UserService = UserFile.NewService(ServiceSchema{
 })
 
 func TestMain(t *testing.T) {
+    // Call the generate function
 	err := protoPackage.Generate()
 	assert.NoError(t, err, "Main Test")
 }
@@ -250,7 +257,7 @@ service PostService {
 >[!NOTE]
 > This package uses the buf cli with the `buf format` command to prettify the output of the code generation. It is highly encouraged to download the buf cli and make it available in path to avoid having messy-looking proto files.
 
-# Converters
+## Converter functions
 
 The package will also generate some functions that can be used to easily convert a struct from its original model type (usually a database item) to the message type that will be used in responses. 
 
@@ -327,7 +334,7 @@ type ConverterFuncData struct {
 
 This function will be called for each model field being iterated during the validation step, and receive all the data for that field, along with the surrounding Package, File and Message.
 
-# Automatic model validation
+## Model validation
 
 The package handles validation for message schemas. When a message schema has a defined model, (like the `&db.UserWithPosts{}`), the package will show an error if the types in the schema do not match the types in the model struct, or if a field is present in one but not in the other (a ModelIgnore slice of strings can be used to ignore specific fields if necessary).
 
@@ -360,17 +367,19 @@ While also adding an extra field to the message schema which is not present in i
 
 This will cause the package to report these errors and exit:
 
-`  ❌ The following errors occurred:
+```
+❌ The following errors occurred:
 Errors in the file user.proto:
   Errors for the User message schema:
     Validation errors for model db.UserWithPosts:
       Expected type "string" for field "id", found "int64".
       Model field "extra_db_field" not found in the message schema.
-      Unknown field "non_db_field" is not present in the message's model.`
+      Unknown field "non_db_field" is not present in the message's model.
+```
 
 This ensures that if a change occurs on either side but is not implemented on the other side, the proto files will not be generated (unless the user specifically chooses to skip validation for a given field or for an entire message).
 
-# Hooks
+## Hooks
 
 This package also allows the user to define hooks for the whole package or for single schemas, which will be called when the schema is processed, and receive all the data for that protobuf element (file, service, oneof or message), which can be used to perform custom actions such as code generation. 
 
