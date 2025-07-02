@@ -191,7 +191,7 @@ func (p *ProtoPackage) BuildFiles() []FileData {
 	for _, f := range p.fileSchemas {
 		file, err := f.build()
 		if err != nil {
-			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %s", f.Name), err))
+			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %q", f.Name), err))
 		}
 
 		out = append(out, file)

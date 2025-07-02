@@ -1,4 +1,17 @@
-From this input:
+# The goal of this package
+
+This package aims to do the following:
+
+1. Define the contents of protobuf files in a declarative way, directly from go code
+2. Provide a simple api to easily add protovalidate rules (and other kinds of options) to fields or messages
+3. Couple messages to specific models (like items coming from a database or from another api), and report errors if there is mismatch between the two
+4. Automatically generate functions to convert source types (like the one above) to the go types generated from the protobuf messages definition
+5. Expose various kinds of hooks that can be used to read the data for each field, message or file and perform custom actions like generating other files based on a customized template (or to perform additional validation)
+
+# What it does
+
+From this schema declaration:
+
 ```go
 var (
 	goMod        = "github.com/Rick-Phoenix/gofirst"
@@ -62,13 +75,6 @@ var UpdatePostRequest = PostFile.NewMessage(MessageSchema{Name: "UpdatePostReque
 	2: FieldMask("field_mask"),
 }})
 
-type UserWithPosts struct {
-	Id        int64         `json:"id"`
-	Name      string        `json:"name"`
-	CreatedAt time.Time     `json:"created_at"`
-	Posts     []sqlgen.Post `json:"posts"`
-}
-
 var UserFile = protoPackage.NewFile(FileSchema{
 	Name:    "user",
 	Package: protoPackage,
@@ -126,6 +132,33 @@ func TestMain(t *testing.T) {
 	assert.NoError(t, err, "Main Test")
 }
 ```
+
+Where the models being used are these:
+
+```go
+// sqlgen package (generated with sqlc)
+type Post struct {
+	Id          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Content     *string   `json:"content"`
+	CreatedAt   time.Time `json:"created_at"`
+	AuthorId    int64     `json:"author_id"`
+	SubredditId int64     `json:"subreddit_id"`
+}
+
+type User struct {
+	Id        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// db package
+type UserWithPosts struct {
+	sqlgen.User
+	Posts []*sqlgen.Post
+}
+```
+
 These two files are generated:
 
 - user.proto
@@ -214,7 +247,21 @@ service PostService {
 }
 ```
 
-Along with some converter functions:
+>[!NOTE]
+> This package uses the buf cli with the `buf format` command to prettify the output of the code generation. It is highly encouraged to download the buf cli and make it available in path to avoid having messy-looking proto files.
+
+# Converters
+
+The package will also generate some functions that can be used to easily convert a struct from its original model type (usually a database item) to the message type that will be used in responses. 
+
+At the moment, the converters generator can only handle the following field types:
+
+- Basic types (string, int, etc) 
+- Types that refer to other message schemas belonging to the same package 
+- time.Time, which gets converted with timestamppb.New. 
+
+However, the package also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function. 
+(Function signature is shown below)
 
 ```go
 package converter
@@ -264,9 +311,23 @@ func UserToUserMsg(User *db.UserWithPosts) *myappv1.User {
 }
 ```
 
-At the moment, the converters generator can only handle basic types, types that come from other message schemas, or time.Time types, which are converted with timestamppb.New. 
+Converter function that can be used to replace the default variant:
 
-The package also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function.
+```go
+type ConverterFunc func(ConverterFuncData)
+
+type ConverterFuncData struct {
+	Package    *ProtoPackage
+	File       *FileSchema
+	Message    *MessageSchema
+	ModelField reflect.StructField
+	ProtoField FieldBuilder
+}
+```
+
+This function will be called for each model field being iterated during the validation step, and receive all the data for that field, along with the surrounding Package, File and Message.
+
+# Automatic model validation
 
 The package handles validation for message schemas. When a message schema has a defined model, (like the `&db.UserWithPosts{}`), the package will show an error if the types in the schema do not match the types in the model struct, or if a field is present in one but not in the other (a ModelIgnore slice of strings can be used to ignore specific fields if necessary).
 
@@ -293,16 +354,55 @@ type User struct {
 
 While also adding an extra field to the message schema which is not present in its model:
 
-`5: String("non_db_field")`
+```go
+5: String("non_db_field")
+```
 
-This will cause protovalidate to report these errors and exit:
+This will cause the package to report these errors and exit:
 
 `  ❌ The following errors occurred:
 Errors in the file user.proto:
   Errors for the User message schema:
     Validation errors for model db.UserWithPosts:
       Expected type "string" for field "id", found "int64".
-      Column "extra_db_field" not found in the proto schema for "sqlgen.User".
-      Unknown field "non_db_field" found in the message schema for model "db.UserWithPosts".`
+      Model field "extra_db_field" not found in the message schema.
+      Unknown field "non_db_field" is not present in the message's model.`
 
 This ensures that if a change occurs on either side but is not implemented on the other side, the proto files will not be generated (unless the user specifically chooses to skip validation for a given field or for an entire message).
+
+# Hooks
+
+This package also allows the user to define hooks for the whole package or for single schemas, which will be called when the schema is processed, and receive all the data for that protobuf element (file, service, oneof or message), which can be used to perform custom actions such as code generation. 
+
+```go
+// Also available for messages, services and oneofs
+type FileHook func(d FileData) error
+
+type FileData struct {
+	Package    *ProtoPackage
+	Name       string
+	Imports    Set
+	Extensions Extensions
+	Options    []ProtoOption
+	Enums      []EnumGroup
+	Messages   []MessageData
+	Services   []ServiceData
+	Metadata   map[string]any
+}
+```
+
+# State of the project
+
+This package is still in the beta stage. It may receive some breaking changes in the near future.
+
+# Tools being used
+
+- Protocompile (parser and reporter, used to extract the data from proto files in tests) 
+
+# Inspirations
+
+This project was inspired by (and aims to replicate) the beautiful, ergonomic apis of the following projects:
+- Zod
+- hono/zod-openapi
+
+A special thanks goes to the developers of protovalidate, which also inspired this package to a large degree.

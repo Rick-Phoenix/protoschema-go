@@ -37,6 +37,7 @@ type MessageSchema struct {
 	ReservedRanges  []Range
 	ReservedNames   []string
 	// The struct to which this schema should conform. If nil, validation is skipped. If defined, a method will check if every field in the model (that is not included in the ModelIgnore slice) has the right name and type in the schema's output, or if there are missing or extra fields, causing a fatal error if that is the case.
+	// Must be a pointer.
 	Model any
 	// The fields to ignore in the schema's validation. This should also be used for fields that are in the schema but not in the model, and vice versa.
 	ModelIgnore []string
@@ -238,7 +239,7 @@ func (m *MessageSchema) checkModel() error {
 					err = errors.Join(err, fmt.Errorf("Expected type %q for field %q, found %q.", fieldType, modelFieldName, goType))
 				}
 			} else if !ignore {
-				err = errors.Join(err, fmt.Errorf("Column %q not found in the proto schema for %q.", modelFieldName, t))
+				err = errors.Join(err, fmt.Errorf("Model field %q not found in the message schema.", modelFieldName))
 			}
 
 		}
@@ -249,7 +250,7 @@ func (m *MessageSchema) checkModel() error {
 	if len(msgFields) > 0 {
 		for name := range msgFields {
 			if !ignores.Has(name) {
-				err = errors.Join(err, fmt.Errorf("Unknown field %q found in the message schema for model %q.", name, modelName))
+				err = errors.Join(err, fmt.Errorf("Unknown field %q is not present in the message's model.", name))
 			}
 		}
 	}
@@ -278,7 +279,7 @@ func (m *MessageSchema) build(imports Set) (MessageData, error) {
 		fieldBuilder := m.Fields[fieldNr]
 		field, err := fieldBuilder.Build(fieldNr, imports)
 		if err != nil {
-			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for field %s", field.Name), err))
+			errAgg = errors.Join(errAgg, indentErrors(fmt.Sprintf("Errors for field %q", field.Name), err))
 		} else {
 			protoFields = append(protoFields, field)
 		}

@@ -136,7 +136,7 @@ func (f *FileSchema) build() (FileData, error) {
 		file.Messages = append(file.Messages, message)
 
 		if errAgg != nil {
-			messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %s message schema", m.Name), errAgg))
+			messageErrors = errors.Join(messageErrors, indentErrors(fmt.Sprintf("Errors for the %q message schema", m.GetName()), errAgg))
 		}
 	}
 
