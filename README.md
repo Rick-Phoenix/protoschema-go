@@ -17,7 +17,7 @@ From this schema declaration:
 ```go
 // Define the package
 var (
-	goMod        = "github.com/Rick-Phoenix/gofirst"
+	goMod        = "github.com/Rick-Phoenix/protoschema"
 	protoPackage = NewProtoPackage(ProtoPackageConfig{
 		Name:      "myapp.v1",
 		ProtoRoot: "proto",
@@ -276,9 +276,9 @@ This is what the converter package would look like for the schema above:
 package converter
 
 import (
-	"github.com/Rick-Phoenix/gofirst/db"
-	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
-	"github.com/Rick-Phoenix/gofirst/gen/myappv1"
+	"github.com/Rick-Phoenix/protoschema/db"
+	"github.com/Rick-Phoenix/protoschema/db/sqlgen"
+	"github.com/Rick-Phoenix/protoschema/gen/myappv1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

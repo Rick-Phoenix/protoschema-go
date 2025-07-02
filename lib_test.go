@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	sb "github.com/Rick-Phoenix/gofirst"
+	sb "github.com/Rick-Phoenix/protoschema"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +129,7 @@ func TestGeneration(t *testing.T) {
 
 	// tmpDir := t.TempDir()
 	tmpDir := "gen/temp"
-	goMod := "github.com/Rick-Phoenix/gofirst"
+	goMod := "github.com/Rick-Phoenix/protoschema"
 	config := sb.ProtoPackageConfig{
 		Name:               "myapp.v1",
 		GoModule:           goMod,

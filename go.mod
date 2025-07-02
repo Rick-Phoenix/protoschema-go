@@ -1,4 +1,4 @@
-module github.com/Rick-Phoenix/gofirst
+module github.com/Rick-Phoenix/protoschema
 
 go 1.24.4
 

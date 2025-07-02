@@ -4,13 +4,13 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Rick-Phoenix/gofirst/db"
-	"github.com/Rick-Phoenix/gofirst/db/sqlgen"
+	"github.com/Rick-Phoenix/protoschema/db"
+	"github.com/Rick-Phoenix/protoschema/db/sqlgen"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	goMod        = "github.com/Rick-Phoenix/gofirst"
+	goMod        = "github.com/Rick-Phoenix/protoschema"
 	protoPackage = NewProtoPackage(ProtoPackageConfig{
 		Name:      "myapp.v1",
 		ProtoRoot: "proto",
