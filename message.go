@@ -207,6 +207,10 @@ func (m *MessageSchema) checkModel() error {
 				if embeddedType.Kind() == reflect.Struct {
 					// Recursive
 					processFields(embeddedType)
+				} else if embeddedType.Kind() == reflect.Pointer {
+					if embeddedType.Elem().Kind() == reflect.Struct {
+						processFields(embeddedType.Elem())
+					}
 				}
 				continue
 			}

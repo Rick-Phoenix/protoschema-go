@@ -1,15 +1,13 @@
 package protoschema
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 
 	u "github.com/Rick-Phoenix/goutils"
 	"github.com/Rick-Phoenix/protoschema/db"
+	"github.com/Rick-Phoenix/protoschema/db/sqlgen"
 	"github.com/labstack/gommon/log"
 	_ "modernc.org/sqlite"
 )
@@ -45,12 +43,11 @@ type QueryData struct {
 	MakeParamStruct bool
 	FuncParamName   string
 	FuncParamType   string
-	Imports         *u.Set[string]
 }
 
 func (p *ProtoPackage) makeQuery() {
 	tmpl := p.tmpl
-	database, err := sql.Open("sqlite", "db/database.sqlite3?_time_format=sqlite")
+	database, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -58,11 +55,9 @@ func (p *ProtoPackage) makeQuery() {
 	qmap := make(map[string]string)
 	qmap["GetUser"] = "userId"
 
-	store := db.NewStore(database)
-	val := reflect.TypeOf(store.Queries)
+	val := reflect.TypeOf(sqlgen.New(database))
 
-	imports := u.NewSet[string]()
-	queryData := QueryData{Name: "GetUserWithPosts", FunctionParams: make(map[string]string), Imports: imports}
+	queryData := QueryData{Name: "GetUserWithPosts", FunctionParams: make(map[string]string)}
 
 	subqueries := []Subquery{{"GetUser", "userId"}, {"GetPostsFromUserId", ""}}
 
@@ -72,21 +67,16 @@ func (p *ProtoPackage) makeQuery() {
 		subQData := SubqueryData{Method: subQ.Method}
 		method, _ := val.MethodByName(subQ.Method)
 
-		fmt.Printf("Method Name: %+v\n", method.Name)
+		// fmt.Printf("Method Name: %+v\n", method.Name)
 		if method.Type.NumIn() >= 3 {
 			secondParam := method.Type.In(2)
 			if secondParam.Kind() == reflect.Struct {
 				subQData.ParamName = secondParam.Name()
 				queryData.FunctionParams[secondParam.Name()] = secondParam.String()
-				for i := range secondParam.NumField() {
-					field := secondParam.Field(i)
-					fmt.Printf("Param %d in %s: %+v %+v\n", i, method.Name, field.Name, field.Type.Name())
-				}
 			} else {
-				fmt.Printf("Single Param: %+v\n", secondParam.Name())
-				if v, ok := qmap[method.Name]; ok {
-					queryData.FunctionParams[v] = secondParam.Name()
-					subQData.ParamName = v
+				if singleParamName, ok := qmap[method.Name]; ok {
+					queryData.FunctionParams[singleParamName] = secondParam.Name()
+					subQData.ParamName = singleParamName
 				}
 			}
 		}
@@ -96,18 +86,14 @@ func (p *ProtoPackage) makeQuery() {
 			outElem := out.Elem()
 			outShortType := outElem.Name()
 			outLongType := out.String()
-			outPkgPath := outElem.PkgPath()
+			// outPkgPath := outElem.PkgPath()
 			if out.Kind() == reflect.Slice {
 				outShortType = outElem.Elem().Name() + "s"
-				outPkgPath = outElem.Elem().PkgPath()
+				// outPkgPath = outElem.Elem().PkgPath()
 			}
 			outShortLower := u.Uncapitalize(outShortType)
 			subQData.VarName = outShortLower
 			subQData.ReturnType = outLongType
-			fmt.Printf("Outshort: %+v\n", outShortType)
-			fmt.Printf("Outshortlower: %+v\n", outShortLower)
-			fmt.Printf("Outlong: %+v\n", outLongType)
-			fmt.Printf("Outpkgpath: %+v\n", outPkgPath)
 		}
 
 		subQueriesData = append(subQueriesData, subQData)
@@ -115,16 +101,22 @@ func (p *ProtoPackage) makeQuery() {
 
 	queryData.Subqueries = subQueriesData
 
-	outType := &db.UserWithPosts{}
+	outType := []db.UserWithPosts{}
 
 	outModel := reflect.TypeOf(outType).Elem()
 
-	queryData.OutType = outModel.String()
+	if outModel.Kind() == reflect.Pointer {
+		outModel = outModel.Elem()
+	}
+
+	queryData.OutType = reflect.TypeOf(outType).String()
+
+	if outModel.Kind() != reflect.Struct {
+		log.Fatalf("Not a struct")
+	}
 
 	for i := range outModel.NumField() {
 		field := outModel.Field(i)
-
-		fmt.Printf("Outfield %d: %+v\n", i, field.Name)
 		queryData.OutTypeFields = append(queryData.OutTypeFields, field.Name)
 	}
 
@@ -139,19 +131,12 @@ func (p *ProtoPackage) makeQuery() {
 		}
 	}
 
-	fmt.Printf("DEBUG: %+v\n", queryData)
+	// fmt.Printf("DEBUG: %+v\n", queryData)
 
 	outputPath := "gen/tttestquery.go"
 
-	var outputBuffer bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&outputBuffer, "multiQuery", queryData); err != nil {
-		fmt.Printf("Failed to execute template: %s", err.Error())
-	}
-
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		fmt.Println("Error dir")
-	}
-	if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
-		fmt.Println("Error writing the file")
+	err = u.ExecTemplateAndFormat(tmpl, "multiQuery", outputPath, queryData)
+	if err != nil {
+		fmt.Print(err)
 	}
 }
