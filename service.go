@@ -18,6 +18,7 @@ type HandlerData struct {
 // Maps handlers to their names.
 type HandlersMap map[string]Handler
 
+// A struct containing the references to the request and response messages for a given rpc handler.
 type Handler struct {
 	Request  *MessageSchema
 	Response *MessageSchema

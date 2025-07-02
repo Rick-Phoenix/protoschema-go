@@ -62,6 +62,7 @@ func (b *protoFieldInternal) IsNonScalar() bool {
 	return b.isNonScalar
 }
 
+// If this field has a message type that is defined with this library, this returns the pointer to that message schema.
 func (b *protoFieldInternal) GetMessageRef() *MessageSchema {
 	return b.messageRef
 }
@@ -82,6 +83,7 @@ func (b *protoFieldInternal) GetName() string {
 	return b.name
 }
 
+// Returns the internal data of the FieldBuilder instance. Mostly for internal use.
 func (b *protoFieldInternal) GetData() FieldData {
 	return FieldData{
 		Name: b.name, ProtoType: b.protoType, ProtoBaseType: b.protoBaseType, Rules: maps.Clone(b.rules),
@@ -91,6 +93,7 @@ func (b *protoFieldInternal) GetData() FieldData {
 	}
 }
 
+// Processes the field's data (rules, imports, etc) and returns a FieldData instance. Mostly for internal use.
 func (b *protoFieldInternal) Build(fieldNr uint32, imports Set) (FieldData, error) {
 	data := FieldData{
 		Name: b.name, ProtoType: b.protoType, GoType: b.goType, FieldNr: fieldNr,

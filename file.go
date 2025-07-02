@@ -18,7 +18,8 @@ type FileSchema struct {
 	// The name of the file. The ".proto" suffix will be added automatically by the constructor and the getter.
 	Name string
 	// Imports required by the components of the file will be added automatically. This can be used to add extra imports if necessary.
-	Imports    Set
+	Imports Set
+	// The protobuf extensions for this file.
 	Extensions Extensions
 	// Top level options.
 	Options  []ProtoOption

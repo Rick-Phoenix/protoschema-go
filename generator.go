@@ -15,6 +15,7 @@ import (
 var templateFS embed.FS
 
 // The function that processes the file schemas (and all the schemas inside them) and generates the proto files, while also calling the various hooks and the converter function.
+// This should be called after all the elements of the proto package have been added with the various constructors.
 func (p *ProtoPackage) Generate() error {
 	filesData := p.BuildFiles()
 
@@ -69,6 +70,21 @@ func (p *ProtoPackage) Generate() error {
 
 		if err := os.WriteFile(outputPath, outputBuffer.Bytes(), 0644); err != nil {
 			fmt.Print(err)
+		}
+
+		cmd := exec.Command("gofmt", "-w", outputPath)
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("An error occurred while trying to format the converter file at %q:\n%s\n", outputPath, err.Error())
+		}
+
+		importCmd := exec.Command("goimports", "-w", outputPath)
+		importCmd.Stderr = os.Stderr
+		importErr := importCmd.Run()
+		if importErr != nil {
+			fmt.Printf("An error occurred while trying to call goimports for the file %q:\n%s\n", outputPath, importErr.Error())
 		}
 
 		fmt.Printf("✅ Successfully generated converter at: %s\n", outputPath)

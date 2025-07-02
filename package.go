@@ -42,11 +42,11 @@ type ProtoPackageConfig struct {
 type ProtoPackage struct {
 	// The name of the package, i.e. "myapp.v1".
 	Name string
-	// If retrieved with the getter or the constructor, it defaults to the package name with slashes instead of dots, as per the proto convention ("myapp.v1" -> "myapp/v1")
+	// If accessed with the getter (or the ProtoPackage instance was created with the constructor), it defaults to the package name with slashes instead of dots, as per the proto convention ("myapp.v1" -> "myapp/v1")
 	BasePath string
 	// The full path to the package of the generated go files.
 	GoPackagePath string
-	// If retrieved with the getter or the constructor, it defaults to the last part of the go package path.
+	// If accessed with the getter (or the ProtoPackage instance was created with the constructor), it defaults to the last part of the go package path.
 	GoPackageName      string
 	protoRoot          string
 	goModule           string
@@ -63,7 +63,7 @@ type ProtoPackage struct {
 	converterFunc      ConverterFunc
 }
 
-// Access the package name safely.
+// Returns the name of the package, defaulting to an empty string if the pointer is nil.
 func (p *ProtoPackage) GetName() string {
 	if p == nil {
 		return ""
@@ -87,7 +87,7 @@ func (p *ProtoPackage) GetGoPackageName() string {
 	return p.GoPackageName
 }
 
-// Accesses the base path of the proto package, inferring it (assuming conventional paths) from the package's name if missing.
+// Accesses the base path of the proto package, inferring it (assuming the conventional structure "myapp.v1" -> "myapp/v1") from the package's name if not explicitely defined.
 func (p *ProtoPackage) GetBasePath() string {
 	if p == nil {
 		return ""
@@ -111,6 +111,7 @@ func (p *ProtoPackage) GetGoPackagePath() string {
 	return p.GoPackagePath
 }
 
+// The constructor for a ProtoPackage instance.
 func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 	p := &ProtoPackage{
 		Name:               conf.Name,
