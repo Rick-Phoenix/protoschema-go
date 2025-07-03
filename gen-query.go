@@ -21,15 +21,17 @@ type Subquery struct {
 }
 
 type SubqueryData struct {
-	Method     string
-	ParamName  string
-	VarName    string
-	ReturnType string
-	NoReturn   bool
+	Method        string
+	ParamName     string
+	VarName       string
+	ReturnType    string
+	NoReturn      bool
+	ParentContext *QueryData
 }
 
 type QuerySchema struct {
 	Name       string
+	Queries    []QueryGroup
 	Subqueries []Subquery
 	OutType    any
 	Store      any
@@ -41,13 +43,19 @@ type QueryGroup struct {
 	Subqueries []Subquery
 }
 
+type QueryGroupData struct {
+	IsTx       bool
+	Subqueries []SubqueryData
+}
+
 type QueryData struct {
 	Name            string
 	FunctionParams  map[string]string
 	OutType         string
 	OutTypeFields   []string
-	Subqueries      []SubqueryData
+	Queries         []QueryGroupData
 	MakeParamStruct bool
+	HasTx           bool
 	FuncParamName   string
 	FuncParamType   string
 }
@@ -62,12 +70,14 @@ func (p *ProtoPackage) makeQuery() {
 	querySchema := QuerySchema{
 		Name:    "GetUserWithPosts",
 		OutType: &db.PostWithUser{},
-		Subqueries: []Subquery{
-			{Method: "UpdatePost"},
-			{Method: "GetUser", SingleParamName: "userId"},
-			// {Method: "GetUser", QueryParamName: "GetPostsFromUserIdParams.UserId"},
-			// {Method: "GetPostsFromUserId"},
+		Queries: []QueryGroup{
+			{IsTx: true, Subqueries: []Subquery{{Method: "UpdatePost"}, {Method: "UpdateUser", NoReturn: true}}},
+			{Subqueries: []Subquery{{Method: "GetUser", SingleParamName: "userId"}}},
 		},
+		// Subqueries: []Subquery{
+		// {Method: "GetUser", QueryParamName: "GetPostsFromUserIdParams.UserId"},
+		// {Method: "GetPostsFromUserId"},
+		// },
 		Store:   sqlgen.New(database),
 		Package: "db",
 	}
@@ -80,46 +90,58 @@ func (p *ProtoPackage) makeQuery() {
 
 	queryData := QueryData{Name: querySchema.Name, FunctionParams: make(map[string]string)}
 
-	subQueriesData := []SubqueryData{}
+	for _, queryGroup := range querySchema.Queries {
 
-	for _, subQ := range querySchema.Subqueries {
-		subQData := SubqueryData{Method: subQ.Method}
-		method, ok := store.MethodByName(subQ.Method)
-
-		if !ok {
-			log.Fatalf("Could not find method %q in %q", subQ.Method, store.String())
+		if len(queryGroup.Subqueries) > 1 {
+			queryData.HasTx = true
 		}
 
-		if method.Type.NumIn() >= 3 {
-			secondParam := method.Type.In(2)
-			if secondParam.Kind() == reflect.Struct {
-				subQData.ParamName = secondParam.Name()
-				queryData.FunctionParams[secondParam.Name()] = getRealPkgPath(secondParam, querySchema.Package)
-			} else if subQ.SingleParamName != "" {
-				subQData.ParamName = subQ.SingleParamName
-				queryData.FunctionParams[subQ.SingleParamName] = secondParam.Name()
-			} else if subQ.QueryParamName != "" {
-				subQData.ParamName = subQ.QueryParamName
+		queryGroupData := QueryGroupData{IsTx: queryGroup.IsTx}
+
+		for _, subQ := range queryGroup.Subqueries {
+			subQData := SubqueryData{Method: subQ.Method, ParentContext: &queryData, NoReturn: subQ.NoReturn}
+			method, ok := store.MethodByName(subQ.Method)
+
+			if !ok {
+				log.Fatalf("Could not find method %q in %q", subQ.Method, store.String())
 			}
-		}
 
-		if method.Type.NumOut() > 0 {
-			out := method.Type.Out(0)
-			outElem := out.Elem()
-			outShortType := outElem.Name()
-			outLongType := getRealPkgPath(out, querySchema.Package)
-			if out.Kind() == reflect.Slice {
-				outShortType = outElem.Elem().Name() + "s"
+			if method.Type.NumIn() >= 3 {
+				secondParam := method.Type.In(2)
+				if secondParam.Kind() == reflect.Struct {
+					subQData.ParamName = secondParam.Name()
+					queryData.FunctionParams[secondParam.Name()] = getRealPkgPath(secondParam, querySchema.Package)
+
+				} else if subQ.SingleParamName != "" {
+					subQData.ParamName = subQ.SingleParamName
+					queryData.FunctionParams[subQ.SingleParamName] = secondParam.Name()
+				} else if subQ.QueryParamName != "" {
+					subQData.ParamName = subQ.QueryParamName
+				}
 			}
-			outShortLower := u.Uncapitalize(outShortType)
-			subQData.VarName = outShortLower
-			subQData.ReturnType = outLongType
+
+			if len(queryData.FunctionParams) > 1 {
+				queryData.MakeParamStruct = true
+			}
+
+			if !subQ.NoReturn && method.Type.NumOut() > 0 {
+				out := method.Type.Out(0)
+				outElem := out.Elem()
+				outShortType := outElem.Name()
+				outLongType := getRealPkgPath(out, querySchema.Package)
+				if out.Kind() == reflect.Slice {
+					outShortType = outElem.Elem().Name() + "s"
+				}
+				outShortLower := u.Uncapitalize(outShortType)
+				subQData.VarName = outShortLower
+				subQData.ReturnType = outLongType
+			}
+
+			queryGroupData.Subqueries = append(queryGroupData.Subqueries, subQData)
 		}
 
-		subQueriesData = append(subQueriesData, subQData)
+		queryData.Queries = append(queryData.Queries, queryGroupData)
 	}
-
-	queryData.Subqueries = subQueriesData
 
 	outModel := reflect.TypeOf(querySchema.OutType).Elem()
 
@@ -139,7 +161,6 @@ func (p *ProtoPackage) makeQuery() {
 	}
 
 	if len(queryData.FunctionParams) > 1 {
-		queryData.MakeParamStruct = true
 		queryData.FuncParamName = "params"
 		queryData.FuncParamType = queryData.Name + "Params"
 	} else {
@@ -151,7 +172,7 @@ func (p *ProtoPackage) makeQuery() {
 
 	outputPath := "db/tttestquery.go"
 
-	err = u.ExecTemplateAndFormat(tmpl, "txQuery", outputPath, queryData)
+	err = u.ExecTemplateAndFormat(tmpl, "multiQuery", outputPath, queryData)
 	if err != nil {
 		fmt.Print(err)
 	}
