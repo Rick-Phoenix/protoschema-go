@@ -1,5 +1,19 @@
-func (s *Store) Get{{ .Resource }}(ctx context.Context, {{ template "params" .Params }}, error) {
-	tx, err := s.db.(*sql.DB).BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+{{ define "txQuery" }}
+
+package db
+{{ $subQueriesLen := len .Subqueries }}
+{{ $makeParamStruct := .MakeParamStruct }}
+
+{{ if .MakeParamStruct }}
+type {{ .Name }}Params struct {
+  {{ range $name, $type := .FunctionParams }}
+  {{ $name }} {{ $type }}
+  {{ end }}
+}
+{{ end }}
+
+func (s *Store) {{ .Name }}(ctx context.Context, {{ .FuncParamName }} {{ .FuncParamType }}) (*{{ .OutType }}, error) {
+  tx, err := s.db.(*sql.DB).BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -7,17 +21,21 @@ func (s *Store) Get{{ .Resource }}(ctx context.Context, {{ template "params" .Pa
 
 	qtx := s.Queries.WithTx(tx)
   {{ range .Subqueries }}
-  {{ .Item }}, err := qtx.(ctx, {{ template "params" .Params }}) 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get {{ .Item }}: %w", err)
-	}
+  {{ if not .NoReturn }}{{ .VarName }},{{end}} err := qtx.{{ .Method }}(ctx, {{ if $makeParamStruct }}params.{{ end }}{{ .ParamName }})
+  if err != nil {
+    return {{ if not .NoReturn }}nil, {{end}}err
+  }
   {{ end }}
 
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return &{{ .OutputType }}{
-		User: user, Posts: ToPointer(posts),
-	}, nil
+  return {{ if .OutType }}&{{ .OutType }}{
+    {{ range .OutTypeFields }}
+    {{ . }}: {{ lower . }}, 
+    {{ end }}
+	},{{ end }} nil
 }
+
+{{ end }}
