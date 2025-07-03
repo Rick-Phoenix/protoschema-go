@@ -48,7 +48,7 @@ var PostSchema = PostFile.NewMessage(MessageSchema{
 		5: String("content").Optional(),
 		6: Int64("subreddit_id"),
 	},
-	ModelIgnore: []string{"content"},
+	ModelIgnore: []string{"content", "updated_at"},
 	Model:       &sqlgen.Post{},
 })
 

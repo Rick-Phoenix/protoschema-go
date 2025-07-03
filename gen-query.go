@@ -3,6 +3,7 @@ package protoschema
 import (
 	"database/sql"
 	"fmt"
+	"path"
 	"reflect"
 
 	u "github.com/Rick-Phoenix/goutils"
@@ -16,6 +17,7 @@ type Subquery struct {
 	Method          string
 	SingleParamName string
 	QueryParamName  string
+	NoReturn        bool
 }
 
 type SubqueryData struct {
@@ -23,10 +25,7 @@ type SubqueryData struct {
 	ParamName  string
 	VarName    string
 	ReturnType string
-}
-
-type Value struct {
-	PkgPath string
+	NoReturn   bool
 }
 
 type QuerySchema struct {
@@ -34,6 +33,12 @@ type QuerySchema struct {
 	Subqueries []Subquery
 	OutType    any
 	Store      any
+	Package    string
+}
+
+type QueryGroup struct {
+	IsTx       bool
+	Subqueries []Subquery
 }
 
 type QueryData struct {
@@ -56,12 +61,15 @@ func (p *ProtoPackage) makeQuery() {
 
 	querySchema := QuerySchema{
 		Name:    "GetUserWithPosts",
-		OutType: &db.UserWithPosts{},
+		OutType: &db.PostWithUser{},
 		Subqueries: []Subquery{
-			{"GetUser", "", "GetPostsFromUserIdParams.UserId"},
-			{"GetPostsFromUserId", "", ""},
+			{Method: "UpdatePost"},
+			{Method: "GetUser", SingleParamName: "userId"},
+			// {Method: "GetUser", QueryParamName: "GetPostsFromUserIdParams.UserId"},
+			// {Method: "GetPostsFromUserId"},
 		},
-		Store: sqlgen.New(database),
+		Store:   sqlgen.New(database),
+		Package: "db",
 	}
 
 	store := reflect.TypeOf(querySchema.Store)
@@ -86,7 +94,7 @@ func (p *ProtoPackage) makeQuery() {
 			secondParam := method.Type.In(2)
 			if secondParam.Kind() == reflect.Struct {
 				subQData.ParamName = secondParam.Name()
-				queryData.FunctionParams[secondParam.Name()] = secondParam.String()
+				queryData.FunctionParams[secondParam.Name()] = getRealPkgPath(secondParam, querySchema.Package)
 			} else if subQ.SingleParamName != "" {
 				subQData.ParamName = subQ.SingleParamName
 				queryData.FunctionParams[subQ.SingleParamName] = secondParam.Name()
@@ -99,11 +107,9 @@ func (p *ProtoPackage) makeQuery() {
 			out := method.Type.Out(0)
 			outElem := out.Elem()
 			outShortType := outElem.Name()
-			outLongType := out.String()
-			// outPkgPath := outElem.PkgPath()
+			outLongType := getRealPkgPath(out, querySchema.Package)
 			if out.Kind() == reflect.Slice {
 				outShortType = outElem.Elem().Name() + "s"
-				// outPkgPath = outElem.Elem().PkgPath()
 			}
 			outShortLower := u.Uncapitalize(outShortType)
 			subQData.VarName = outShortLower
@@ -121,7 +127,7 @@ func (p *ProtoPackage) makeQuery() {
 		outModel = outModel.Elem()
 	}
 
-	queryData.OutType = outModel.String()
+	queryData.OutType = getRealPkgPath(outModel, querySchema.Package)
 
 	if outModel.Kind() != reflect.Struct {
 		log.Fatalf("Not a struct")
@@ -143,12 +149,18 @@ func (p *ProtoPackage) makeQuery() {
 		}
 	}
 
-	// fmt.Printf("DEBUG: %+v\n", queryData)
+	outputPath := "db/tttestquery.go"
 
-	outputPath := "gen/tttestquery.go"
-
-	err = u.ExecTemplateAndFormat(tmpl, "multiQuery", outputPath, queryData)
+	err = u.ExecTemplateAndFormat(tmpl, "txQuery", outputPath, queryData)
 	if err != nil {
 		fmt.Print(err)
 	}
+}
+
+func getRealPkgPath(model reflect.Type, pkg string) string {
+	if path.Base(model.PkgPath()) == pkg {
+		return model.Name()
+	}
+
+	return model.String()
 }
