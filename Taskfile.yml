@@ -14,3 +14,6 @@ tasks:
   bufdeps:
     dir: proto
     cmd: buf dep update
+  sqlc:
+    cmd: sqlc generate
+    dir: testdata
