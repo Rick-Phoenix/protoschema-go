@@ -1,17 +1,6 @@
 {{ define "txQuery" }}
 
-  {{ range .Subqueries }}
-    {{ if .NoReturn }}
-    if err := qtx.{{ .Method }}(ctx, {{ if .ParentContext.MakeParamStruct }}params.{{ end }}{{ .ParamName }}); err != nil {
-      return nil, fmt.Errorf("error with {{ .Method }}: %w", err)
-    }
-    {{ else }}
-    {{ .VarName }}, err := qtx.{{ .Method }}(ctx, {{ if .ParentContext.MakeParamStruct }}params.{{ end }}{{ .ParamName }})
-    if err != nil {
-      return nil, fmt.Errorf("failed to get {{ .VarName }}: %w", err)
-    }
-  {{ end }}{{/* If .NoReturn */}}
-  {{ end }}
+  {{ template "singleSubquery" . }}
 
   if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)

@@ -18,6 +18,8 @@ type Subquery struct {
 	SingleParamName string
 	QueryParamName  string
 	NoReturn        bool
+	Varname         string
+	DiscardReturn   bool
 }
 
 type SubqueryData struct {
@@ -26,6 +28,7 @@ type SubqueryData struct {
 	VarName       string
 	ReturnType    string
 	NoReturn      bool
+	DiscardReturn bool
 	ParentContext *QueryData
 }
 
@@ -99,7 +102,7 @@ func (p *ProtoPackage) makeQuery() {
 		queryGroupData := QueryGroupData{IsTx: queryGroup.IsTx}
 
 		for _, subQ := range queryGroup.Subqueries {
-			subQData := SubqueryData{Method: subQ.Method, ParentContext: &queryData, NoReturn: subQ.NoReturn}
+			subQData := SubqueryData{Method: subQ.Method, ParentContext: &queryData, VarName: subQ.Varname, NoReturn: subQ.NoReturn, DiscardReturn: subQ.DiscardReturn}
 			method, ok := store.MethodByName(subQ.Method)
 
 			if !ok {
@@ -133,7 +136,13 @@ func (p *ProtoPackage) makeQuery() {
 					outShortType = outElem.Elem().Name() + "s"
 				}
 				outShortLower := u.Uncapitalize(outShortType)
-				subQData.VarName = outShortLower
+				if subQ.NoReturn {
+					subQData.VarName = ""
+				} else if subQ.DiscardReturn {
+					subQData.VarName = "_"
+				} else if subQ.Varname == "" {
+					subQData.VarName = outShortLower
+				}
 				subQData.ReturnType = outLongType
 			}
 

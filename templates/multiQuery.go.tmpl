@@ -1,9 +1,6 @@
 {{ define "multiQuery" }}
 
 package db
-{{ $makeParamStruct := .MakeParamStruct }}
-{{ $hasTx := .HasTx }}
-
 {{ if .MakeParamStruct }}
 type {{ .Name }}Params struct {
   {{ range $name, $type := .FunctionParams }}
@@ -27,7 +24,7 @@ func (s *Store) {{ .Name }}(ctx context.Context, {{ .FuncParamName }} {{ .FuncPa
 
 {{ if .IsTx }}
 
-  {{ if  $hasTx }}
+  {{ if  $.HasTx }}
   {{ template "txQuery" . }}
   {{ else }}
   {{ template "singleSubquery" . }}
@@ -35,13 +32,11 @@ func (s *Store) {{ .Name }}(ctx context.Context, {{ .FuncParamName }} {{ .FuncPa
 
 {{ else }}
 
-  {{ $subQueriesLen := len .Subqueries }}
-
-  {{ if gt $subQueriesLen 1 }}
-  {{ template "goroutineSubquery" . }}
-  {{ else }}{{/* If subQueriesLen = 1 */}}
+  {{ if gt (len .Subqueries) 1 }}
+  {{ template "goroutineQuery" . }}
+  {{ else }}
   {{ template "singleSubquery" . }}
-  {{ end }}{{/* If subQueriesLen > 1 */}}
+  {{ end }}
 
 {{ end }}
 
