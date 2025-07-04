@@ -244,12 +244,12 @@ func TestGeneration(t *testing.T) {
 		Resource: "User",
 		Handlers: sb.HandlersMap{
 			"GetUser": {
-				GetUserRequest,
-				GetUserResponse,
+				Request:  GetUserRequest,
+				Response: GetUserResponse,
 			},
 			"UpdateUser": {
-				UpdateUserRequest,
-				sb.Empty(),
+				Request:  UpdateUserRequest,
+				Response: sb.Empty(),
 			},
 		},
 	})

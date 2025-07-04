@@ -4,6 +4,8 @@ import (
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/Rick-Phoenix/protoschema/_test/db"
 )
 
 // Function that receives the service data after its schema has been processed.
@@ -13,6 +15,7 @@ type HandlerData struct {
 	Name     string
 	Request  *MessageSchema
 	Response *MessageSchema
+	Query    db.QueryData
 }
 
 // Maps handlers to their names.
@@ -22,6 +25,7 @@ type HandlersMap map[string]Handler
 type Handler struct {
 	Request  *MessageSchema
 	Response *MessageSchema
+	Query    db.QueryData
 }
 
 // The output struct of the schema after it has been processed. Gets passed as an argument to the ServiceHook.

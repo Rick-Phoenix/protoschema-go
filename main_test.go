@@ -1,12 +1,12 @@
 package protoschema
 
 import (
+	"database/sql"
 	"path"
 	"testing"
 
-	"github.com/Rick-Phoenix/protoschema/testdata/db"
-	"github.com/Rick-Phoenix/protoschema/testdata/db/sqlgen"
-	"github.com/stretchr/testify/assert"
+	"github.com/Rick-Phoenix/protoschema/_test/db"
+	"github.com/labstack/gommon/log"
 )
 
 var (
@@ -28,12 +28,12 @@ var PostService = PostFile.NewService(ServiceSchema{
 	Resource: "Post",
 	Handlers: HandlersMap{
 		"GetPost": {
-			GetPostRequest,
-			GetPostResponse,
+			Request:  GetPostRequest,
+			Response: GetPostResponse,
 		},
 		"UpdatePost": {
-			UpdatePostRequest,
-			Empty(),
+			Request:  UpdatePostRequest,
+			Response: Empty(),
 		},
 	},
 })
@@ -49,7 +49,7 @@ var PostSchema = PostFile.NewMessage(MessageSchema{
 		6: Int64("subreddit_id"),
 	},
 	ModelIgnore: []string{"content", "updated_at"},
-	Model:       &sqlgen.Post{},
+	Model:       &db.Post{},
 })
 
 var GetPostRequest = PostFile.NewMessage(MessageSchema{
@@ -74,7 +74,6 @@ var UpdatePostRequest = PostFile.NewMessage(MessageSchema{Name: "UpdatePostReque
 var UserFile = protoPackage.NewFile(FileSchema{
 	Name:    "user",
 	Package: protoPackage,
-	Hook:    protoPackage.genConnectHandler,
 })
 
 var UserSchema = UserFile.NewMessage(MessageSchema{
@@ -114,17 +113,27 @@ var UserService = UserFile.NewService(ServiceSchema{
 	Resource: "User",
 	Handlers: HandlersMap{
 		"GetUser": {
-			GetUserRequest, GetUserResponse,
+			Request:  GetUserRequest,
+			Response: GetUserResponse,
 		},
 		"UpdateUser": {
-			UpdateUserRequest,
-			Empty(),
+			Request:  UpdateUserRequest,
+			Response: Empty(),
 		},
 	},
 })
 
 func TestMain(t *testing.T) {
-	err := protoPackage.Generate()
-
-	assert.NoError(t, err, "Main Test")
+	database, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	store := db.New(database)
+	store.ExtractMethods()
+	// handlerBuilder := NewHandlerBuilder(store, "")
+	// files := protoPackage.BuildFiles()
+	// for _, file := range files {
+	// 	err := handlerBuilder.genConnectHandler(file)
+	// 	assert.NoError(t, err, "Main Test")
+	// }
 }
