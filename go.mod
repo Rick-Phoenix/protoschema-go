@@ -13,8 +13,6 @@ require (
 	modernc.org/sqlite v1.38.0
 )
 
-replace github.com/Rick-Phoenix/goutils v0.1.2 => ../go-utils
-
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
