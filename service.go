@@ -51,12 +51,21 @@ type ServiceSchema struct {
 	Metadata map[string]any
 }
 
-func (s *ServiceSchema) build(imports Set) ServiceData {
-	out := ServiceData{
-		Resource: s.Resource, Options: s.Options, Metadata: s.Metadata,
+// Gets the name of the go package for this service's proto package, if set.
+func (s *ServiceSchema) GetGoPackagePath() string {
+	if s == nil || s.Package == nil {
+		return ""
 	}
 
-	handlerKeys := slices.SortedFunc(maps.Keys(s.Handlers), func(a, b string) int {
+	return s.Package.GetGoPackagePath()
+}
+
+func (f *ServiceSchema) build(imports Set) ServiceData {
+	out := ServiceData{
+		Resource: f.Resource, Options: f.Options, Metadata: f.Metadata,
+	}
+
+	handlerKeys := slices.SortedFunc(maps.Keys(f.Handlers), func(a, b string) int {
 		methodsOrder := map[string]int{
 			"Create": 0,
 			"Get":    1,
@@ -87,7 +96,7 @@ func (s *ServiceSchema) build(imports Set) ServiceData {
 	})
 
 	for _, name := range handlerKeys {
-		h := s.Handlers[name]
+		h := f.Handlers[name]
 
 		handlerData := HandlerData{
 			Name:     name,
@@ -96,15 +105,15 @@ func (s *ServiceSchema) build(imports Set) ServiceData {
 		}
 
 		for _, v := range []*MessageSchema{h.Request, h.Response} {
-			if v != nil && v.File != s.File && v.ImportPath != "" {
+			if v != nil && v.File != f.File && v.ImportPath != "" {
 				imports[v.ImportPath] = present
 			}
 		}
 		out.Handlers = append(out.Handlers, handlerData)
 	}
 
-	if s.Hook != nil {
-		s.Hook(out)
+	if f.Hook != nil {
+		f.Hook(out)
 	}
 
 	return out

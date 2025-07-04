@@ -166,6 +166,15 @@ func (m *MessageSchema) GetGoPackageName() string {
 	return m.Package.GetGoPackageName()
 }
 
+// Returns the path of the go package for this message's proto package, if set.
+func (m *MessageSchema) GetGoPackagePath() string {
+	if m == nil || m.Package == nil {
+		return ""
+	}
+
+	return m.Package.GetGoPackagePath()
+}
+
 // Helper to generate a Cel option for this message.
 func (m *MessageSchema) CelOption(id, message, expression string) {
 	opt := ProtoOption{}

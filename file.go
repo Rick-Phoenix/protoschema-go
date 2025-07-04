@@ -73,6 +73,15 @@ func (f *FileSchema) GetImportPath() string {
 	return path.Join(f.Package.GetBasePath(), name)
 }
 
+// Gets the name of the go package for this file's proto package, if set.
+func (f FileData) GetGoPackagePath() string {
+	if f.Package == nil {
+		return ""
+	}
+
+	return f.Package.GetGoPackagePath()
+}
+
 // Creates a new MessageSchema instance, automatically setting its Package, File and ImportPath fields.
 // If a Hook is missing in the schema, it assigns the global MessageHook (if defined).
 func (f *FileSchema) NewMessage(s MessageSchema) *MessageSchema {

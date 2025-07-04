@@ -21,21 +21,23 @@ func (s *{{ $res }}Service) {{ .Name }}(
   req *connect.Request[{{ .Request.GetGoPackageName }}.{{ .Request.Name }}],
 ) (*connect.Response[{{ .Response.GetGoPackageName }}.{{ .Response.Name }}], error) {
 
-  resource, err := s.Store.method(ctx, params)
-  if errors.Is(err, sql.ErrNoRows) {
-    return nil, connect.NewError(connect.CodeNotFound, err)
-  } else {
-    var sqliteErr *sqlite.Error
-    if errors.As(err, &sqliteErr) {
-      switch sqliteErr.Code() {
-      case sqlite3.SQLITE_CONSTRAINT:
-        //
-      }
-    }
-  }
+  {{ .Query.Name }}, err := s.Store.Queries.{{ .Query.Method }}(ctx, req.Msg.Get{{ .Query.Param }}())
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		} else {
+			var sqliteErr *sqlite.Error
+			if errors.As(err, &sqliteErr) {
+				fmt.Printf("Sqlite error: %s\n", sqlite.ErrorCodeString[sqliteErr.Code()])
+			} else {
+				fmt.Printf("Unknown error: %s\n", err.Error())
+			}
+			return nil, connect.NewError(connect.CodeUnknown, err)
+		}
+	}
 
   return connect.NewResponse(&{{ .Response.GetGoPackageName }}.{{ .Response.Name }}{
-
+    {{ .Query.ReturnField }}: {{ .Query.Name }},
 	}), nil
 }
 
