@@ -259,7 +259,7 @@ service PostService {
 
 ## Converter functions
 
-The package will also generate some functions that can be used to easily convert a struct from its original model type (usually a database item) to the message type that will be used in responses. 
+protoschema will also generate some functions that can be used to easily convert a struct from its original model type (usually a database item) to the message type that will be used in responses. 
 
 At the moment, the converters generator can only handle the following field types:
 
@@ -267,7 +267,7 @@ At the moment, the converters generator can only handle the following field type
 - Types that refer to other message schemas belonging to the same package 
 - time.Time, which gets converted with timestamppb.New. 
 
-However, the package also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function. 
+However, protoschema also allows the user to define their custom function that receives the data for the field (along with the context of its file, package, message and message model) and overrides the default function. 
 (Function signature is shown below)
 
 This is what the converter package would look like for the schema above:
@@ -340,7 +340,7 @@ This function will be called for each model field being iterated during the vali
 
 ## Model validation
 
-The package handles validation for message schemas. When a message schema has a defined model, (like the `&db.UserWithPosts{}`), the package will show an error if the types in the schema do not match the types in the model struct, or if a field is present in one but not in the other (a ModelIgnore slice of strings can be used to ignore specific fields if necessary).
+protoschema handles validation for message schemas. When a message schema has a defined model, (like the `&db.UserWithPosts{}`), protoschema will show an error if the types in the schema do not match the types in the model struct, or if a field is present in one but not in the other (a ModelIgnore slice of strings can be used to ignore specific fields if necessary).
 
 For example, let's try changing the User model from this:
 
@@ -371,7 +371,7 @@ While also adding an extra field to the message schema which is not present in i
 5: String("non_db_field")
 ```
 
-This will cause the package to report these errors and exit:
+This will cause protoschema to report these errors and exit:
 
 ```
 ❌ The following errors occurred:
