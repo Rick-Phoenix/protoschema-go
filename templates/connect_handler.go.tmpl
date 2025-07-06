@@ -1,5 +1,5 @@
 {{ define "queryCall" }}
-{{ if not .IsErr }}{{ index .ReturnTypes 0 }}, {{ end }}err := s.Queries.{{ .Name }}(ctx, req.Msg.Get())
+{{ if not .IsErr }}{{ uncapitalize (index .ReturnTypes 0) }}, {{ end }}err := s.Queries.{{ .Name }}(ctx, req.Msg.Get())
 {{ end }}
 {{ define "connectHandler" }}
 package handlers
@@ -40,12 +40,10 @@ func (s *{{ $res }}Service) {{ .Name }}(
 	}
 
   return connect.NewResponse(&{{ .Response.GetGoPackageName }}.{{ .Response.Name }}{
-    {{ if .Query }}
-    {{ range $name, $_ := .Query.ReturnFields }}
-    {{ $name }}: ,
+    {{ range .Response.GetFieldNames }}
+    {{ capitalize .  }}: {{ . }},
     {{ end }}
-    {{ end }}
-	), nil
+  }), nil
 }
 
 {{ end }}

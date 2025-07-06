@@ -122,6 +122,18 @@ func (m *MessageSchema) GetFields() map[string]FieldBuilder {
 	return out
 }
 
+func (m *MessageSchema) GetFieldNames() []string {
+	out := make([]string, len(m.Fields))
+	i := 0
+
+	for _, field := range m.Fields {
+		out[i] = field.GetName()
+		i++
+	}
+
+	return out
+}
+
 // Gets the message's name, adding the prefix with the parent message's name if nested.
 func (m *MessageSchema) GetName() string {
 	if m == nil {

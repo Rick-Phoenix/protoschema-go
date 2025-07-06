@@ -16,6 +16,7 @@ type HandlerData struct {
 	Request  *MessageSchema
 	Response *MessageSchema
 	Query    *db.QueryData
+	Metadata map[string]any
 }
 
 // Maps handlers to their names.
@@ -26,6 +27,7 @@ type Handler struct {
 	Request  *MessageSchema
 	Response *MessageSchema
 	Query    *db.QueryData
+	Metadata map[string]any
 }
 
 // The output struct of the schema after it has been processed. Gets passed as an argument to the ServiceHook.
@@ -34,7 +36,7 @@ type ServiceData struct {
 	File     *FileSchema
 	Package  *ProtoPackage
 	Options  []ProtoOption
-	Handlers []HandlerData
+	Handlers []*HandlerData
 	Metadata map[string]any
 }
 
@@ -106,6 +108,8 @@ func (f *ServiceSchema) build(imports Set) ServiceData {
 			Name:     name,
 			Request:  h.Request,
 			Response: h.Response,
+			Query:    h.Query,
+			Metadata: h.Metadata,
 		}
 
 		for _, v := range []*MessageSchema{h.Request, h.Response} {
@@ -113,7 +117,7 @@ func (f *ServiceSchema) build(imports Set) ServiceData {
 				imports[v.ImportPath] = present
 			}
 		}
-		out.Handlers = append(out.Handlers, handlerData)
+		out.Handlers = append(out.Handlers, &handlerData)
 	}
 
 	if f.Hook != nil {

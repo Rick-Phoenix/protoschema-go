@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"text/template"
 )
@@ -64,82 +63,52 @@ type ProtoPackage struct {
 	converterFunc      ConverterFunc
 }
 
-type StoreData struct {
-	PkgPath string
-	Methods map[string]StoreMethod
-}
-
-type StoreMethod struct {
-	Name       string
-	ReturnType string
-}
-
 // Returns the name of the package, defaulting to an empty string if the pointer is nil.
-func (hb *ProtoPackage) GetName() string {
-	if hb == nil {
+func (p *ProtoPackage) GetName() string {
+	if p == nil {
 		return ""
 	}
 
-	return hb.Name
+	return p.Name
 }
 
 // Accesses the go package name and uses the default value if it's missing.
-func (hb *ProtoPackage) GetGoPackageName() string {
-	if hb == nil {
+func (p *ProtoPackage) GetGoPackageName() string {
+	if p == nil {
 		return ""
 	}
 
-	if hb.GoPackageName == "" {
-		if goPkgBase := path.Base(hb.GoPackagePath); goPkgBase != "." {
+	if p.GoPackageName == "" {
+		if goPkgBase := path.Base(p.GoPackagePath); goPkgBase != "." {
 			return goPkgBase
 		}
 	}
 
-	return hb.GoPackageName
+	return p.GoPackageName
 }
 
 // Accesses the base path of the proto package, inferring it (assuming the conventional structure "myapp.v1" -> "myapp/v1") from the package's name if not explicitely defined.
-func (hb *ProtoPackage) GetBasePath() string {
-	if hb == nil {
+func (p *ProtoPackage) GetBasePath() string {
+	if p == nil {
 		return ""
 	}
 
-	if hb.BasePath == "" {
-		pkgPath := strings.ReplaceAll(hb.Name, ".", "/")
-		hb.BasePath = pkgPath
+	if p.BasePath == "" {
+		pkgPath := strings.ReplaceAll(p.Name, ".", "/")
+		p.BasePath = pkgPath
 		return pkgPath
 	}
 
-	return hb.BasePath
+	return p.BasePath
 }
 
 // Returns the full path to the package of the generated go files.
-func (hb *ProtoPackage) GetGoPackagePath() string {
-	if hb == nil {
+func (p *ProtoPackage) GetGoPackagePath() string {
+	if p == nil {
 		return ""
 	}
 
-	return hb.GoPackagePath
-}
-
-func extractMethods(model reflect.Type) map[string]StoreMethod {
-	output := make(map[string]StoreMethod)
-
-	for i := range model.NumMethod() {
-		method := model.Method(i)
-		data := StoreMethod{}
-		data.Name = method.Name
-		if method.Type.NumOut() > 0 {
-			outType := method.Type.Out(0)
-			if outType.Kind() == reflect.Pointer {
-				outType = outType.Elem()
-			}
-			data.ReturnType = outType.Name()
-		}
-		output[data.Name] = data
-	}
-
-	return output
+	return p.GoPackagePath
 }
 
 // The constructor for a ProtoPackage instance.
@@ -193,10 +162,10 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 }
 
 // Adds a file to the package and returns a pointer to it.
-func (hb *ProtoPackage) NewFile(s FileSchema) *FileSchema {
+func (p *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 	newFile := &FileSchema{
 		Name:       s.Name + ".proto",
-		Package:    hb,
+		Package:    p,
 		Imports:    make(Set),
 		Options:    s.Options,
 		Extensions: s.Extensions,
@@ -207,19 +176,19 @@ func (hb *ProtoPackage) NewFile(s FileSchema) *FileSchema {
 	}
 	maps.Copy(newFile.Imports, s.Imports)
 	if s.Hook == nil {
-		s.Hook = hb.fileHook
+		s.Hook = p.fileHook
 	}
-	hb.fileSchemas = append(hb.fileSchemas, newFile)
+	p.fileSchemas = append(p.fileSchemas, newFile)
 	return newFile
 }
 
 // Processes all the files' data and returns it. This is called automatically when .Generate() is called.
 // In most cases it's better to use the FileHook to perform custom actions on the data, but this can also be used to collect all the processed data and use it directly.
-func (hb *ProtoPackage) BuildFiles() []FileData {
+func (p *ProtoPackage) BuildFiles() []FileData {
 	out := []FileData{}
 	var fileErrors error
 
-	for _, f := range hb.fileSchemas {
+	for _, f := range p.fileSchemas {
 		file, err := f.build()
 		if err != nil {
 			fileErrors = errors.Join(fileErrors, indentErrors(fmt.Sprintf("Errors in the file %q", f.Name), err))

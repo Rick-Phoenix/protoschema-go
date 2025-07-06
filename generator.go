@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	u "github.com/Rick-Phoenix/goutils"
 )
 
 //go:embed templates/*
@@ -167,5 +169,7 @@ var funcMap = template.FuncMap{
 
 		return f.ProtoType
 	},
-	"lower": strings.ToLower,
+	"lower":        strings.ToLower,
+	"capitalize":   u.Capitalize,
+	"uncapitalize": u.Uncapitalize,
 }
