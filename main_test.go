@@ -7,6 +7,7 @@ import (
 
 	"github.com/Rick-Phoenix/protoschema/_test/db"
 	"github.com/labstack/gommon/log"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -129,11 +130,10 @@ func TestMain(t *testing.T) {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	store := db.New(database)
-	store.ExtractMethods()
-	// handlerBuilder := NewHandlerBuilder(store, "")
-	// files := protoPackage.BuildFiles()
-	// for _, file := range files {
-	// 	err := handlerBuilder.genConnectHandler(file)
-	// 	assert.NoError(t, err, "Main Test")
-	// }
+	handlerBuilder := NewHandlerBuilder(store, "gen/handlers")
+	files := protoPackage.BuildFiles()
+	for _, file := range files {
+		err := handlerBuilder.genConnectHandler(file)
+		assert.NoError(t, err, "Main Test")
+	}
 }

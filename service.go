@@ -15,7 +15,7 @@ type HandlerData struct {
 	Name     string
 	Request  *MessageSchema
 	Response *MessageSchema
-	Query    db.QueryData
+	Query    *db.QueryData
 }
 
 // Maps handlers to their names.
@@ -25,7 +25,7 @@ type HandlersMap map[string]Handler
 type Handler struct {
 	Request  *MessageSchema
 	Response *MessageSchema
-	Query    db.QueryData
+	Query    *db.QueryData
 }
 
 // The output struct of the schema after it has been processed. Gets passed as an argument to the ServiceHook.

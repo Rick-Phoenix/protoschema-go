@@ -1,3 +1,6 @@
+{{ define "queryCall" }}
+{{ if not .IsErr }}{{ index .ReturnTypes 0 }}, {{ end }}err := s.Queries.{{ .Name }}(ctx, req.Msg.Get())
+{{ end }}
 {{ define "connectHandler" }}
 package handlers
 
@@ -5,7 +8,7 @@ package handlers
 
 
 type {{ .Resource }}Service struct {
-	Store *db.Store
+  Queries *db.Queries
 }
 
 func New{{ .Resource }}Service(s *db.Store) *{{ .Resource }}Service {
@@ -21,7 +24,7 @@ func (s *{{ $res }}Service) {{ .Name }}(
   req *connect.Request[{{ .Request.GetGoPackageName }}.{{ .Request.Name }}],
 ) (*connect.Response[{{ .Response.GetGoPackageName }}.{{ .Response.Name }}], error) {
 
-  {{ .Query.Name }}, err := s.Store.Queries.{{ .Query.Method }}(ctx, req.Msg.Get{{ .Query.Param }}())
+  {{ if .Query }}{{ template "queryCall" .Query }}{{ end }}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, connect.NewError(connect.CodeNotFound, err)
@@ -37,8 +40,12 @@ func (s *{{ $res }}Service) {{ .Name }}(
 	}
 
   return connect.NewResponse(&{{ .Response.GetGoPackageName }}.{{ .Response.Name }}{
-    {{ .Query.ReturnField }}: {{ .Query.Name }},
-	}), nil
+    {{ if .Query }}
+    {{ range $name, $_ := .Query.ReturnFields }}
+    {{ $name }}: ,
+    {{ end }}
+    {{ end }}
+	), nil
 }
 
 {{ end }}

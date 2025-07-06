@@ -51,13 +51,13 @@ func (q *Queries) GetPkg() string {
 	return reflect.TypeOf(q).Elem().PkgPath()
 }
 
-func (q *Queries) ExtractMethods() map[string]QueryData {
-	output := make(map[string]QueryData)
+func (q *Queries) ExtractMethods() map[string]*QueryData {
+	output := make(map[string]*QueryData)
 	model := reflect.TypeOf(q)
 	ignoredMethods := []string{"WithTx", "ExtractMethods", "GetPkg"}
 	for i := range model.NumMethod() {
 		method := model.Method(i)
-		data := QueryData{
+		data := &QueryData{
 			Params:       make(map[string]string),
 			ReturnFields: make(map[string]string),
 		}
@@ -104,8 +104,6 @@ func (q *Queries) ExtractMethods() map[string]QueryData {
 		}
 		output[data.Name] = data
 	}
-
-	fmt.Printf("DEBUG: %+v\n", output)
 
 	return output
 }
