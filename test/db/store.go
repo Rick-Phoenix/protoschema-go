@@ -37,10 +37,11 @@ type QueryData struct {
 	Name         string
 	ParamName    string
 	Params       map[string]string
-	IsResult     bool
-	IsErr        bool
 	ReturnTypes  []string
 	ReturnFields map[string]string
+	IsErr        bool
+	SliceReturn  bool
+	IsResult     bool
 }
 
 func (q *Queries) GetPkg() string {
@@ -77,6 +78,7 @@ func (q *Queries) ExtractMethods() map[string]*QueryData {
 			} else {
 				var target reflect.Type
 				if firstReturn.Kind() == reflect.Slice {
+					data.SliceReturn = true
 					target = firstReturn.Elem().Elem()
 				} else if firstReturn.Kind() == reflect.Pointer {
 					target = firstReturn.Elem()

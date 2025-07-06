@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Rick-Phoenix/protoschema/_test/db"
+	"github.com/Rick-Phoenix/protoschema/test/db"
 )
 
 // Function that receives the service data after its schema has been processed.

@@ -9,11 +9,11 @@ tasks:
       - go test -v . -run TestMain
     silent: true
   bufgen:
-    dir: _test/proto
+    dir: test/proto
     cmd: buf generate
   bufdeps:
-    dir: _test/proto
+    dir: test/proto
     cmd: buf dep update
   sqlc:
     cmd: sqlc generate
-    dir: _test
+    dir: test

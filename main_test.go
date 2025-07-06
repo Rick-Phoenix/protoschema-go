@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Rick-Phoenix/protoschema/_test/db"
+	"github.com/Rick-Phoenix/protoschema/test/db"
 	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
 )
