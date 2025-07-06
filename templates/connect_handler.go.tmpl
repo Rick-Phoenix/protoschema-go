@@ -41,7 +41,8 @@ func (s *{{ $res }}Service) {{ .Name }}(
 
   return connect.NewResponse(&{{ .Response.GetGoPackageName }}.{{ .Response.Name }}{
     {{ range .Response.GetFieldNames }}
-    {{ capitalize .  }}: {{ . }},
+    {{ $name := capitalize . }}
+    {{ $name }}: converter.{{ $name }}To{{ $name }}Msg({{ . }}),
     {{ end }}
   }), nil
 }
