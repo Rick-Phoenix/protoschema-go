@@ -1,0 +1,47 @@
+{{- define "message" -}}
+{{ range .Messages }}
+message {{ .Name }} {
+{{- if .ReservedRanges }}
+  reserved {{ joinRange .ReservedRanges }};
+{{- end }}
+{{- if .ReservedNumbers }}
+  reserved {{ joinUint .ReservedNumbers ", " }};
+{{- end }}
+{{- if .ReservedNames }}
+  reserved {{ join .ReservedNames ", "}};
+{{- end }}
+  {{- range .Options -}}
+    {{ fmtOpt . }};
+  {{- end }}
+{{ range .Enums -}}
+  enum {{ .Name }} {
+  {{ range .Options -}}
+    {{ fmtOpt . }};
+  {{ end }}
+  {{ range $val, $name := .Members -}}
+    {{ $name }} = {{ $val }};
+  {{ end -}}
+  {{ if .ReservedNumbers -}}
+    reserved {{ joinInt32 .ReservedNumbers ", "}};
+  {{ end -}}
+  {{ if .ReservedNames -}}
+    reserved {{ join .ReservedNames ", "}};
+  {{ end -}}
+  {{ if .ReservedRanges -}}
+    reserved {{ joinRange .ReservedRanges }};
+  {{- end }}
+  }
+{{ end }}
+  {{ template "message" . }}
+{{ range .Oneofs }}
+  {{ range .Options -}}
+    {{ fmtOpt . }};
+  {{ end }}
+  oneof {{ .Name }} {
+    {{- template "field" . }}
+  }
+{{ end }}
+{{- template "field" . }}
+}
+{{ end }}
+{{ end }}

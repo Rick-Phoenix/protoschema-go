@@ -1,0 +1,8 @@
+{{ define "field" }}
+{{ $protoPkg := .Package }}
+{{- range $_, $field := .Fields }}
+  {{ keyword .Optional .Repeated }}{{ getProtoType .  $protoPkg }} {{.Name}} = {{.FieldNr}}{{ if gt (len .Options) 0 }} [
+    {{ range $idx, $opt := .Options }}{{ $opt }}{{ if lt $idx (dec (len $field.Options)) }}{{",\n    "}}{{end}}{{ end }} 
+  ]{{- end -}};
+  {{- end }}
+{{ end }}
