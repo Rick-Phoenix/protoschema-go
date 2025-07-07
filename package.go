@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/Rick-Phoenix/protoschema/internal/shared"
 )
 
 // The configuration for a ProtoPackage instance
@@ -143,7 +145,7 @@ func NewProtoPackage(conf ProtoPackageConfig) *ProtoPackage {
 		p.converterOutputDir = "gen/converter"
 	}
 
-	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(templateFS, "templates/*")
+	tmpl, err := template.New("protoTemplates").Funcs(funcMap).ParseFS(shared.TemplateFS, "templates/*")
 	if err != nil {
 		fmt.Print(fmt.Errorf("Failed to initiate tmpl instance for the generator: %w", err))
 		os.Exit(1)

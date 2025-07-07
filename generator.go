@@ -2,7 +2,6 @@ package protoschema
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,9 +11,6 @@ import (
 
 	u "github.com/Rick-Phoenix/goutils"
 )
-
-//go:embed templates/*
-var templateFS embed.FS
 
 // The function that processes the file schemas (and all the schemas inside them) and generates the proto files, while also calling the various hooks and the converter function.
 // This should be called after all the elements of the proto package have been added with the various constructors.
