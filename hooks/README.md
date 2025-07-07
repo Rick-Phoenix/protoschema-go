@@ -120,7 +120,7 @@ func TestHandlerGen(t *testing.T) {
 }
 ```
 
-As you can see here we are initiating a Queries instance and passing it to the `NewConnectHandlerGen` constructor, as well as specifying the output directory for the generated files. Then we are extracting the FileData with protoschema to pass it to the handler generator. 
+As you can see here we are initiating a Queries instance and passing it to the `NewConnectHandlerGen` constructor, as well as specifying the output directory for the generated files (of which the last part will be the name of the package). Then we are extracting the FileData with protoschema to pass it to the handler generator. 
 
 From this, this file will be generated:
 

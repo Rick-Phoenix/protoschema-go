@@ -2,7 +2,7 @@
 {{ if not .IsErr }}{{ uncapitalize (index .ReturnTypes 0) }}, {{ end }}err := s.Queries.{{ .Name }}(ctx, req.Msg.Get())
 {{ end }}
 {{ define "connectHandler" }}
-package handlers
+package {{ .Package }}
 
 {{ template "imports" .Imports }}
 
