@@ -136,7 +136,7 @@ func TestHandlerGen(t *testing.T) {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	store := db.New(database)
-	handlerBuilder := hooks.NewHandlerBuilder(store, "gen/handlers")
+	handlerBuilder := hooks.NewConnectHandlerGen(store, "gen/handlers")
 	files := TestPkg.BuildFiles()
 	for _, file := range files {
 		err := handlerBuilder.Generate(file)

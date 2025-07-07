@@ -11,8 +11,8 @@ type {{ .Resource }}Service struct {
   Queries *db.Queries
 }
 
-func New{{ .Resource }}Service(s *db.Store) *{{ .Resource }}Service {
-	return &{{ .Resource }}Service{Store: s}
+func New{{ .Resource }}Service(queries *db.Queries) *{{ .Resource }}Service {
+  return &{{ .Resource }}Service{Queries: queries}
 }
 
 {{ $res := .Resource }}

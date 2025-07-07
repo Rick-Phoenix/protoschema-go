@@ -17,3 +17,5 @@ tasks:
   sqlc:
     cmd: sqlc generate
     dir: test
+  handler-gen:
+    cmd: go test -v . -run TestHandlerGen
