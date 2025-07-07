@@ -387,6 +387,11 @@ This ensures that if a change occurs on either side but is not implemented on th
 
 ## Hooks
 
+### Hooks subpackage
+
+This library includes a hooks subpackage which contains some hooks that can be used in a plug-and-play fashion. Look inside the hooks directory for a more detailed documentation for those.
+
+### Custom hooks
 protoschema also allows the user to define hooks for the whole package or for single schemas, which will be called when the schema is processed, and receive all the data for that protobuf element (file, service, oneof or message), which can be used to perform custom actions such as code generation. 
 
 ```go
